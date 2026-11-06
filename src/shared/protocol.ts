@@ -1,0 +1,168 @@
+export type FileRole = "target" | "reference" | "mentioned";
+
+export interface ContextFile {
+  path: string;
+  role: FileRole;
+  score: number;
+  tokens: number;
+  reasons: string[];
+}
+
+export interface ContextReport {
+  strategy: string;
+  budgetTokens: number;
+  usedTokens: number;
+  files: ContextFile[];
+  fetched: string[];
+}
+
+export type ToolStatus = "running" | "awaiting-approval" | "done" | "denied" | "error";
+
+export interface DiffStat {
+  added: number;
+  removed: number;
+}
+
+export interface TextStep {
+  kind: "text";
+  id: string;
+  text: string;
+}
+
+export interface ReasoningStep {
+  kind: "reasoning";
+  id: string;
+  text: string;
+}
+
+export interface ToolStep {
+  kind: "tool";
+  id: string;
+  name: string;
+  title: string;
+  detail?: string;
+  path?: string;
+  status: ToolStatus;
+  output?: string;
+  diff?: DiffStat;
+  threadTitle?: string;
+}
+
+export interface ApprovalStep {
+  kind: "approval";
+  id: string;
+  toolCallId: string;
+  toolName: string;
+  title: string;
+  detail: string;
+  status: "pending" | "allowed" | "denied";
+}
+
+export interface SubagentStep {
+  kind: "subagent";
+  id: string;
+  title: string;
+  status: "running" | "done" | "error";
+}
+
+export type NoticeTone = "info" | "success" | "warning" | "error";
+
+export interface NoticeStep {
+  kind: "notice";
+  id: string;
+  tone: NoticeTone;
+  text: string;
+}
+
+export type Step = TextStep | ReasoningStep | ToolStep | ApprovalStep | SubagentStep | NoticeStep;
+
+export type TurnStatus = "running" | "paused" | "done" | "cancelled" | "error";
+
+export interface TokenUsage {
+  input: number;
+  output: number;
+  cached: number;
+}
+
+export interface Turn {
+  id: string;
+  prompt: string;
+  mentions: string[];
+  context?: ContextReport;
+  steps: Step[];
+  status: TurnStatus;
+  model: string;
+  usage: TokenUsage;
+  startedAt: number;
+  endedAt?: number;
+}
+
+export type HarnessState = "connecting" | "starting" | "ready" | "offline";
+
+export interface HarnessStatus {
+  state: HarnessState;
+  url: string;
+  message?: string;
+}
+
+export type ModelHealthState = "healthy" | "cooling" | "unknown";
+
+export interface ModelHealth {
+  model: string;
+  state: ModelHealthState;
+  coolingUntil?: number;
+  lastError?: string;
+}
+
+export interface ChangedFile {
+  path: string;
+  added: number;
+  removed: number;
+}
+
+export interface ChangeSetSummary {
+  id: string;
+  label: string;
+  files: ChangedFile[];
+  createdAt: number;
+  undone: boolean;
+}
+
+export interface ChatState {
+  sessionId?: string;
+  sessionUrl?: string;
+  turns: Turn[];
+  harness: HarnessStatus;
+  models: ModelHealth[];
+  activeModel?: string;
+  busy: boolean;
+  changeSets: ChangeSetSummary[];
+}
+
+export type MentionKind = "file" | "symbol";
+
+export interface MentionItem {
+  kind: MentionKind;
+  label: string;
+  path: string;
+  line?: number;
+  detail?: string;
+}
+
+export type HostMessage =
+  | { type: "state"; state: ChatState }
+  | { type: "mentionResults"; requestId: number; items: MentionItem[] }
+  | { type: "focusInput" };
+
+export type WebviewMessage =
+  | { type: "ready" }
+  | { type: "send"; text: string; mentions: string[] }
+  | { type: "cancel" }
+  | { type: "newSession" }
+  | { type: "approve"; toolCallId: string; allow: boolean }
+  | { type: "openFile"; path: string; line?: number }
+  | { type: "undo"; changeSetId: string }
+  | { type: "searchMentions"; requestId: number; query: string }
+  | { type: "openSessionInHarness" }
+  | { type: "configureModels" }
+  | { type: "reconnect" };

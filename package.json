@@ -1,0 +1,156 @@
+{
+  "name": "anvil",
+  "displayName": "Anvil: TrueForge Coding Agent",
+  "description": "Agentic coding inside VS Code, orchestrated by the TrueForge harness.",
+  "version": "0.1.0",
+  "publisher": "anvil-forge",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swapnilsubhashpatil/forge-a-thon"
+  },
+  "engines": {
+    "vscode": "^1.95.0",
+    "node": ">=22.14.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages"
+  ],
+  "icon": "media/icon.png",
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "anvil",
+          "title": "Anvil",
+          "icon": "media/anvil.svg"
+        }
+      ]
+    },
+    "views": {
+      "anvil": [
+        {
+          "type": "webview",
+          "id": "anvil.chat",
+          "name": "Agent"
+        }
+      ]
+    },
+    "commands": [
+      { "command": "anvil.inlineEdit", "title": "Edit Selection with Anvil", "category": "Anvil", "icon": "$(sparkle)" },
+      { "command": "anvil.newSession", "title": "New Session", "category": "Anvil", "icon": "$(add)" },
+      { "command": "anvil.cancel", "title": "Cancel Running Turn", "category": "Anvil", "icon": "$(debug-stop)" },
+      { "command": "anvil.acceptHunk", "title": "Accept Change", "category": "Anvil" },
+      { "command": "anvil.rejectHunk", "title": "Reject Change", "category": "Anvil" },
+      { "command": "anvil.acceptAll", "title": "Accept All Changes in File", "category": "Anvil", "icon": "$(check-all)" },
+      { "command": "anvil.rejectAll", "title": "Reject All Changes in File", "category": "Anvil", "icon": "$(close-all)" },
+      { "command": "anvil.undoLastChange", "title": "Undo Last Agent Change", "category": "Anvil", "icon": "$(discard)" },
+      { "command": "anvil.openSessionInHarness", "title": "Open Session in TrueForge", "category": "Anvil", "icon": "$(link-external)" },
+      { "command": "anvil.selectModels", "title": "Configure Model Fallback Chain", "category": "Anvil" },
+      { "command": "anvil.restartHarness", "title": "Reconnect to TrueForge", "category": "Anvil" }
+    ],
+    "keybindings": [
+      { "command": "anvil.inlineEdit", "key": "ctrl+alt+k", "mac": "cmd+alt+k", "when": "editorTextFocus" },
+      { "command": "anvil.acceptHunk", "key": "ctrl+alt+y", "mac": "cmd+alt+y", "when": "anvil.reviewActive && editorTextFocus" },
+      { "command": "anvil.rejectHunk", "key": "ctrl+alt+n", "mac": "cmd+alt+n", "when": "anvil.reviewActive && editorTextFocus" },
+      { "command": "anvil.cancel", "key": "ctrl+alt+backspace", "mac": "cmd+alt+backspace", "when": "anvil.turnRunning" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "anvil.newSession", "when": "view == anvil.chat", "group": "navigation@1" },
+        { "command": "anvil.openSessionInHarness", "when": "view == anvil.chat", "group": "navigation@2" }
+      ],
+      "editor/title": [
+        { "command": "anvil.acceptAll", "when": "anvil.reviewActive", "group": "navigation@1" },
+        { "command": "anvil.rejectAll", "when": "anvil.reviewActive", "group": "navigation@2" }
+      ],
+      "editor/context": [
+        { "command": "anvil.inlineEdit", "when": "editorHasSelection", "group": "1_modification@0" }
+      ]
+    },
+    "configuration": {
+      "title": "Anvil",
+      "properties": {
+        "anvil.harness.url": {
+          "type": "string",
+          "default": "http://localhost:8790",
+          "description": "Base URL of the TrueForge harness server."
+        },
+        "anvil.harness.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start a local TrueForge server with npx when none is reachable."
+        },
+        "anvil.models.chain": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "markdownDescription": "Ordered model fallback chain, as TrueForge model names (`provider/model`). The first healthy model runs each turn; failures fall through to the next."
+        },
+        "anvil.context.budgetTokens": {
+          "type": "number",
+          "default": 6000,
+          "minimum": 1000,
+          "description": "Token budget for the context pack attached to each turn."
+        },
+        "anvil.resilience.firstEventTimeoutSeconds": {
+          "type": "number",
+          "default": 45,
+          "minimum": 5,
+          "description": "Fail over to the next model when no model output arrives within this many seconds."
+        },
+        "anvil.agent.iterationLimit": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "maximum": 1024,
+          "description": "Maximum agent loop iterations per turn."
+        },
+        "anvil.commands.timeoutSeconds": {
+          "type": "number",
+          "default": 120,
+          "description": "Timeout for commands the agent runs."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs && vite build --config webview-ui/vite.config.ts",
+    "watch": "node scripts/build.mjs --watch",
+    "watch:webview": "vite build --watch --config webview-ui/vite.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p webview-ui/tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "bench": "node scripts/bench.ts",
+    "harness": "node scripts/start-harness.mjs",
+    "package": "npm run build && vsce package --no-dependencies --out dist/anvil.vsix"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@truefoundry/trueforge-sdk": "0.185.0",
+    "diff": "^9.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/vscode": "~1.95.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "@vscode/codicons": "^0.0.46-24",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8"
+  }
+}
