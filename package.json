@@ -17,7 +17,6 @@
     "AI",
     "Programming Languages"
   ],
-  "icon": "media/icon.png",
   "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished"
@@ -42,35 +41,126 @@
       ]
     },
     "commands": [
-      { "command": "anvil.inlineEdit", "title": "Edit Selection with Anvil", "category": "Anvil", "icon": "$(sparkle)" },
-      { "command": "anvil.newSession", "title": "New Session", "category": "Anvil", "icon": "$(add)" },
-      { "command": "anvil.cancel", "title": "Cancel Running Turn", "category": "Anvil", "icon": "$(debug-stop)" },
-      { "command": "anvil.acceptHunk", "title": "Accept Change", "category": "Anvil" },
-      { "command": "anvil.rejectHunk", "title": "Reject Change", "category": "Anvil" },
-      { "command": "anvil.acceptAll", "title": "Accept All Changes in File", "category": "Anvil", "icon": "$(check-all)" },
-      { "command": "anvil.rejectAll", "title": "Reject All Changes in File", "category": "Anvil", "icon": "$(close-all)" },
-      { "command": "anvil.undoLastChange", "title": "Undo Last Agent Change", "category": "Anvil", "icon": "$(discard)" },
-      { "command": "anvil.openSessionInHarness", "title": "Open Session in TrueForge", "category": "Anvil", "icon": "$(link-external)" },
-      { "command": "anvil.selectModels", "title": "Configure Model Fallback Chain", "category": "Anvil" },
-      { "command": "anvil.restartHarness", "title": "Reconnect to TrueForge", "category": "Anvil" }
+      {
+        "command": "anvil.inlineEdit",
+        "title": "Edit Selection with Anvil",
+        "category": "Anvil",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "anvil.newSession",
+        "title": "New Session",
+        "category": "Anvil",
+        "icon": "$(add)"
+      },
+      {
+        "command": "anvil.cancel",
+        "title": "Cancel Running Turn",
+        "category": "Anvil",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "anvil.acceptHunk",
+        "title": "Accept Change",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.rejectHunk",
+        "title": "Reject Change",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.acceptAll",
+        "title": "Accept All Changes in File",
+        "category": "Anvil",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "anvil.rejectAll",
+        "title": "Reject All Changes in File",
+        "category": "Anvil",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "anvil.undoLastChange",
+        "title": "Undo Last Agent Change",
+        "category": "Anvil",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "anvil.openSessionInHarness",
+        "title": "Open Session in TrueForge",
+        "category": "Anvil",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "anvil.selectModels",
+        "title": "Configure Model Fallback Chain",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.restartHarness",
+        "title": "Reconnect to TrueForge",
+        "category": "Anvil"
+      }
     ],
     "keybindings": [
-      { "command": "anvil.inlineEdit", "key": "ctrl+alt+k", "mac": "cmd+alt+k", "when": "editorTextFocus" },
-      { "command": "anvil.acceptHunk", "key": "ctrl+alt+y", "mac": "cmd+alt+y", "when": "anvil.reviewActive && editorTextFocus" },
-      { "command": "anvil.rejectHunk", "key": "ctrl+alt+n", "mac": "cmd+alt+n", "when": "anvil.reviewActive && editorTextFocus" },
-      { "command": "anvil.cancel", "key": "ctrl+alt+backspace", "mac": "cmd+alt+backspace", "when": "anvil.turnRunning" }
+      {
+        "command": "anvil.inlineEdit",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "anvil.acceptHunk",
+        "key": "ctrl+alt+y",
+        "mac": "cmd+alt+y",
+        "when": "anvil.reviewActive && editorTextFocus"
+      },
+      {
+        "command": "anvil.rejectHunk",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "anvil.reviewActive && editorTextFocus"
+      },
+      {
+        "command": "anvil.cancel",
+        "key": "ctrl+alt+backspace",
+        "mac": "cmd+alt+backspace",
+        "when": "anvil.turnRunning"
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "anvil.newSession", "when": "view == anvil.chat", "group": "navigation@1" },
-        { "command": "anvil.openSessionInHarness", "when": "view == anvil.chat", "group": "navigation@2" }
+        {
+          "command": "anvil.newSession",
+          "when": "view == anvil.chat",
+          "group": "navigation@1"
+        },
+        {
+          "command": "anvil.openSessionInHarness",
+          "when": "view == anvil.chat",
+          "group": "navigation@2"
+        }
       ],
       "editor/title": [
-        { "command": "anvil.acceptAll", "when": "anvil.reviewActive", "group": "navigation@1" },
-        { "command": "anvil.rejectAll", "when": "anvil.reviewActive", "group": "navigation@2" }
+        {
+          "command": "anvil.acceptAll",
+          "when": "anvil.reviewActive",
+          "group": "navigation@1"
+        },
+        {
+          "command": "anvil.rejectAll",
+          "when": "anvil.reviewActive",
+          "group": "navigation@2"
+        }
       ],
       "editor/context": [
-        { "command": "anvil.inlineEdit", "when": "editorHasSelection", "group": "1_modification@0" }
+        {
+          "command": "anvil.inlineEdit",
+          "when": "editorHasSelection",
+          "group": "1_modification@0"
+        }
       ]
     },
     "configuration": {
@@ -88,7 +178,9 @@
         },
         "anvil.models.chain": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "markdownDescription": "Ordered model fallback chain, as TrueForge model names (`provider/model`). The first healthy model runs each turn; failures fall through to the next."
         },
@@ -127,7 +219,8 @@
     "test": "node --test \"test/**/*.test.ts\"",
     "bench": "node scripts/bench.ts",
     "harness": "node scripts/start-harness.mjs",
-    "package": "npm run build && vsce package --no-dependencies --out dist/anvil.vsix"
+    "package": "npm run build && vsce package --no-dependencies --out dist/anvil.vsix",
+    "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -143,6 +236,7 @@
     "@types/vscode": "~1.95.0",
     "@vitejs/plugin-react": "^6.3.0",
     "@vscode/codicons": "^0.0.46-24",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "react": "^19.3.1",
