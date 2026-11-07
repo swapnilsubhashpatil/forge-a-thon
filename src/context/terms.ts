@@ -78,7 +78,8 @@ export interface QueryToken {
 export function queryTokens(text: string): QueryToken[] {
   const out: QueryToken[] = [];
   let position = 0;
-  for (const match of text.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
+  const withoutExtensions = text.replace(/\.(py|pyi|ts|tsx|js|jsx|mjs|rst|md|txt|json|toml|cfg|ini|ya?ml|html|css)\b/gi, " ");
+  for (const match of withoutExtensions.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
     const raw = match[0];
     const compound = /_|[a-z][A-Z]/.test(raw);
     if (compound) out.push({ term: raw.toLowerCase().replace(/^_+/, ""), position, compound: true });
