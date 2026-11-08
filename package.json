@@ -11,7 +11,7 @@
   },
   "engines": {
     "vscode": "^1.95.0",
-    "node": ">=22.14.0"
+    "node": ">=22.18.0"
   },
   "categories": [
     "AI",
@@ -169,12 +169,14 @@
         "anvil.harness.url": {
           "type": "string",
           "default": "http://localhost:8790",
-          "description": "Base URL of the TrueForge harness server."
+          "description": "Base URL of the TrueForge harness server.",
+          "scope": "machine"
         },
         "anvil.harness.autoStart": {
           "type": "boolean",
           "default": true,
-          "description": "Start a local TrueForge server with npx when none is reachable."
+          "description": "Start a local TrueForge server with npx when none is reachable.",
+          "scope": "machine"
         },
         "anvil.models.chain": {
           "type": "array",
@@ -207,6 +209,18 @@
           "type": "number",
           "default": 120,
           "description": "Timeout for commands the agent runs."
+        },
+        "anvil.models.reasoningEffort": {
+          "type": "string",
+          "enum": [
+            "default",
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "default": "default",
+          "markdownDescription": "Reasoning effort passed to the model. `none` disables thinking on models such as Qwen 3, which makes local models much faster."
         }
       }
     }

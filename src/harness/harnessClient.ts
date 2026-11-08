@@ -3,8 +3,6 @@ import { TrueForge, isEventDelta, mergeEventDelta, type TrueForgeApi } from "@tr
 export type HarnessEvent = TrueForgeApi.TurnStreamingEvent;
 export type AgentSpec = TrueForgeApi.AgentSpec;
 
-export const TOOL_SERVER_NAME = "anvil-editor";
-
 const STREAM_TIMEOUT_SECONDS = 600;
 
 export interface ApprovalDecision {
@@ -37,11 +35,11 @@ export class HarnessClient {
     return response.data.map((model) => model.name);
   }
 
-  async registerToolServer(url: string, token: string): Promise<void> {
+  async registerToolServer(name: string, url: string, token: string): Promise<void> {
     await this.api.settings.mcpServers.createOrUpdate({
       manifest: {
         type: "remote",
-        name: TOOL_SERVER_NAME,
+        name,
         description: "Anvil editor tools served by the VS Code extension",
         url,
         auth: { type: "header", headers: { Authorization: `Bearer ${token}` } },
@@ -50,18 +48,20 @@ export class HarnessClient {
   }
 
   async createSession(spec: AgentSpec, title: string): Promise<string> {
-    const response = await this.api.sessions.create({ agent: { spec }, metadata: { title } });
-    return response.data.id;
+    const response = await this.api.sessions.create({ agent: { spec } });
+    const id = response.data.id;
+    await this.api.sessions.update(id, { title }).catch(() => undefined);
+    return id;
   }
 
   async updateSessionSpec(sessionId: string, spec: AgentSpec): Promise<void> {
     await this.api.sessions.update(sessionId, { agent: { spec } });
   }
 
-  async startTurn(sessionId: string, content: string, signal: AbortSignal): Promise<AsyncIterable<HarnessEvent>> {
+  async startTurn(sessionId: string, content: string, previousTurnId: string, signal: AbortSignal): Promise<AsyncIterable<HarnessEvent>> {
     return this.api.sessions.createTurnStream(
       sessionId,
-      { input: [{ type: "user.message", content }] },
+      { input: [{ type: "user.message", content }], previousTurnId },
       { timeoutInSeconds: STREAM_TIMEOUT_SECONDS, maxRetries: 0, abortSignal: signal },
     );
   }

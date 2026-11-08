@@ -31,8 +31,8 @@ export class HarnessProcess {
     this.start(new URL(client.baseUrl).port || "8790");
     const deadline = Date.now() + STARTUP_TIMEOUT_MS;
     while (Date.now() < deadline) {
-      if (this.child?.exitCode !== null && this.child?.exitCode !== undefined) {
-        throw new Error(`TrueForge exited with code ${this.child.exitCode}. See the Anvil output channel.`);
+      if (this.child && (this.child.exitCode !== null || this.child.signalCode !== null)) {
+        throw new Error(`TrueForge exited (${this.child.exitCode ?? this.child.signalCode}). See the Anvil output channel.`);
       }
       if (await client.ping()) return "started";
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
@@ -48,19 +48,17 @@ export class HarnessProcess {
       cwd: this.dataDir,
       shell: process.platform === "win32",
       windowsHide: true,
+      detached: true,
       env: { ...process.env, PORT: port, OUTBOUND_URL_ALLOWED_HOSTS: LOOPBACK_ALLOWLIST },
     });
     this.child.stdout?.on("data", (chunk: Buffer) => this.log(chunk.toString().trimEnd()));
     this.child.stderr?.on("data", (chunk: Buffer) => this.log(chunk.toString().trimEnd()));
     this.child.on("exit", (code) => this.log(`TrueForge exited (${code ?? "signal"})`));
+    this.child.unref();
   }
 
   dispose(): void {
-    if (!this.child || this.child.exitCode !== null) return;
-    if (process.platform === "win32" && this.child.pid) {
-      spawn("taskkill", ["/pid", String(this.child.pid), "/t", "/f"], { windowsHide: true });
-    } else {
-      this.child.kill();
-    }
+    this.child?.stdout?.removeAllListeners();
+    this.child?.stderr?.removeAllListeners();
   }
 }
