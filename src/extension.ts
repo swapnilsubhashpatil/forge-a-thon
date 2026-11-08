@@ -17,7 +17,7 @@ import type { HostMessage, WebviewMessage } from "./shared/protocol.ts";
 import { createEditorTools, ReadCache } from "./tools/editorTools.ts";
 import { startToolServer, type RunningToolServer } from "./tools/toolServer.ts";
 import { ChatViewProvider } from "./ui/chatViewProvider.ts";
-import { runInlineEdit } from "./ui/inlineEdit.ts";
+import { inlineRequest, runInlineEdit } from "./ui/inlineEdit.ts";
 
 export async function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel("Anvil", { log: true });
@@ -239,7 +239,11 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const ready = connect();
-  return { ready, runner, store, sendPrompt, ledger };
+  const runInline = async (path: string, firstLine: number, lastLine: number, instruction: string) => {
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...path.split("/")));
+    await runner.run(inlineRequest(document, path, firstLine, lastLine, instruction));
+  };
+  return { ready, runner, store, sendPrompt, runInline, ledger };
 }
 
 async function orderModels(models: string[]): Promise<string[] | undefined> {

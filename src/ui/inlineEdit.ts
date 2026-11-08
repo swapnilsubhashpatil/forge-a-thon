@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { estimateTokens } from "../context/tokens.ts";
-import type { TurnRunner } from "../agent/turnRunner.ts";
+import type { TurnRequest, TurnRunner } from "../agent/turnRunner.ts";
 
 const SURROUNDING_LINES = 30;
 
@@ -32,6 +32,22 @@ export async function runInlineEdit(runner: TurnRunner, root: vscode.Uri): Promi
   });
   if (!instruction?.trim()) return;
 
+  const request = inlineRequest(document, path, firstLine, lastLine, instruction.trim());
+
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: `Anvil · editing ${path}`, cancellable: true },
+    async (_progress, token) => {
+      const subscription = token.onCancellationRequested(() => void runner.cancel());
+      try {
+        await runner.run(request);
+      } finally {
+        subscription.dispose();
+      }
+    },
+  );
+}
+
+export function inlineRequest(document: vscode.TextDocument, path: string, firstLine: number, lastLine: number, instruction: string): TurnRequest {
   const numbered = (from: number, to: number) => {
     const lines: string[] = [];
     for (let line = from; line <= to; line += 1) lines.push(`${String(line + 1).padStart(5)}  ${document.lineAt(line).text}`);
@@ -53,28 +69,18 @@ export async function runInlineEdit(runner: TurnRunner, root: vscode.Uri): Promi
     `Instruction: ${instruction.trim()}`,
   ].join("\n");
 
-  await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: `Anvil · editing ${path}`, cancellable: true },
-    async (_progress, token) => {
-      const subscription = token.onCancellationRequested(() => void runner.cancel());
-      try {
-        await runner.run({
-          mode: "inline",
-          title: `Inline edit · ${path}`,
-          prompt: instruction.trim(),
-          mentions: [path],
-          message,
-          context: {
-            strategy: "Inline edit: the selection plus 30 surrounding lines, no repository search.",
-            budgetTokens: estimateTokens(message),
-            usedTokens: estimateTokens(message),
-            files: [{ path, role: "target", score: 1, tokens: estimateTokens(message), reasons: [`selection lines ${firstLine + 1}-${lastLine + 1}`] }],
-            fetched: [],
-          },
-        });
-      } finally {
-        subscription.dispose();
-      }
+  return {
+    mode: "inline",
+    title: `Inline edit · ${path}`,
+    prompt: instruction,
+    mentions: [path],
+    message,
+    context: {
+      strategy: "Inline edit: the selection plus 30 surrounding lines, no repository search.",
+      budgetTokens: estimateTokens(message),
+      usedTokens: estimateTokens(message),
+      files: [{ path, role: "target", score: 1, tokens: estimateTokens(message), reasons: [`selection lines ${firstLine + 1}-${lastLine + 1}`] }],
+      fetched: [],
     },
-  );
+  };
 }
