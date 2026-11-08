@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile, stat } from "node:fs/promises";
-import { join, posix } from "node:path";
+import { lstat, readdir, readFile, realpath, stat } from "node:fs/promises";
+import { isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import { parseFile, type PythonImport, type SymbolEntry } from "./skeleton.ts";
 import { identifierTerms, pathTerms, textTerms } from "./terms.ts";
@@ -41,6 +41,7 @@ export class WorkspaceIndex {
   private parsed = new Map<string, Parsed>();
   private contents = new Map<string, { mtimeMs: number; text: string }>();
   private modules = new Map<string, string>();
+  private realRoot?: Promise<string>;
 
   constructor(root: string) {
     this.root = root;
@@ -72,6 +73,7 @@ export class WorkspaceIndex {
 
   async refresh(path: string): Promise<void> {
     const rel = normalize(path);
+    if (!this.entries.has(rel) && (await this.ignored(rel))) return;
     const loaded = await this.load(rel);
     if (!loaded) {
       this.remove(rel);
@@ -93,7 +95,8 @@ export class WorkspaceIndex {
 
   async read(path: string): Promise<string> {
     const rel = normalize(path);
-    const absolute = join(this.root, rel);
+    const absolute = await this.contained(rel);
+    if (!absolute) throw new Error(`Path ${path} is outside the workspace`);
     const info = await stat(absolute);
     const cached = this.contents.get(rel);
     if (cached && cached.mtimeMs === info.mtimeMs) return cached.text;
@@ -103,14 +106,15 @@ export class WorkspaceIndex {
   }
 
   private async load(path: string): Promise<boolean> {
-    const absolute = join(this.root, path);
+    let absolute;
     let info;
     try {
-      info = await stat(absolute);
+      absolute = await this.contained(path);
+      info = await lstat(join(this.root, path));
     } catch {
       return false;
     }
-    if (!info.isFile() || info.size > MAX_BYTES || BINARY_EXT.test(path)) return false;
+    if (!absolute || !info.isFile()|| info.size > MAX_BYTES || BINARY_EXT.test(path)) return false;
     const buffer = await readFile(absolute);
     if (buffer.subarray(0, 8000).includes(0)) return false;
     const text = buffer.toString("utf8");
@@ -138,6 +142,23 @@ export class WorkspaceIndex {
     this.entries.set(path, entry);
     this.parsed.set(path, { entry, pythonImports: file.pythonImports, scriptImports: file.scriptImports });
     return true;
+  }
+
+  private async contained(rel: string): Promise<string | undefined> {
+    const absolute = resolve(this.root, rel);
+    if (!inside(resolve(this.root), absolute)) return undefined;
+    this.realRoot ??= realpath(this.root);
+    const real = await realpath(absolute);
+    return inside(await this.realRoot, real) ? real : undefined;
+  }
+
+  private async ignored(rel: string): Promise<boolean> {
+    try {
+      await run("git", ["check-ignore", "-q", "--", rel], { cwd: this.root, windowsHide: true });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async listFiles(): Promise<string[]> {
@@ -218,6 +239,11 @@ export class WorkspaceIndex {
 
 function normalize(path: string): string {
   return path.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function inside(root: string, target: string): boolean {
+  const rel = relative(root, target);
+  return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
 }
 
 function moduleNames(path: string): string[] {

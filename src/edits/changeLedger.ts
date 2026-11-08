@@ -7,6 +7,7 @@ interface FileChange {
   uri: vscode.Uri;
   before: string | undefined;
   after: string;
+  conflicted?: boolean;
 }
 
 interface ChangeSet {
@@ -41,8 +42,13 @@ export class ChangeLedger {
     if (!set) throw new Error(`Unknown change set ${setId}`);
     const key = uri.toString();
     const previous = set.files.get(key);
-    set.files.set(key, { uri, before: previous ? previous.before : before, after });
+    const conflicted = previous ? previous.conflicted === true || previous.after !== before : false;
+    set.files.set(key, { uri, before: previous ? previous.before : before, after, conflicted });
     this.emit();
+  }
+
+  hasWrites(setId: string): boolean {
+    return (this.sets.find((s) => s.id === setId)?.files.size ?? 0) > 0;
   }
 
   async undo(setId: string): Promise<UndoResult> {
@@ -50,10 +56,10 @@ export class ChangeLedger {
     const result: UndoResult = { restored: [], skipped: [] };
     if (!set || set.undone) return result;
     const edit = new vscode.WorkspaceEdit();
-    const restoredDocs: vscode.TextDocument[] = [];
+    const restoredDocs: Array<{ path: string; document: vscode.TextDocument }> = [];
     for (const change of set.files.values()) {
       const path = vscode.workspace.asRelativePath(change.uri, false);
-      const document = await openDocument(change.uri);
+      const document = change.conflicted ? undefined : await openDocument(change.uri);
       if (!document || document.getText() !== change.after) {
         result.skipped.push(path);
         continue;
@@ -62,14 +68,17 @@ export class ChangeLedger {
         edit.deleteFile(change.uri, { ignoreIfNotExists: true });
       } else {
         edit.replace(change.uri, fullRange(document), change.before);
-        restoredDocs.push(document);
+        restoredDocs.push({ path, document });
       }
       result.restored.push(path);
     }
     if (result.restored.length > 0 && !(await vscode.workspace.applyEdit(edit))) {
       return { restored: [], skipped: [...result.skipped, ...result.restored] };
     }
-    await Promise.all(restoredDocs.map((document) => document.save()));
+    const saved = await Promise.all(restoredDocs.map(({ document }) => document.save()));
+    const unsaved = new Set(restoredDocs.filter((_, i) => !saved[i]).map(({ path }) => path));
+    result.restored = result.restored.filter((path) => !unsaved.has(path));
+    result.skipped.push(...unsaved);
     set.undone = result.restored.length > 0;
     this.emit();
     return result;

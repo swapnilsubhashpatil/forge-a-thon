@@ -87,6 +87,10 @@ export function renderReview(baseline: string, hunks: Hunk[], decisions: HunkDec
   return render;
 }
 
+export function sameText(a: string, b: string): boolean {
+  return a === b || a.replace(/\r\n/g, "\n") === b.replace(/\r\n/g, "\n");
+}
+
 export function diffStat(baseline: string, text: string): DiffStat {
   return computeHunks(baseline, text).reduce((stat, hunk) => ({ added: stat.added + hunk.added, removed: stat.removed + hunk.removed }), { added: 0, removed: 0 });
 }
