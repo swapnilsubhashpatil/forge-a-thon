@@ -57,7 +57,7 @@ function Working({ paused }: { paused: boolean }) {
   return (
     <div className="mt-3 flex items-center gap-2 px-1 text-sm text-muted">
       <Icon name={paused ? "watch" : "loading"} spin={!paused} />
-      <span className="animate-pulse-soft">{paused ? "Waiting for your approval…" : "Working…"}</span>
+      <span className="animate-pulse-soft">{paused ? "Waiting for your review…" : "Working…"}</span>
     </div>
   );
 }
@@ -91,6 +91,7 @@ function Footer({ turn }: { turn: Turn }) {
 
 function showsWorking(turn: Turn): boolean {
   if (turn.status === "paused") return !turn.steps.some((step) => step.kind === "approval" && step.status === "pending");
+  if (turn.steps.some((step) => step.kind === "tool" && step.status === "awaiting-approval")) return true;
   if (turn.status !== "running") return false;
   const last = turn.steps.at(-1);
   if (!last) return true;
@@ -116,7 +117,7 @@ export const TurnView = memo(function TurnView({ turn, latest }: { turn: Turn; l
           <StepView step={step} live={running && step === last} />
         </div>
       ))}
-      {showsWorking(turn) && <Working paused={turn.status === "paused"} />}
+      {showsWorking(turn) && <Working paused={turn.status === "paused" || turn.steps.some((step) => step.kind === "tool" && step.status === "awaiting-approval")} />}
       {!live && <Footer turn={turn} />}
     </article>
   );

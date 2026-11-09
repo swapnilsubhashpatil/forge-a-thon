@@ -1,10 +1,12 @@
 import { AnvilMark } from "./AnvilMark.tsx";
 
 const examples = [
-  "Add a `flask config` command that prints the app config as JSON",
-  "Explain how the CLI loads the app",
-  "Find where debug mode is decided",
+  "Explain how this project is structured",
+  "Find where errors are handled and summarise the approach",
+  "Add a test for the function I have open",
 ];
+
+const inlineShortcut = navigator.userAgent.includes("Mac") ? "⌘⌥K" : "Ctrl+Alt+K";
 
 export function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   return (
@@ -32,7 +34,7 @@ export function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
         ))}
       </ul>
       <p className="text-xs text-muted">
-        <kbd className="rounded-sm border border-border px-1 font-mono text-2xs">Ctrl+Alt+K</kbd> edits the selection inline
+        <kbd className="rounded-sm border border-border px-1 font-mono text-2xs">{inlineShortcut}</kbd> edits the selection inline
       </p>
     </div>
   );
