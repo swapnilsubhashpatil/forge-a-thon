@@ -59,7 +59,9 @@ opens `../flask-3.1.3`. Then run **Anvil: Configure Model Fallback Chain** and p
 models. To install instead: `npm run package` and install `dist/anvil.vsix`.
 
 Local models: set `OLLAMA_MODEL=qwen3:8b` in `.env` (after `ollama pull qwen3:8b`) and set
-`anvil.models.reasoningEffort` to `none`; Qwen 3 otherwise spends its whole output budget thinking.
+`anvil.models.reasoningEffort` to `none`; Qwen 3 otherwise spends its whole output budget thinking. Start Ollama
+with `OLLAMA_CONTEXT_LENGTH=16384`, because the 4k default truncates Anvil's prompts. Models under ~14B often produce
+invalid tool-call JSON; use a hosted model for the demo (see [docs/verification.md](docs/verification.md)).
 
 ### Agent definition
 
