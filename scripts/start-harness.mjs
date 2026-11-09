@@ -15,9 +15,9 @@ const baseUrl = process.env.TRUEFORGE_URL ?? "http://localhost:8790";
 const port = new URL(baseUrl).port || "8790";
 
 const providers = [
-  { env: "OPENAI_API_KEY", manifest: (apiKey) => ({ type: "openai", auth: { apiKey }, models: [] }) },
-  { env: "ANTHROPIC_API_KEY", manifest: (apiKey) => ({ type: "anthropic", auth: { apiKey }, models: [] }) },
-  { env: "GEMINI_API_KEY", manifest: (apiKey) => ({ type: "google-gemini", auth: { apiKey }, models: [] }) },
+  { env: "OPENAI_API_KEY", manifest: (apiKey) => ({ type: "openai", auth: { api_key: apiKey }, models: [] }) },
+  { env: "ANTHROPIC_API_KEY", manifest: (apiKey) => ({ type: "anthropic", auth: { api_key: apiKey }, models: [] }) },
+  { env: "GEMINI_API_KEY", manifest: (apiKey) => ({ type: "google-gemini", auth: { api_key: apiKey }, models: [] }) },
 ];
 
 async function ping() {
@@ -41,7 +41,7 @@ async function catalogModels(type) {
   const response = await fetch(`${baseUrl}/api/v1/catalogs/model-providers`);
   const catalog = await response.json();
   const entry = catalog.data.find((provider) => provider.type === type);
-  return (entry?.models ?? []).map((model) => ({ modelId: model.model_id, name: model.name, properties: model.properties ?? {} }));
+  return (entry?.models ?? []).map((model) => ({ model_id: model.model_id, name: model.name, properties: model.properties ?? {} }));
 }
 
 let child;
@@ -74,8 +74,8 @@ if (process.env.OLLAMA_MODEL) {
     manifest: {
       type: "custom",
       name: "ollama",
-      baseUrl: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1",
-      models: [{ modelId, name, properties: { contextLength: 32768, maxOutputTokens: 4096 } }],
+      base_url: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1",
+      models: [{ model_id: modelId, name, properties: { context_length: 32768, max_output_tokens: 8192, reasoning_efforts: ["none", "low", "medium", "high"] } }],
     },
   });
   console.log(`Registered local Ollama model as ollama/${name}`);
@@ -86,9 +86,9 @@ if (process.env.BROKEN_PROVIDER_FOR_DEMO === "1") {
     manifest: {
       type: "custom",
       name: "broken",
-      baseUrl: "http://127.0.0.1:9/v1",
-      auth: { apiKey: "invalid" },
-      models: [{ modelId: "unreachable", name: "unreachable", properties: { contextLength: 32768, maxOutputTokens: 4096 } }],
+      base_url: "http://127.0.0.1:9/v1",
+      auth: { api_key: "invalid" },
+      models: [{ model_id: "unreachable", name: "unreachable", properties: { context_length: 32768, max_output_tokens: 4096 } }],
     },
   });
   console.log("Registered broken/unreachable to demonstrate model failover");

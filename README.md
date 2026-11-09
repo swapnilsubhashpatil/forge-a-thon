@@ -25,7 +25,7 @@ is copied, so there is no fork point to declare. Licence: MIT.
 
 ## Requirements
 
-- VS Code ≥ 1.95, Node.js ≥ 22.14, git
+- VS Code ≥ 1.95, Node.js ≥ 22.18, git
 - Python ≥ 3.9 for the Flask demo
 - A model provider: an API key for OpenAI / Anthropic / Gemini, **or** a local [Ollama](https://ollama.com) model with tool calling (e.g. `qwen3:4b`)
 
@@ -57,6 +57,9 @@ cd ../flask-3.1.3 && python -m venv .venv && .venv/Scripts/pip install -e . "pyt
 Run the extension: open this folder in VS Code and press `F5` (“Run Anvil”). The Extension Development Host
 opens `../flask-3.1.3`. Then run **Anvil: Configure Model Fallback Chain** and pick the primary and fallback
 models. To install instead: `npm run package` and install `dist/anvil.vsix`.
+
+Local models: set `OLLAMA_MODEL=qwen3:8b` in `.env` (after `ollama pull qwen3:8b`) and set
+`anvil.models.reasoningEffort` to `none`; Qwen 3 otherwise spends its whole output budget thinking.
 
 ### Agent definition
 

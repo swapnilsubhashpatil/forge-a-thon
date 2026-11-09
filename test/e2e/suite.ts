@@ -74,9 +74,9 @@ async function registerBrokenProvider(): Promise<void> {
       manifest: {
         type: "custom",
         name: "broken",
-        baseUrl: "http://127.0.0.1:9/v1",
-        auth: { apiKey: "invalid" },
-        models: [{ modelId: "unreachable", name: "unreachable", properties: { contextLength: 32768, maxOutputTokens: 4096 } }],
+        base_url: "http://127.0.0.1:9/v1",
+        auth: { api_key: "invalid" },
+        models: [{ model_id: "unreachable", name: "unreachable", properties: { context_length: 32768, max_output_tokens: 4096 } }],
       },
     }),
   });
@@ -105,7 +105,7 @@ async function taskA(api: AnvilApi, label: string): Promise<Turn> {
 
 async function undoAll(api: AnvilApi): Promise<void> {
   for (const changeSet of api.store.state.changeSets.filter((set) => !set.undone)) await api.ledger.undo(changeSet.id);
-  assert.equal(git("status --porcelain"), "", "undo restores a clean tree");
+  assert.equal(git("status --porcelain -- . :!.vscode"), "", "undo restores a clean tree");
 }
 
 export async function run(): Promise<void> {
@@ -114,6 +114,9 @@ export async function run(): Promise<void> {
   await api.ready;
   assert.equal(api.store.state.harness.state, "ready", `harness: ${JSON.stringify(api.store.state.harness)}`);
 
+  const settings = vscode.workspace.getConfiguration("anvil");
+  await settings.update("models.reasoningEffort", process.env.ANVIL_E2E_REASONING ?? "none", vscode.ConfigurationTarget.Workspace);
+  await settings.update("resilience.firstEventTimeoutSeconds", 120, vscode.ConfigurationTarget.Workspace);
   await useChain([PRIMARY]);
   await taskA(api, "taskA");
   await undoAll(api);
@@ -132,7 +135,7 @@ export async function run(): Promise<void> {
   await pending;
   console.log("cancel:", describe(lastTurn(api)));
   assert.equal(lastTurn(api).status, "cancelled");
-  assert.equal(git("status --porcelain"), "", "cancel leaves the tree clean");
+  assert.equal(git("status --porcelain -- . :!.vscode"), "", "cancel leaves the tree clean");
 
   if (process.env.ANVIL_E2E_TASK_B === "1") {
     const stop = autoReview(api);
