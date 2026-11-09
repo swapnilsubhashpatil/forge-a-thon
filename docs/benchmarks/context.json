@@ -1,0 +1,278 @@
+{
+  "repo": "pallets/flask 3.1.3",
+  "date": "2026-11-06",
+  "node": "v25.5.0",
+  "files": 226,
+  "repoTokens": 294686,
+  "buildMsMedianOf5": 184.9,
+  "rankMsPerQuery": 13.4,
+  "packMsPerQuery": 13.27,
+  "quality": {
+    "anvil": {
+      "recall3": 0.833,
+      "recall5": 1,
+      "mrr": 0.854
+    },
+    "bm25": {
+      "recall3": 0.625,
+      "recall5": 0.708,
+      "mrr": 0.432
+    },
+    "pathOnly": {
+      "recall3": 0.167,
+      "recall5": 0.208,
+      "mrr": 0.144
+    }
+  },
+  "perQuery": [
+    {
+      "query": "Add a new `flask config` CLI command that prints the current app's configuration as JSON, with an option to mask secret values, and add tests for it.",
+      "truth": [
+        "src/flask/cli.py",
+        "tests/test_cli.py",
+        "docs/cli.rst"
+      ],
+      "anvilTop5": [
+        "src/flask/cli.py",
+        "docs/cli.rst",
+        "tests/test_cli.py",
+        "tests/test_json.py",
+        "tests/test_json_tag.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 0,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "change get_debug_flag so FLASK_DEBUG=off is false",
+      "truth": [
+        "src/flask/helpers.py"
+      ],
+      "anvilTop5": [
+        "src/flask/helpers.py",
+        "tests/test_helpers.py",
+        "src/flask/cli.py",
+        "src/flask/app.py",
+        "src/flask/sansio/app.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "where are blueprints registered",
+      "truth": [
+        "src/flask/sansio/app.py",
+        "src/flask/sansio/blueprints.py"
+      ],
+      "anvilTop5": [
+        "src/flask/sansio/blueprints.py",
+        "docs/blueprints.rst",
+        "tests/test_blueprints.py",
+        "src/flask/sansio/app.py",
+        "src/flask/blueprints.py"
+      ],
+      "hit3": {
+        "anvil": 0.5,
+        "bm25": 0.5,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "add a test for json provider sort keys",
+      "truth": [
+        "src/flask/json/provider.py",
+        "tests/test_json.py"
+      ],
+      "anvilTop5": [
+        "src/flask/json/provider.py",
+        "tests/test_json.py",
+        "tests/test_json_tag.py",
+        "src/flask/json/__init__.py",
+        "src/flask/sansio/app.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 0.5
+      }
+    },
+    {
+      "query": "make the session cookie SameSite attribute configurable per request",
+      "truth": [
+        "src/flask/sessions.py"
+      ],
+      "anvilTop5": [
+        "src/flask/sessions.py",
+        "src/flask/wrappers.py",
+        "tests/test_session_interface.py",
+        "tests/test_request.py",
+        ".github/pull_request_template.md"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 1
+      }
+    },
+    {
+      "query": "support loading configuration from a TOML file",
+      "truth": [
+        "src/flask/config.py"
+      ],
+      "anvilTop5": [
+        "src/flask/config.py",
+        "docs/config.rst",
+        "tests/test_config.py",
+        "tests/test_instance_config.py",
+        "tests/static/config.json"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 0,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "improve the error message when no create_app factory is found in the module",
+      "truth": [
+        "src/flask/cli.py"
+      ],
+      "anvilTop5": [
+        "tests/test_apps/cliapp/factory.py",
+        "docs/tutorial/factory.rst",
+        "tests/test_user_error_handler.py",
+        "src/flask/cli.py",
+        "tests/type_check/typing_error_handler.py"
+      ],
+      "hit3": {
+        "anvil": 0,
+        "bm25": 1,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "send a signal when the application context is pushed",
+      "truth": [
+        "src/flask/ctx.py",
+        "src/flask/signals.py"
+      ],
+      "anvilTop5": [
+        "src/flask/app.py",
+        "src/flask/ctx.py",
+        "src/flask/signals.py",
+        "docs/signals.rst",
+        "tests/test_signals.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 0,
+        "pathOnly": 0.5
+      }
+    },
+    {
+      "query": "MethodView should dispatch HEAD requests to the get method",
+      "truth": [
+        "src/flask/views.py"
+      ],
+      "anvilTop5": [
+        "src/flask/views.py",
+        "tests/test_views.py",
+        "docs/views.rst",
+        "docs/tutorial/views.rst",
+        "src/flask/app.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "url_for should quote special characters in the _anchor fragment",
+      "truth": [
+        "src/flask/app.py"
+      ],
+      "anvilTop5": [
+        "src/flask/app.py",
+        "src/flask/helpers.py",
+        "tests/test_helpers.py",
+        "src/flask/wrappers.py",
+        "CHANGES.rst"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "teardown_appcontext callbacks should run even after an unhandled exception",
+      "truth": [
+        "src/flask/app.py",
+        "src/flask/ctx.py"
+      ],
+      "anvilTop5": [
+        "src/flask/sansio/app.py",
+        "src/flask/app.py",
+        "docs/appcontext.rst",
+        "docs/reqcontext.rst",
+        "src/flask/ctx.py"
+      ],
+      "hit3": {
+        "anvil": 0.5,
+        "bm25": 0,
+        "pathOnly": 0
+      }
+    },
+    {
+      "query": "allow registering template filters on a blueprint for the whole app",
+      "truth": [
+        "src/flask/sansio/blueprints.py"
+      ],
+      "anvilTop5": [
+        "src/flask/sansio/blueprints.py",
+        "tests/test_blueprints.py",
+        "src/flask/sansio/app.py",
+        "docs/blueprints.rst",
+        "src/flask/blueprints.py"
+      ],
+      "hit3": {
+        "anvil": 1,
+        "bm25": 1,
+        "pathOnly": 0
+      }
+    }
+  ],
+  "pack": {
+    "budgetTokens": 6000,
+    "avgPackTokens": 4182,
+    "avgNaiveTop8Tokens": 38390,
+    "savingsPercent": 89.1,
+    "maxPackTokens": 5585
+  },
+  "search": {
+    "ripgrep": "VS Code bundled rg",
+    "results": [
+      {
+        "query": "add_command",
+        "fallbackMs": 30.7,
+        "ripgrepMs": 76
+      },
+      {
+        "query": "def .*_command",
+        "fallbackMs": 46.4,
+        "ripgrepMs": 90
+      },
+      {
+        "query": "SESSION_COOKIE",
+        "fallbackMs": 57.4,
+        "ripgrepMs": 128.7
+      }
+    ]
+  }
+}
