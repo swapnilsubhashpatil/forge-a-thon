@@ -13,6 +13,10 @@
     "create_file",
     "run_command"
   ],
+  "enabledTools": [
+    "propose_edit",
+    "read_file"
+  ],
   "preloadTools": true,
   "subagents": false,
   "compactionInputTokens": 60000,

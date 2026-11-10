@@ -14,6 +14,7 @@ interface AgentProfile {
   name: string;
   instructions: string[];
   toolsRequiringApproval: string[];
+  enabledTools?: string[];
   preloadTools: boolean;
   subagents: boolean;
   compactionInputTokens: number;
@@ -31,14 +32,15 @@ export class AgentProfiles {
 
   spec(mode: AgentMode, model: string, options: SpecOptions): AgentSpec {
     const profile = this.profiles[mode];
-    const reasoning = options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {};
+    const effort = options.reasoningEffort ?? defaultReasoningEffort(model);
+    const reasoning = effort ? { reasoningEffort: effort } : {};
     return {
       model: { name: model, params: { temperature: profile.params.temperature, maxTokens: profile.params.maxTokens, ...reasoning } },
       instructions: profile.instructions.join("\n"),
       mcpServers: [
         {
           name: options.toolServerName,
-          enableTools: ["@all"],
+          enableTools: profile.enabledTools ?? ["@all"],
           preload: profile.preloadTools,
           requireApprovalForTools: ["@write", "@destructive", ...profile.toolsRequiringApproval],
         },
@@ -55,4 +57,8 @@ export class AgentProfiles {
       },
     };
   }
+}
+
+export function defaultReasoningEffort(model: string): string | undefined {
+  return model.startsWith("ollama/") ? "none" : undefined;
 }

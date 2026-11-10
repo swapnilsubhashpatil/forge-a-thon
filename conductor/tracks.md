@@ -8,3 +8,4 @@
 | T4 Agent loop: turn runner, approvals, failover, cancel | done (live A/B/C pending hosted model) | [plan](tracks/t4-agent/plan.md) |
 | T5 Webview UI | done | [plan](tracks/t5-webview/plan.md) |
 | T6 Verification: unit, E2E, review/fix pass | review fixed; hosted-model E2E open | [plan](tracks/t6-verification/plan.md) |
+| T8 Standout: scope-locked improvements (scorecard, weak-model rescue, held-out bench) | in progress | [plan](tracks/t8-standout/plan.md) |
