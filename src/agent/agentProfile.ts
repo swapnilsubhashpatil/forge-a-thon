@@ -8,6 +8,7 @@ export interface SpecOptions {
   toolServerName: string;
   iterationLimit?: number;
   reasoningEffort?: string;
+  maxTokens?: number;
 }
 
 interface AgentProfile {
@@ -30,12 +31,16 @@ export class AgentProfiles {
     this.profiles = { agent: load("anvil-agent.json"), inline: load("anvil-inline.json") };
   }
 
+  maxTokens(mode: AgentMode): number {
+    return this.profiles[mode].params.maxTokens;
+  }
+
   spec(mode: AgentMode, model: string, options: SpecOptions): AgentSpec {
     const profile = this.profiles[mode];
     const effort = options.reasoningEffort ?? defaultReasoningEffort(model);
     const reasoning = effort ? { reasoningEffort: effort } : {};
     return {
-      model: { name: model, params: { temperature: profile.params.temperature, maxTokens: profile.params.maxTokens, ...reasoning } },
+      model: { name: model, params: { temperature: profile.params.temperature, maxTokens: options.maxTokens ?? profile.params.maxTokens, ...reasoning } },
       instructions: profile.instructions.join("\n"),
       mcpServers: [
         {

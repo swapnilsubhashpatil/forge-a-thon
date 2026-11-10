@@ -11,7 +11,7 @@ Every change must pass all four checks, or it is out of scope:
 
 ## In scope (in order)
 - [x] S1 Inline mode exposes only `propose_edit` and `read_file`; reasoning effort `none` for local models
-- [ ] S2 `truncated` failure kind: retry with no reasoning and more output tokens instead of failing over
+- [x] S2 `truncated` failure kind: retry with no reasoning and more output tokens instead of failing over
 - [ ] S3 Live prediction scorecard on the Context card: record every read, record edited files, show predicted vs read vs edited
 - [ ] S4 Rescue step: detect empty or text-only edit turns, parse the edit locally, one rewrite retry, normal per-hunk review
 - [ ] S5 Held-out context benchmark built from Flask commit history
