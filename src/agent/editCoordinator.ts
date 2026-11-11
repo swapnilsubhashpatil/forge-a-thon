@@ -23,6 +23,8 @@ export class EditCoordinator {
   private cancelled = false;
   /** G2: returns the expected area for an edit to an existing file, if any. */
   fenceFor: (path: string) => ScopeFence | undefined = () => undefined;
+  /** G3: grounding check for a file, if its language is supported. */
+  groundingFor: (path: string) => ((addedText: string, proposal: string) => string[]) | undefined = () => undefined;
 
   constructor(root: vscode.Uri, review: ReviewController, onApplied: (path: string, stat: DiffStat) => void) {
     this.root = root;
@@ -124,6 +126,7 @@ export class EditCoordinator {
       changeSetId,
       isNewFile: baseline === undefined,
       fence: baseline === undefined ? undefined : this.fenceFor(path),
+      grounding: this.groundingFor(path),
     });
     if (outcome.accepted > 0) this.onApplied(path, outcome.stat);
     return { ok: true, path, outcome };
@@ -152,8 +155,7 @@ function isNoChange(outcome: ReviewOutcome): boolean {
 function describeForModel(result: EditResult): string {
   if (!result.ok) return `Edit not applied: ${result.reason}`;
   const text = describeOutcome(result);
-  return result.outcome.scopeNote ? `${text}
-${result.outcome.scopeNote}` : text;
+  return result.outcome.scopeNote ? `${text}\n${result.outcome.scopeNote}` : text;
 }
 
 function describeOutcome(result: EditResult & { ok: true }): string {
