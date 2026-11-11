@@ -9,6 +9,7 @@ import { TurnRunner, type RunnerSettings } from "./agent/turnRunner.ts";
 import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
+import { FINISH_FOLLOW_UP } from "./agent/finishGate.ts";
 import { rankFiles } from "./context/ranker.ts";
 import { WorkspaceIndex } from "./context/workspaceIndex.ts";
 import { ChangeLedger } from "./edits/changeLedger.ts";
@@ -118,6 +119,8 @@ export async function activate(context: vscode.ExtensionContext) {
         currentContext: () => runner.currentContext(),
         onFileRead: (path) => runner.noteFileRead(path),
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
+        onCommandResult: (command, exitCode) => runner.noteCommand(command, exitCode),
+        finishTask: (args) => runner.finishTask(args),
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
@@ -150,6 +153,10 @@ export async function activate(context: vscode.ExtensionContext) {
       await runTurn(text, mentions);
     } finally {
       runner.markStarting(false);
+    }
+    // M8: edits accepted but the agent stopped without finish_task -> exactly one follow-up on the same session.
+    if (runner.needsFinishFollowUp()) {
+      await runner.run({ mode: "agent", title: "Verify and finish", prompt: "Anvil: verify and finish", mentions: [], message: FINISH_FOLLOW_UP, followUp: true });
     }
     await flushQueue();
   };

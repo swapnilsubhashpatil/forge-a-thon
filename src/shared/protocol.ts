@@ -112,6 +112,15 @@ export interface TokenUsage {
   cached: number;
 }
 
+export interface FinishReport {
+  summary: string;
+  filesChanged: string[];
+  verified: boolean;
+  verification: string;
+  /** Command that verified the change, when verified. */
+  command?: string;
+}
+
 export interface Turn {
   id: string;
   prompt: string;
@@ -121,6 +130,10 @@ export interface Turn {
   status: TurnStatus;
   model: string;
   usage: TokenUsage;
+  /** Accepted finish_task report (M8). */
+  finish?: FinishReport;
+  /** Set on Anvil's own follow-up turns. */
+  followUp?: boolean;
   startedAt: number;
   endedAt?: number;
 }

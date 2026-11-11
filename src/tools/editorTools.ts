@@ -19,6 +19,8 @@ export interface ToolServices {
   currentContext: () => ContextReport | undefined;
   onFileRead: (path: string) => void;
   onCommandOutput: (command: string, output: string) => void;
+  onCommandResult?: (command: string, exitCode: string) => void;
+  finishTask?: (args: { summary: string; files_changed?: string[]; verification?: string; verified: boolean }) => string;
 }
 
 const MAX_READ_LINES = 400;
@@ -157,6 +159,25 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
       run: (args) => services.edits.execute("create_file", args),
     },
     {
+      name: "finish_task",
+      title: "Finish task",
+      description:
+        "Call once when the request is complete. verified=true is accepted only if a test or check ran with run_command after your last accepted edit and passed; otherwise set verified=false and explain why in verification.",
+      inputSchema: {
+        summary: z.string().describe("What you changed, in one or two sentences"),
+        files_changed: z.array(z.string()).optional(),
+        verification: z.string().optional().describe("The command you ran and its result, or why you could not verify"),
+        verified: z.boolean(),
+      },
+      annotations: readOnly,
+      run: async (args) => services.finishTask?.({
+        summary: String(args.summary ?? ""),
+        files_changed: args.files_changed as string[] | undefined,
+        verification: args.verification as string | undefined,
+        verified: args.verified === true,
+      }) ?? "Recorded.",
+    },
+    {
       name: "run_command",
       title: "Run command",
       description: "Run a shell command in the workspace root after the user approves it, e.g. tests. Returns exit code and output.",
@@ -173,6 +194,7 @@ function runCommand(command: string, services: ToolServices): Promise<string> {
       const output = clip(`${stdout}${stderr ? `\n${stderr}` : ""}`.trim());
       services.onCommandOutput(command, output);
       const code = error ? (error.killed ? "timeout" : String(error.code ?? 1)) : "0";
+      services.onCommandResult?.(command, code);
       resolve(`$ ${command}\nexit code: ${code}\n${output}`);
     });
   });
