@@ -47,6 +47,7 @@ type AttemptResult =
 
 interface ActiveTurn {
   turnId: string;
+  mode: AgentMode;
   abort: AbortController;
   cancelled: boolean;
   sessionId?: string;
@@ -98,9 +99,28 @@ export class TurnRunner {
   }
 
   noteFileRead(path: string): void {
-    const context = this.currentContext();
-    if (!context || context.files.some((file) => file.path === path) || context.fetched.includes(path)) return;
-    this.deps.store.update(() => context.fetched.push(path));
+    const context = this.activeContext();
+    if (!context) return;
+    const inPack = context.files.some((file) => file.path === path);
+    const newRead = !context.read.includes(path);
+    const newFetch = !inPack && !context.fetched.includes(path);
+    if (!newRead && !newFetch) return;
+    this.deps.store.update(() => {
+      if (newRead) context.read.push(path);
+      if (newFetch) context.fetched.push(path);
+    });
+  }
+
+  noteFileEdited(path: string): void {
+    const context = this.activeContext();
+    if (!context || context.edited.includes(path)) return;
+    this.deps.store.update(() => context.edited.push(path));
+  }
+
+  /** Context of the running turn only, so late tool calls never touch a finished turn's scorecard. */
+  private activeContext(): ContextReport | undefined {
+    if (!this.active) return undefined;
+    return this.deps.store.state.turns.find((turn) => turn.id === this.active?.turnId)?.context;
   }
 
   resetSession(): void {
@@ -127,7 +147,7 @@ export class TurnRunner {
     const { store, ledger, edits, breaker } = this.deps;
     this.turnCounter += 1;
     const turnId = `turn-${Date.now().toString(36)}-${this.turnCounter}`;
-    const active: ActiveTurn = { turnId, abort: new AbortController(), cancelled: false, approvals: new Map() };
+    const active: ActiveTurn = { turnId, mode: request.mode, abort: new AbortController(), cancelled: false, approvals: new Map() };
     this.active = active;
     this.starting = false;
     this.deps.onBusyChange(true);
@@ -450,6 +470,18 @@ export class TurnRunner {
     switch (event.type) {
       case "model.message": {
         const threadId = event.threadId;
+        if (threadId === MAIN_THREAD && event.usage && turn.context) {
+          const usage = event.usage;
+          const context = turn.context;
+          store.update(() => {
+            context.live = {
+              inputTokens: usage.inputTokens,
+              threshold: this.deps.profiles.compactionTokens(this.active?.mode ?? "agent"),
+              cacheReadTokens: usage.cacheReadTokens,
+              compactions: context.live?.compactions ?? 0,
+            };
+          });
+        }
         if (threadId === MAIN_THREAD) {
           const text = extractText(event.content);
           if (text.trim()) store.upsertStep(turn.id, { kind: "text", id: event.id, text });
@@ -483,6 +515,12 @@ export class TurnRunner {
         store.notice(turn.id, "info", "Compacting earlier conversation to stay within the context window.");
         break;
       case "thread.context_compaction_finished":
+        if (turn.context?.live) {
+          const live = turn.context.live;
+          store.update(() => {
+            live.compactions += 1;
+          });
+        }
         store.notice(turn.id, "success", "Context compacted. The agent keeps a summary of earlier steps.");
         break;
       default:

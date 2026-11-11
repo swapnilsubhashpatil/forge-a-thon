@@ -133,6 +133,9 @@ let state: ChatState = {
           },
         ],
         fetched: ["src/flask/json/provider.py"],
+        read: ["src/flask/cli.py", "tests/test_cli.py", "docs/cli.rst", "src/flask/json/provider.py"],
+        edited: ["src/flask/cli.py", "tests/test_cli.py", "docs/cli.rst"],
+        live: { inputTokens: 21400, threshold: 60000, cacheReadTokens: 17900, compactions: 0 },
       },
       steps: [
         {

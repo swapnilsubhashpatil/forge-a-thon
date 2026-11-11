@@ -31,6 +31,10 @@ export class AgentProfiles {
     this.profiles = { agent: load("anvil-agent.json"), inline: load("anvil-inline.json") };
   }
 
+  compactionTokens(mode: AgentMode): number {
+    return this.profiles[mode].compactionInputTokens;
+  }
+
   maxTokens(mode: AgentMode): number {
     return this.profiles[mode].params.maxTokens;
   }

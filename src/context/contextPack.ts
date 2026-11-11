@@ -86,6 +86,8 @@ export async function buildContextPack(
         reasons: file.reasons,
       })),
       fetched: [],
+      read: [],
+      edited: [],
     },
   };
 }

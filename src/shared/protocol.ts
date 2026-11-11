@@ -13,7 +13,23 @@ export interface ContextReport {
   budgetTokens: number;
   usedTokens: number;
   files: ContextFile[];
+  /** Files the agent read that were not in the pack. */
   fetched: string[];
+  /** Every file the agent read during the turn, pack files included. */
+  read: string[];
+  /** Files with at least one accepted hunk during the turn. */
+  edited: string[];
+  live?: ContextLive;
+}
+
+export interface ContextLive {
+  /** Input tokens of the latest main-thread model call. */
+  inputTokens: number;
+  /** Compaction trigger configured for the agent. */
+  threshold: number;
+  /** Cache-read tokens of the latest call; undefined when the provider reports none. */
+  cacheReadTokens?: number;
+  compactions: number;
 }
 
 export type ToolStatus = "running" | "awaiting-approval" | "done" | "denied" | "error";

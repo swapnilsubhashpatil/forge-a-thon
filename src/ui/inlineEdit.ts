@@ -81,6 +81,8 @@ export function inlineRequest(document: vscode.TextDocument, path: string, first
       usedTokens: estimateTokens(message),
       files: [{ path, role: "target", score: 1, tokens: estimateTokens(message), reasons: [`selection lines ${firstLine + 1}-${lastLine + 1}`] }],
       fetched: [],
+      read: [],
+      edited: [],
     },
   };
 }

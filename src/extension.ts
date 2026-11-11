@@ -76,7 +76,8 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   const index = new WorkspaceIndex(folder.uri.fsPath);
-  const edits = new EditCoordinator(folder.uri, review, () => undefined);
+  // The callback runs only after a review is accepted, long after `runner` below is initialised.
+  const edits = new EditCoordinator(folder.uri, review, (path) => runner.noteFileEdited(path));
   const runner = new TurnRunner({
     client: () => client,
     store,
