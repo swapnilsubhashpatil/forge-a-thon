@@ -67,18 +67,36 @@ for (const provider of providers) {
   console.log(`Registered ${manifest.type} provider (${manifest.models.length} models)`);
 }
 
+const slug = (modelId) => modelId.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+const list = (value) => (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+
 if (process.env.OLLAMA_MODEL) {
-  const modelId = process.env.OLLAMA_MODEL;
-  const name = modelId.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+  const models = list(process.env.OLLAMA_MODEL).map((modelId) => ({
+    model_id: modelId,
+    name: slug(modelId),
+    properties: { context_length: 32768, max_output_tokens: 8192, reasoning_efforts: ["none", "low", "medium", "high"] },
+  }));
   await put("/settings/model-providers", {
-    manifest: {
-      type: "custom",
-      name: "ollama",
-      base_url: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1",
-      models: [{ model_id: modelId, name, properties: { context_length: 32768, max_output_tokens: 8192, reasoning_efforts: ["none", "low", "medium", "high"] } }],
-    },
+    manifest: { type: "custom", name: "ollama", base_url: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1", models },
   });
-  console.log(`Registered local Ollama model as ollama/${name}`);
+  console.log(`Registered local Ollama models: ${models.map((model) => `ollama/${model.name}`).join(", ")}`);
+}
+
+// OpenAI-compatible hosted providers used for the model test matrix. Each needs a key and a comma-separated model list.
+const compatible = [
+  { name: "openrouter", keyEnv: "OPENROUTER_API_KEY", modelsEnv: "OPENROUTER_MODELS", baseUrl: "https://openrouter.ai/api/v1" },
+  { name: "xai", keyEnv: "XAI_API_KEY", modelsEnv: "XAI_MODELS", baseUrl: "https://api.x.ai/v1" },
+  { name: "groq", keyEnv: "GROQ_API_KEY", modelsEnv: "GROQ_MODELS", baseUrl: "https://api.groq.com/openai/v1" },
+];
+for (const provider of compatible) {
+  const apiKey = process.env[provider.keyEnv];
+  const ids = list(process.env[provider.modelsEnv]);
+  if (!apiKey || !ids.length) continue;
+  const models = ids.map((modelId) => ({ model_id: modelId, name: slug(modelId), properties: { context_length: 131072, max_output_tokens: 8192 } }));
+  await put("/settings/model-providers", {
+    manifest: { type: "custom", name: provider.name, base_url: provider.baseUrl, auth: { api_key: apiKey }, models },
+  });
+  console.log(`Registered ${provider.name}: ${models.map((model) => `${provider.name}/${model.name}`).join(", ")}`);
 }
 
 if (process.env.BROKEN_PROVIDER_FOR_DEMO === "1") {
