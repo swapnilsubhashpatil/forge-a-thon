@@ -3,12 +3,21 @@ import { join } from "node:path";
 import type { AgentSpec } from "../harness/harnessClient.ts";
 
 export type AgentMode = "agent" | "inline";
+export type PromptProfile = "auto" | "full" | "compact";
 
 export interface SpecOptions {
   toolServerName: string;
   iterationLimit?: number;
   reasoningEffort?: string;
   maxTokens?: number;
+  promptProfile?: PromptProfile;
+}
+
+/** Local models get the short agent prompt unless the user forces the full one (Gemini CLI ships the same split). */
+export function usesCompactPrompt(model: string, profile: PromptProfile = "auto"): boolean {
+  if (profile === "compact") return true;
+  if (profile === "full") return false;
+  return model.startsWith("ollama/");
 }
 
 interface AgentProfile {
@@ -25,10 +34,16 @@ interface AgentProfile {
 
 export class AgentProfiles {
   private readonly profiles: Record<AgentMode, AgentProfile>;
+  private readonly compactAgent: AgentProfile;
 
   constructor(extensionPath: string) {
     const load = (file: string) => JSON.parse(readFileSync(join(extensionPath, "agents", file), "utf8")) as AgentProfile;
     this.profiles = { agent: load("anvil-agent.json"), inline: load("anvil-inline.json") };
+    this.compactAgent = load("anvil-agent-compact.json");
+  }
+
+  private profileFor(mode: AgentMode, model: string, promptProfile?: PromptProfile): AgentProfile {
+    return mode === "agent" && usesCompactPrompt(model, promptProfile) ? this.compactAgent : this.profiles[mode];
   }
 
   compactionTokens(mode: AgentMode): number {
@@ -40,7 +55,7 @@ export class AgentProfiles {
   }
 
   spec(mode: AgentMode, model: string, options: SpecOptions): AgentSpec {
-    const profile = this.profiles[mode];
+    const profile = this.profileFor(mode, model, options.promptProfile);
     const effort = options.reasoningEffort ?? defaultReasoningEffort(model);
     const reasoning = effort ? { reasoningEffort: effort } : {};
     return {

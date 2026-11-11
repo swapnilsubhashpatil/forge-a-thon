@@ -205,6 +205,17 @@
           "maximum": 1024,
           "description": "Maximum agent loop iterations per turn."
         },
+        "anvil.agent.promptProfile": {
+          "type": "string",
+          "enum": ["auto", "full", "compact"],
+          "default": "auto",
+          "enumDescriptions": [
+            "Compact prompt for local ollama/ models, full prompt otherwise",
+            "Always use the full agent prompt",
+            "Always use the short prompt (helps small or weak models)"
+          ],
+          "description": "Which agent instructions to send. The compact prompt is shorter and easier for small models to follow."
+        },
         "anvil.commands.timeoutSeconds": {
           "type": "number",
           "default": 120,
