@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { ChatState, MentionItem } from "../../../src/shared/protocol.ts";
+import type { ChatState, MentionItem, QueuedNote } from "../../../src/shared/protocol.ts";
 import { cx, shortModel } from "../format.ts";
 import { useStore } from "../state/store.ts";
 import { post, type Draft } from "../state/vscode.ts";
@@ -51,6 +51,40 @@ function OfflineHint({ chat }: { chat: ChatState }) {
         </button>
       )}
     </div>
+  );
+}
+
+function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
+  const delivered = note.status === "delivered";
+  return (
+    <li className="flex items-start gap-1.5 rounded border border-border bg-editor/60 px-2 py-1 text-xs">
+      <Icon name={delivered ? "check" : "clock"} className={cx("mt-0.5 shrink-0", delivered ? "text-green" : "text-muted")} />
+      <span className="min-w-0 flex-1 break-words text-fg">{note.text}</span>
+      <span className="shrink-0 text-2xs text-muted">
+        {delivered ? `delivered at step ${note.deliveredAtStep}` : busy ? "queued for next step" : "queued"}
+      </span>
+      {!delivered && (
+        <>
+          <button
+            type="button"
+            title="Stop the current run and send this now"
+            onClick={() => post({ type: "stopAndSend", id: note.id })}
+            className="shrink-0 rounded bg-secondary px-1.5 text-2xs text-secondary-fg hover:bg-secondary-hover"
+          >
+            {busy ? "Stop and send" : "Send"}
+          </button>
+          <button
+            type="button"
+            aria-label="Remove queued message"
+            title="Remove"
+            onClick={() => post({ type: "removeNote", id: note.id })}
+            className="grid size-4 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+          >
+            <Icon name="close" />
+          </button>
+        </>
+      )}
+    </li>
   );
 }
 
@@ -108,7 +142,7 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
 
   function send() {
     const text = draft.text.trim();
-    if (!text || chat.busy || !ready) return;
+    if (!text || !ready) return;
     post({ type: "send", text, mentions: usedMentions(draft) });
     onDraftChange({ text: "", mentions: [] });
     setMention(undefined);
@@ -157,11 +191,18 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
     requestAnimationFrame(() => input.setSelectionRange(caret + prefix.length, caret + prefix.length));
   }
 
-  const canSend = ready && !chat.busy && draft.text.trim() !== "";
+  const canSend = ready && draft.text.trim() !== "";
 
   return (
     <div className="shrink-0 border-t border-border px-3 pt-2 pb-2">
       {!ready && <OfflineHint chat={chat} />}
+      {chat.queue.length > 0 && (
+        <ul className="mb-2 flex flex-col gap-1" aria-label="Messages sent while Anvil works">
+          {chat.queue.map((note) => (
+            <NoteChip key={note.id} note={note} busy={chat.busy} />
+          ))}
+        </ul>
+      )}
       <div className="relative rounded border border-input-border bg-input focus-within:border-focus">
         {menuOpen && <MentionMenu items={items} activeIndex={activeIndex} onSelect={select} onHover={setActiveIndex} />}
         <textarea
@@ -174,7 +215,7 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
           aria-controls={menuOpen ? "mention-menu" : undefined}
           aria-activedescendant={menuOpen && items.length > 0 ? mentionId(activeIndex) : undefined}
           aria-autocomplete="list"
-          placeholder={chat.busy ? "Anvil is working — Esc to stop" : "Describe a change — @ to add files or symbols"}
+          placeholder={chat.busy ? "Anvil is working. Send a note to steer it, or Esc to stop" : "Describe a change — @ to add files or symbols"}
           onChange={(event) => updateText(event.target.value, event.target.selectionStart)}
           onKeyDown={onKeyDown}
           onBlur={() => setMention(undefined)}
@@ -191,6 +232,18 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
             <Icon name="mention" />
           </button>
           <span className="flex-1" />
+          {chat.busy && (
+            <button
+              type="button"
+              aria-label="Queue message"
+              title="Send while working: delivered to the agent at its next step"
+              disabled={!canSend}
+              onClick={send}
+              className={cx("grid size-6 place-items-center rounded bg-secondary text-secondary-fg", canSend && "hover:bg-secondary-hover")}
+            >
+              <Icon name="arrow-up" />
+            </button>
+          )}
           {chat.busy ? (
             <button
               type="button"

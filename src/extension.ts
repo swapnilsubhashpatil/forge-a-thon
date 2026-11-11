@@ -118,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
         currentContext: () => runner.currentContext(),
         onFileRead: (path) => runner.noteFileRead(path),
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
-      }, readCache), log);
+      }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
       store.update((state) => {
@@ -139,9 +139,10 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   };
 
-  const sendPrompt = async (text: string, mentions: string[]) => {
+  const sendPrompt = async (text: string, mentions: string[]): Promise<void> => {
+    // While a turn runs, a new message is queued and delivered at the next tool step (M11), never cancelling work.
     if (runner.busy) {
-      void vscode.window.showWarningMessage("Anvil is still working on the previous request. Stop it or wait for it to finish.");
+      runner.queueNote(text, mentions);
       return;
     }
     runner.markStarting(true);
@@ -150,6 +151,31 @@ export async function activate(context: vscode.ExtensionContext) {
     } finally {
       runner.markStarting(false);
     }
+    await flushQueue();
+  };
+
+  // Messages the agent never saw become the next turn, so nothing typed during a run is lost. After a plain Stop
+  // they stay queued as chips: the user stopped on purpose and decides what to send.
+  const flushQueue = async (): Promise<void> => {
+    if (runner.busy || store.state.turns.at(-1)?.status === "cancelled") return;
+    const leftovers = runner.takeLeftovers();
+    if (leftovers) await sendPrompt(leftovers.text, leftovers.mentions);
+  };
+
+  const stopAndSend = async (id: string) => {
+    const note = runner.takeNote(id);
+    if (!note) return;
+    if (runner.busy) {
+      runner.queueNote(note.text, note.mentions);
+      const queued = store.state.queue.at(-1);
+      await runner.cancel({ superseded: true });
+      // The running sendPrompt sends leftovers once the cancelled turn unwinds; make this note go first.
+      if (queued) store.update((state) => {
+        state.queue = [queued, ...state.queue.filter((entry) => entry !== queued)];
+      });
+      return;
+    }
+    await sendPrompt(note.text, note.mentions);
   };
 
   const runTurn = async (text: string, mentions: string[]) => {
@@ -204,6 +230,12 @@ export async function activate(context: vscode.ExtensionContext) {
       case "cancel":
         await runner.cancel();
         break;
+      case "removeNote":
+        runner.removeNote(message.id);
+        break;
+      case "stopAndSend":
+        await stopAndSend(message.id).catch((error: unknown) => log(`Stop and send failed: ${String(error)}`));
+        break;
       case "newSession":
         await runner.cancel();
         readCache.clear();
@@ -254,7 +286,10 @@ export async function activate(context: vscode.ExtensionContext) {
     watcher.onDidChange((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidCreate((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidDelete((uri) => !ignored(uri) && index.remove(relative(uri))),
-    vscode.commands.registerCommand("anvil.inlineEdit", () => runInlineEdit(runner, folder.uri)),
+    vscode.commands.registerCommand("anvil.inlineEdit", async () => {
+      await runInlineEdit(runner, folder.uri);
+      await flushQueue();
+    }),
     vscode.commands.registerCommand("anvil.newSession", () => handleMessage({ type: "newSession" }, () => undefined)),
     vscode.commands.registerCommand("anvil.cancel", () => runner.cancel()),
     vscode.commands.registerCommand("anvil.undoLastChange", async () => {

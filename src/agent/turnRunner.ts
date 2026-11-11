@@ -8,6 +8,7 @@ import type { ConversationStore } from "./conversationStore.ts";
 import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
 import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
 import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts";
+import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
 
 export interface TurnRequest {
   mode: AgentMode;
@@ -51,6 +52,8 @@ interface ActiveTurn {
   mode: AgentMode;
   abort: AbortController;
   cancelled: boolean;
+  /** Cancelled by "Stop and send" rather than Stop. */
+  superseded?: boolean;
   sessionId?: string;
   approvals: Map<string, (allow: boolean) => void>;
 }
@@ -78,6 +81,11 @@ export class TurnRunner {
   private readonly healthy = new Set<string>();
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
+  private noteCounter = 0;
+  /** Subagent threads currently running; while any run, a tool call is only treated as main-thread when announced. */
+  private readonly runningSubagents = new Set<string>();
+  /** Signatures of main-thread tool calls seen in the event stream and not yet executed. */
+  private readonly expectedMain = new Map<string, number>();
 
   constructor(deps: TurnRunnerDeps) {
     this.deps = deps;
@@ -124,6 +132,63 @@ export class TurnRunner {
     return this.deps.store.state.turns.find((turn) => turn.id === this.active?.turnId)?.context;
   }
 
+  /** Holds a message sent while a turn runs (M11). */
+  queueNote(text: string, mentions: string[]): void {
+    this.noteCounter += 1;
+    const id = `note-${Date.now().toString(36)}-${this.noteCounter}`;
+    this.deps.store.update((state) => state.queue.push({ id, text, mentions, status: "queued" }));
+  }
+
+  removeNote(id: string): void {
+    this.deps.store.update((state) => {
+      state.queue = state.queue.filter((note) => note.id !== id || note.status !== "queued");
+    });
+  }
+
+  /** Takes one queued note out of the queue, e.g. for "Stop and send". */
+  takeNote(id: string): { text: string; mentions: string[] } | undefined {
+    const note = this.deps.store.state.queue.find((entry) => entry.id === id && entry.status === "queued");
+    if (!note) return undefined;
+    this.removeNote(id);
+    return { text: note.text, mentions: note.mentions };
+  }
+
+  /** Undelivered notes, removed from the queue and joined into the next prompt. */
+  takeLeftovers(): { text: string; mentions: string[] } | undefined {
+    let leftovers: { text: string; mentions: string[] } | undefined;
+    this.deps.store.update((state) => {
+      leftovers = takeLeftovers(state.queue);
+    });
+    return leftovers;
+  }
+
+  /**
+   * Called by the tool server with every tool result. Appends queued notes to the next main-thread result of an
+   * agent turn; subagent results and inline turns never carry them.
+   */
+  decorateToolResult(name: string, args: Record<string, unknown>, result: string): string {
+    const active = this.active;
+    if (!active || active.cancelled || active.mode !== "agent") return result;
+    const signature = callSignature(name, args);
+    const announced = this.expectedMain.get(signature) ?? 0;
+    if (announced > 0) {
+      if (announced === 1) this.expectedMain.delete(signature);
+      else this.expectedMain.set(signature, announced - 1);
+    }
+    const isMain = announced > 0 || this.runningSubagents.size === 0;
+    if (!isMain || !this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
+    const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
+    const step = (turn?.steps.filter((entry) => entry.kind === "tool" && entry.threadTitle === undefined).length ?? 0) || 1;
+    let delivered: ReturnType<typeof deliverQueued> = [];
+    this.deps.store.update((state) => {
+      delivered = deliverQueued(state.queue, step, active.turnId);
+    });
+    if (!delivered.length) return result;
+    const label = delivered.length === 1 ? "your message" : `${delivered.length} messages`;
+    this.deps.store.notice(active.turnId, "info", `Delivered ${label} to the agent with the result of step ${step}.`);
+    return result + formatNotes(delivered);
+  }
+
   resetSession(): void {
     this.agentSession = undefined;
     this.deps.store.reset();
@@ -151,6 +216,8 @@ export class TurnRunner {
     const active: ActiveTurn = { turnId, mode: request.mode, abort: new AbortController(), cancelled: false, approvals: new Map() };
     this.active = active;
     this.starting = false;
+    this.runningSubagents.clear();
+    this.expectedMain.clear();
     this.deps.onBusyChange(true);
 
     const turn: Turn = {
@@ -212,7 +279,7 @@ export class TurnRunner {
           return;
         }
         if (result.kind === "cancelled" || active.cancelled) {
-          this.finish(turn, "cancelled");
+          this.finish(turn, active.superseded ? "superseded" : "cancelled");
           return;
         }
         if (result.kind === "harness") {
@@ -239,6 +306,7 @@ export class TurnRunner {
       this.active = undefined;
       store.update((state) => {
         state.busy = false;
+        state.queue = state.queue.filter((note) => note.status === "queued");
       });
       this.refreshModelHealth();
       store.flush();
@@ -246,10 +314,11 @@ export class TurnRunner {
     }
   }
 
-  async cancel(): Promise<void> {
+  async cancel(options: { superseded?: boolean } = {}): Promise<void> {
     const active = this.active;
     if (!active || active.cancelled) return;
     active.cancelled = true;
+    active.superseded = options.superseded;
     active.abort.abort();
     this.deps.edits.cancelPending();
     for (const resolve of active.approvals.values()) resolve(false);
@@ -492,6 +561,10 @@ export class TurnRunner {
         for (const call of event.toolCalls ?? []) {
           if (!call.function?.name) continue;
           const { name, args } = parseArguments(call.function.name, call.function.arguments ?? "");
+          if (threadId === MAIN_THREAD) {
+            const signature = callSignature(name, args);
+            this.expectedMain.set(signature, (this.expectedMain.get(signature) ?? 0) + 1);
+          }
           this.upsertTool(turn, { id: call.id }, name, args, threadId);
         }
         break;
@@ -507,10 +580,12 @@ export class TurnRunner {
         break;
       }
       case "thread.created":
+        this.runningSubagents.add(event.threadId);
         this.threadTitles.set(event.threadId, event.title);
         store.upsertStep(turn.id, { kind: "subagent", id: event.threadId, title: event.title, status: "running" });
         break;
       case "thread.done":
+        this.runningSubagents.delete(event.threadId);
         store.upsertStep(turn.id, { kind: "subagent", id: event.threadId, title: event.title, status: event.state.status === "done" ? "done" : "error" });
         break;
       case "thread.context_compaction_started":

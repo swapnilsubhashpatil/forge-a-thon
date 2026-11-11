@@ -15,6 +15,7 @@ export class ConversationStore {
       models: [],
       busy: false,
       changeSets: [],
+      queue: [],
     };
   }
 

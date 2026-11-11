@@ -56,6 +56,10 @@ let state: ChatState = {
   sessionId: "ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   sessionUrl: "http://localhost:8790/sessions/ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   harness: { state: "ready", url: "http://localhost:8790" },
+  queue: [
+    { id: "note-1", text: "also mask keys containing CREDENTIAL", mentions: [], status: "delivered", deliveredAtStep: 4 },
+    { id: "note-2", text: "then add a changelog entry", mentions: [], status: "queued" },
+  ],
   models: [
     { model: primary, state: "cooling", coolingUntil: now + 47_000, lastError: "401 Unauthorized: invalid API key" },
     { model: fallback, state: "healthy" },

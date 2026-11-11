@@ -13,6 +13,7 @@ const initialChat: ChatState = {
   models: [],
   busy: false,
   changeSets: [],
+  queue: [],
 };
 
 let snapshot: Snapshot = {

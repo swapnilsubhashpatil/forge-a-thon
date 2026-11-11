@@ -94,7 +94,17 @@ export interface NoticeStep {
 
 export type Step = TextStep | ReasoningStep | ToolStep | ApprovalStep | SubagentStep | NoticeStep;
 
-export type TurnStatus = "running" | "paused" | "done" | "cancelled" | "error";
+export type TurnStatus = "running" | "paused" | "done" | "cancelled" | "superseded" | "error";
+
+export interface QueuedNote {
+  id: string;
+  text: string;
+  mentions: string[];
+  status: "queued" | "delivered";
+  /** Tool step (1-based) whose result carried the note. */
+  deliveredAtStep?: number;
+  turnId?: string;
+}
 
 export interface TokenUsage {
   input: number;
@@ -155,6 +165,8 @@ export interface ChatState {
   activeModel?: string;
   busy: boolean;
   changeSets: ChangeSetSummary[];
+  /** Messages sent while a turn runs (M11). */
+  queue: QueuedNote[];
 }
 
 export type MentionKind = "file" | "symbol";
@@ -176,6 +188,8 @@ export type WebviewMessage =
   | { type: "ready" }
   | { type: "send"; text: string; mentions: string[] }
   | { type: "cancel" }
+  | { type: "removeNote"; id: string }
+  | { type: "stopAndSend"; id: string }
   | { type: "newSession" }
   | { type: "approve"; toolCallId: string; allow: boolean }
   | { type: "openFile"; path: string; line?: number }
