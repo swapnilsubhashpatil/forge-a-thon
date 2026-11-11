@@ -8,6 +8,7 @@ import { CircuitBreaker } from "./agent/resilience.ts";
 import { TurnRunner, type RunnerSettings } from "./agent/turnRunner.ts";
 import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
+import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
 import { rankFiles } from "./context/ranker.ts";
 import { WorkspaceIndex } from "./context/workspaceIndex.ts";
 import { ChangeLedger } from "./edits/changeLedger.ts";
@@ -113,6 +114,7 @@ export async function activate(context: vscode.ExtensionContext) {
         rgPath: findRipgrep(vscode.env.appRoot),
         edits,
         commandTimeoutMs: () => config().get<number>("commands.timeoutSeconds", 120) * 1000,
+        commandEnv: (): Record<string, string> => (!process.env.PYTHONPATH && pythonSrcLayout(folder.uri.fsPath) ? { PYTHONPATH: "src" } : {}),
         currentContext: () => runner.currentContext(),
         onFileRead: (path) => runner.noteFileRead(path),
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
@@ -157,7 +159,9 @@ export async function activate(context: vscode.ExtensionContext) {
       .map((editor) => vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/"))
       .filter((path) => index.get(path));
     const ranked = rankFiles(index, { text, mentions: mentionPaths, activeFiles });
-    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000));
+    const targets = ranked.filter((file) => file.role !== "reference").map((file) => file.path);
+    const verify = detectTestCommand(folder.uri.fsPath, index.files().map((file) => file.path), targets);
+    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify);
     await runner.run({
       mode: "agent",
       title: text.slice(0, 80),

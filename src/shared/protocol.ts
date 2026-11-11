@@ -20,6 +20,8 @@ export interface ContextReport {
   /** Files with at least one accepted hunk during the turn. */
   edited: string[];
   live?: ContextLive;
+  /** Detected test command offered to the agent, if any. */
+  verify?: string;
 }
 
 export interface ContextLive {

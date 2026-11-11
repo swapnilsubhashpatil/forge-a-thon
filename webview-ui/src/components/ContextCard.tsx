@@ -175,6 +175,13 @@ export function ContextCard({ report, defaultOpen }: { report: ContextReport; de
               </ul>
             </div>
           )}
+          {report.verify && (
+            <p className="mt-1.5 flex items-center gap-1 px-2 text-xs text-muted">
+              <Icon name="beaker" />
+              <span>verify with</span>
+              <code className="rounded bg-code px-1 font-mono text-fg">{report.verify}</code>
+            </p>
+          )}
           <p className="mt-1.5 px-2 text-xs text-muted">{report.strategy}</p>
         </div>
       )}
