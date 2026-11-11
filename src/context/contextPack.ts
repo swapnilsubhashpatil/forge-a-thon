@@ -21,6 +21,7 @@ export async function buildContextPack(
     `Ranked ${index.files().length} files by @mentions, path match, BM25 term overlap, sibling symbols, test/docs companions and import-graph PageRank; ` +
     `this pack holds the top candidates, a repo map and code slices within ${budgetTokens} tokens. Use search_code, find_symbol and read_file for anything else.`;
   const included = new Map<string, number>();
+  const slices: Array<{ path: string; start: number; end: number }> = [];
   const sections: string[] = [];
   const used = () => estimateTokens(OPEN + sections.join("\n\n") + CLOSE);
   const remaining = () => budgetTokens - used() - 2;
@@ -49,6 +50,7 @@ export async function buildContextPack(
     const share = Math.floor((remaining() * 0.6) / Math.max(1, mentioned.length - mentioned.indexOf(file)));
     const body = trimToTokens(await safeRead(index, file.path), share - 20);
     if (body && tryAdd(fence(`${file.path} (full${body.trimmed ? ", trimmed" : ""})`, body.text))) {
+      if (!body.trimmed) slices.push({ path: file.path, start: 1, end: Number.MAX_SAFE_INTEGER });
       included.set(file.path, (included.get(file.path) ?? 0) + estimateTokens(body.text));
     }
   }
@@ -66,6 +68,7 @@ export async function buildContextPack(
       const cost = estimateTokens(section) + 1;
       if (spent + cost > share || !tryAdd(section)) break;
       spent += cost;
+      slices.push({ path: file.path, start: start + 1, end });
       included.set(file.path, (included.get(file.path) ?? 0) + estimateTokens(lines.slice(start, end).join("\n")));
     }
   }
@@ -91,6 +94,7 @@ export async function buildContextPack(
       read: [],
       edited: [],
       verify: verify?.command,
+      slices,
     },
   };
 }

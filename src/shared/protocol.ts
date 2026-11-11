@@ -22,6 +22,8 @@ export interface ContextReport {
   live?: ContextLive;
   /** Detected test command offered to the agent, if any. */
   verify?: string;
+  /** Line ranges (1-based, inclusive) the pack showed the agent; whole-file mentions use end = Infinity. */
+  slices?: Array<{ path: string; start: number; end: number }>;
 }
 
 export interface ContextLive {
