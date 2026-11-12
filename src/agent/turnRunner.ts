@@ -10,6 +10,7 @@ import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, 
 import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts";
 import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
 import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFence.ts";
+import { killAllCommands } from "../tools/commandRunner.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
@@ -384,6 +385,7 @@ export class TurnRunner {
     if (!active || active.cancelled) return;
     active.cancelled = true;
     active.superseded = options.superseded;
+    killAllCommands();
     active.abort.abort();
     this.deps.edits.cancelPending();
     for (const resolve of active.approvals.values()) resolve(false);
