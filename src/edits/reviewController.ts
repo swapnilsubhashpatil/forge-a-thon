@@ -5,6 +5,7 @@ import { computeHunks, diffStat, formatPatch, renderReview, resolveText, sameTex
 import type { Hunk, HunkDecision, ReviewRender } from "./hunks.ts";
 import { describeFlags, flagHunks, type ScopeFence } from "./scopeFence.ts";
 import { describeUngrounded } from "./grounding.ts";
+import { currentRegion } from "./feedback.ts";
 
 export interface ReviewRequest {
   uri: vscode.Uri;
@@ -29,6 +30,8 @@ export interface ReviewOutcome {
   stat: DiffStat;
   /** Sentence about hunks flagged outside the fence, for the model. */
   scopeNote?: string;
+  /** M3: numbered current text around rejected changes. */
+  currentRegion?: string;
 }
 
 interface Session {
@@ -362,6 +365,7 @@ function outcomeOf(request: ReviewRequest, hunks: Hunk[], decisions: HunkDecisio
     rejectedPatch: finalText === request.proposal ? "" : formatPatch(path, finalText, request.proposal),
     stat: diffStat(request.baseline, finalText),
     scopeNote: discarded ? undefined : reviewNotes(request, hunks),
+    currentRegion: discarded || accepted === total ? undefined : currentRegion(finalText, request.proposal),
   };
 }
 

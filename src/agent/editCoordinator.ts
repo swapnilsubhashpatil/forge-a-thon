@@ -5,6 +5,7 @@ import { applyReplacement } from "../edits/editMatcher.ts";
 import type { ReviewController, ReviewOutcome } from "../edits/reviewController.ts";
 import type { DiffStat } from "../shared/protocol.ts";
 import type { ScopeFence } from "../edits/scopeFence.ts";
+import { NEW_BASELINE, STALE_HINT } from "../edits/feedback.ts";
 
 export const EDIT_TOOLS = new Set(["propose_edit", "create_file"]);
 
@@ -141,7 +142,7 @@ function propose(tool: string, args: Record<string, unknown>, path: string, base
     return oldString ? { ok: false, path, reason: `File ${path} does not exist. Use create_file to create it.` } : newString;
   }
   const match = applyReplacement(baseline, oldString, newString, args.replace_all === true);
-  return match.ok ? match.text : { ok: false, path, reason: `${match.reason}\n${match.hint}` };
+  return match.ok ? match.text : { ok: false, path, reason: `${match.reason}\n${match.hint}\n${STALE_HINT}` };
 }
 
 function unchanged(text: string, status: "accepted" | "discarded"): ReviewOutcome {
@@ -150,6 +151,10 @@ function unchanged(text: string, status: "accepted" | "discarded"): ReviewOutcom
 
 function isNoChange(outcome: ReviewOutcome): boolean {
   return outcome.total === 0 && outcome.status !== "discarded";
+}
+
+function currentText(path: string, region: string | undefined): string[] {
+  return region ? [`Current text of ${path} around those changes:`, "```", region, "```"] : [];
 }
 
 function describeForModel(result: EditResult): string {
@@ -168,13 +173,21 @@ function describeOutcome(result: EditResult & { ok: true }): string {
     case "partial":
       return [
         `Partially applied to ${path} (${stat}): the user accepted ${outcome.accepted} of ${outcome.total} change(s) and rejected ${outcome.rejected}.`,
+        NEW_BASELINE,
         "Rejected changes (not applied, do not re-propose them unless the user asks):",
         "```diff",
         outcome.rejectedPatch.trim(),
         "```",
+        ...currentText(path, outcome.currentRegion),
       ].join("\n");
     case "rejected":
-      return `The user rejected every change to ${path}. Nothing was written. Ask what they want instead of retrying the same edit.\n\`\`\`diff\n${outcome.rejectedPatch.trim()}\n\`\`\``;
+      return [
+        `The user rejected every change to ${path}. Nothing was written. This was the user's decision, not a tool failure: ask what they want instead of retrying the same edit.`,
+        "```diff",
+        outcome.rejectedPatch.trim(),
+        "```",
+        ...currentText(path, outcome.currentRegion),
+      ].join("\n");
     case "discarded":
       return `The edit to ${path} was discarded before review finished. Nothing was written.`;
   }
