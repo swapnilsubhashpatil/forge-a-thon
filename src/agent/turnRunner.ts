@@ -11,6 +11,7 @@ import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts
 import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
 import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFence.ts";
 import { killAllCommands } from "../tools/commandRunner.ts";
+import { subagentDenial } from "./subagentPolicy.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
@@ -578,6 +579,16 @@ export class TurnRunner {
       }
       const { name, args } = parseArguments(call.function.name, call.function.arguments ?? "{}");
       this.upsertTool(turn, { id: ref.id, status: "awaiting-approval" }, name, args, threadId);
+
+      const subagentReason = threadId !== MAIN_THREAD ? subagentDenial(name, args) : undefined;
+      if (subagentReason) {
+        this.upsertTool(turn, { id: ref.id, status: "denied", output: subagentReason }, name, args, threadId);
+        return { ...base, allow: false, reason: subagentReason };
+      }
+      if (threadId !== MAIN_THREAD && name === "run_command") {
+        this.upsertTool(turn, { id: ref.id, status: "running" }, name, args, threadId);
+        return { ...base, allow: true };
+      }
 
       if (EDIT_TOOLS.has(name)) {
         const result = await this.deps.edits.resolve(name, args);
