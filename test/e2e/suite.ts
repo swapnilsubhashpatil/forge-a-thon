@@ -109,7 +109,7 @@ const PY = () => process.env.ANVIL_E2E_PYTHON ?? "python";
 
 /** Checks Task B the way the problem statement verifies it: pytest, flask --help, masked JSON, at least three files. */
 function verifyTaskB(): Record<string, unknown> {
-  const cwd = root().fsPath;
+  const cwd = root().fsPath.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase());
   const env = { ...process.env, PYTHONPATH: `${cwd}/src` };
   const lines = (text: string) => text.split(/\r?\n/).filter(Boolean);
   const files = [...lines(git("diff --name-only")), ...lines(git("ls-files --others --exclude-standard -- . :!.vscode"))];
@@ -137,6 +137,7 @@ function verifyTaskB(): Record<string, unknown> {
     filesChanged: files.length,
     pytest: pytest.ok,
     pytestSummary: lines(pytest.output).at(-1),
+    pytestFailures: lines(pytest.output).filter((line) => /^(FAILED|ERROR|E\s)/.test(line)).slice(0, 20),
     inHelp,
     masked,
     passed: pytest.ok && files.length >= 3 && inHelp && masked,

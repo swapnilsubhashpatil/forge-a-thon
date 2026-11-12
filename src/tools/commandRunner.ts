@@ -26,11 +26,19 @@ const HEAD_CHARS = 2_000;
 const TAIL_CHARS = 10_000;
 const running = new Set<ChildProcess>();
 
+/**
+ * VS Code reports Windows paths with a lowercase drive letter ("c:\…"). Tools that compare paths case-sensitively
+ * (Flask's own CLI tests among them) then fail for reasons unrelated to the change, so commands get "C:\…".
+ */
+export function normalizeCwd(cwd: string, platform: NodeJS.Platform = process.platform): string {
+  return platform === "win32" ? cwd.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase()) : cwd;
+}
+
 export function runShell(command: string, options: CommandOptions): Promise<CommandResult> {
   const started = Date.now();
   return new Promise((resolve) => {
     const child = spawn(command, {
-      cwd: options.cwd,
+      cwd: normalizeCwd(options.cwd),
       shell: true,
       windowsHide: true,
       detached: process.platform !== "win32",

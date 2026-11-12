@@ -48,3 +48,10 @@ test("a silent command hits the inactivity timeout and is killed", async () => {
   assert.ok(result.wallMs < 10_000);
   assert.match(formatCommandResult("sleep", result, 800), /no output for 1s \(process tree killed\)/);
 });
+
+test("Windows drive letters are upper-cased for commands, other platforms untouched", async () => {
+  const { normalizeCwd } = await import("../src/tools/commandRunner.ts");
+  assert.equal(normalizeCwd(String.raw`c:\Users\x\flask`, "win32"), String.raw`C:\Users\x\flask`);
+  assert.equal(normalizeCwd(String.raw`C:\Users\x`, "win32"), String.raw`C:\Users\x`);
+  assert.equal(normalizeCwd("/home/c:/x", "linux"), "/home/c:/x");
+});
