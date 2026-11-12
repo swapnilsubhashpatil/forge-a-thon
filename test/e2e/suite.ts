@@ -1,6 +1,8 @@
 import { execSync } from "node:child_process";
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import * as vscode from "vscode";
 import type { ChatState, Turn } from "../../src/shared/protocol.ts";
 
@@ -103,6 +105,44 @@ async function taskA(api: AnvilApi, label: string): Promise<Turn> {
   return turn;
 }
 
+const PY = () => process.env.ANVIL_E2E_PYTHON ?? "python";
+
+/** Checks Task B the way the problem statement verifies it: pytest, flask --help, masked JSON, at least three files. */
+function verifyTaskB(): Record<string, unknown> {
+  const cwd = root().fsPath;
+  const env = { ...process.env, PYTHONPATH: `${cwd}/src` };
+  const lines = (text: string) => text.split(/\r?\n/).filter(Boolean);
+  const files = [...lines(git("diff --name-only")), ...lines(git("ls-files --others --exclude-standard -- . :!.vscode"))];
+  const attempt = (command: string, options: { cwd?: string; env?: NodeJS.ProcessEnv } = {}) => {
+    try {
+      return { ok: true, output: execSync(command, { cwd: options.cwd ?? cwd, env: options.env ?? env, encoding: "utf8", stdio: "pipe", timeout: 120_000 }) };
+    } catch (error) {
+      const failure = error as { stdout?: string; stderr?: string };
+      return { ok: false, output: `${failure.stdout ?? ""}${failure.stderr ?? ""}` };
+    }
+  };
+  const pytest = attempt(`"${PY()}" -m pytest tests/test_cli.py -q`);
+  const help = attempt(`"${PY()}" -m flask --help`);
+  const inHelp = help.ok && /\bconfig\b/.test(help.output);
+  const appDir = mkdtempSync(join(tmpdir(), "anvil-taskb-app-"));
+  writeFileSync(
+    join(appDir, "demo_app.py"),
+    ["from flask import Flask", "app = Flask(__name__)", "app.config['SECRET_KEY'] = 'shh'", "app.config['API_TOKEN'] = 'tok'", "app.config['GREETING'] = 'hello'", ""].join("\n"),
+  );
+  const separator = process.platform === "win32" ? ";" : ":";
+  const config = attempt(`"${PY()}" -m flask --app demo_app config`, { cwd: appDir, env: { ...env, PYTHONPATH: `${appDir}${separator}${cwd}/src` } });
+  const masked = config.ok && config.output.includes("***") && !config.output.includes("shh") && !config.output.includes('"tok"') && config.output.includes("hello");
+  return {
+    files,
+    filesChanged: files.length,
+    pytest: pytest.ok,
+    pytestSummary: lines(pytest.output).at(-1),
+    inHelp,
+    masked,
+    passed: pytest.ok && files.length >= 3 && inHelp && masked,
+  };
+}
+
 async function undoAll(api: AnvilApi): Promise<void> {
   for (const changeSet of api.store.state.changeSets.filter((set) => !set.undone)) await api.ledger.undo(changeSet.id);
   assert.equal(git("status --porcelain -- . :!.vscode"), "", "undo restores a clean tree");
@@ -137,6 +177,7 @@ export async function run(): Promise<void> {
   assert.equal(lastTurn(api).status, "cancelled");
   assert.equal(git("status --porcelain -- . :!.vscode"), "", "cancel leaves the tree clean");
 
+  let taskB: Record<string, unknown> | undefined;
   if (process.env.ANVIL_E2E_TASK_B === "1") {
     const stop = autoReview(api);
     try {
@@ -146,8 +187,10 @@ export async function run(): Promise<void> {
     }
     console.log("taskB:", describe(lastTurn(api)));
     console.log(git("diff --stat"));
+    taskB = verifyTaskB();
+    console.log("taskB check:", JSON.stringify(taskB));
   }
 
   console.log("timings:", JSON.stringify(timings));
-  if (process.env.ANVIL_E2E_REPORT) writeFileSync(process.env.ANVIL_E2E_REPORT, JSON.stringify({ model: PRIMARY, timings, turns: api.store.state.turns }, null, 2));
+  if (process.env.ANVIL_E2E_REPORT) writeFileSync(process.env.ANVIL_E2E_REPORT, JSON.stringify({ model: PRIMARY, timings, taskB, turns: api.store.state.turns }, null, 2));
 }

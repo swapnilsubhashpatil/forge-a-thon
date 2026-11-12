@@ -23,7 +23,8 @@ execSync(`git clone --quiet "${flask}" "${workspace}"`);
 
 await runTests({
   vscodeExecutablePath: process.env.VSCODE_PATH,
-  extensionDevelopmentPath: root,
+  // ANVIL_E2E_EXTENSION points at another build of Anvil (e.g. a worktree of main) to benchmark it with this suite.
+  extensionDevelopmentPath: process.env.ANVIL_E2E_EXTENSION ?? root,
   extensionTestsPath: join(root, "dist/test/suite.js"),
   launchArgs: [workspace, "--disable-extensions", "--skip-welcome", "--skip-release-notes"],
 });
