@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { Step, Turn } from "../../../src/shared/protocol.ts";
+import type { PlanItem, Step, Turn } from "../../../src/shared/protocol.ts";
 import { cx, formatDuration, formatTokens, shortModel } from "../format.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
 import { ContextCard } from "./ContextCard.tsx";
@@ -59,6 +59,37 @@ function Working({ paused }: { paused: boolean }) {
       <Icon name={paused ? "watch" : "loading"} spin={!paused} />
       <span className="animate-pulse-soft">{paused ? "Waiting for your review…" : "Working…"}</span>
     </div>
+  );
+}
+
+const planIcons: Record<PlanItem["status"], { icon: string; tone: string }> = {
+  pending: { icon: "circle-large-outline", tone: "text-muted" },
+  in_progress: { icon: "arrow-circle-right", tone: "text-blue" },
+  completed: { icon: "pass-filled", tone: "text-green" },
+  blocked: { icon: "error", tone: "text-yellow" },
+  cancelled: { icon: "circle-slash", tone: "text-muted" },
+};
+
+function PlanChecklist({ plan }: { plan: PlanItem[] }) {
+  const done = plan.filter((item) => item.status === "completed").length;
+  return (
+    <section className="rounded border border-border bg-editor/40 px-2 py-1.5" aria-label="Agent plan">
+      <div className="mb-1 flex items-center gap-2 text-xs text-muted">
+        <Icon name="checklist" />
+        <span className="text-fg">Plan</span>
+        <span className="tabular-nums">
+          {done}/{plan.length}
+        </span>
+      </div>
+      <ul className="flex flex-col gap-0.5">
+        {plan.map((item) => (
+          <li key={item.step} className={cx("flex items-start gap-1.5 text-xs", item.status === "cancelled" && "line-through opacity-60")}>
+            <Icon name={planIcons[item.status].icon} className={cx("mt-0.5 shrink-0", planIcons[item.status].tone)} />
+            <span className={item.status === "in_progress" ? "text-fg" : "text-muted"}>{item.step}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -128,6 +159,11 @@ export const TurnView = memo(function TurnView({ turn, latest }: { turn: Turn; l
       {turn.context && (
         <div className="mt-3">
           <ContextCard report={turn.context} defaultOpen={latest} />
+        </div>
+      )}
+      {turn.plan && turn.plan.length > 0 && (
+        <div className="mt-3">
+          <PlanChecklist plan={turn.plan} />
         </div>
       )}
       {turn.steps.map((step, index) => (

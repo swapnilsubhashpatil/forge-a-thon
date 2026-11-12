@@ -1,4 +1,5 @@
-import type { FinishReport } from "../shared/protocol.ts";
+import type { FinishReport, PlanItem } from "../shared/protocol.ts";
+import { openItems } from "./plan.ts";
 
 export interface CommandRecord {
   command: string;
@@ -26,9 +27,13 @@ export type FinishDecision = { ok: true; report: FinishReport; reply: string } |
  * Cline's rule, made mechanical: "verified" needs a command that ran after the last accepted edit and passed.
  * An honest "not verified" with a reason is always accepted (tests denied, no tests, docs-only change).
  */
-export function evaluateFinish(args: FinishArgs, log: WorkLog): FinishDecision {
+export function evaluateFinish(args: FinishArgs, log: WorkLog, plan?: PlanItem[]): FinishDecision {
   const summary = args.summary.trim();
   if (!summary) return { ok: false, reply: "finish_task needs a summary of what you changed." };
+  const open = openItems(plan);
+  if (open.length) {
+    return { ok: false, reply: `Not accepted: plan steps are still open (${open.map((item) => item.step).join("; ")}). Finish them, or mark them blocked or cancelled with update_plan, then call finish_task again.` };
+  }
   const command = log.lastCommand;
   const ranAfterEdit = command !== undefined && (log.lastEditAt === undefined || command.at > log.lastEditAt);
 

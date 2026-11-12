@@ -20,6 +20,7 @@ export interface ToolServices {
   onFileRead: (path: string, startLine: number, endLine: number) => void;
   onCommandOutput: (command: string, output: string) => void;
   onCommandResult?: (command: string, exitCode: string) => void;
+  updatePlan?: (plan: unknown) => string;
   finishTask?: (args: { summary: string; files_changed?: string[]; verification?: string; verified: boolean }) => string;
 }
 
@@ -156,6 +157,18 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
       inputSchema: { path: z.string().min(1), content: z.string() },
       annotations: { readOnlyHint: false },
       run: (args) => services.edits.execute("create_file", args),
+    },
+    {
+      name: "update_plan",
+      title: "Update plan",
+      description:
+        "Keep a short checklist of the task's steps. Call it before your first edit and whenever a step changes status. At most one step may be in_progress. finish_task is refused while steps are pending or in_progress.",
+      inputSchema: {
+        plan: z.array(z.object({ step: z.string(), status: z.enum(["pending", "in_progress", "completed", "blocked", "cancelled"]) })),
+        explanation: z.string().optional(),
+      },
+      annotations: readOnly,
+      run: async (args) => services.updatePlan?.(args.plan) ?? "Plan updated.",
     },
     {
       name: "finish_task",

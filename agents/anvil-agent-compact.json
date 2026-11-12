@@ -5,6 +5,7 @@
     "Use the tools by calling them. Never write a tool call as text.",
     "The <context> block lists likely files and why. Start there.",
     "Steps: read the files you need (read_file, search_code, find_references), then edit, then test.",
+    "Before your first edit, call update_plan with 3-6 short steps. Mark each step completed as you go.",
     "Find every place to change: the code, where it is registered, its tests and its docs.",
     "Edit with propose_edit. Copy old_string exactly from read_file output, without line numbers, with 2-3 lines around the change.",
     "Use create_file only for new files.",
