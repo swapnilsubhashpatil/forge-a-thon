@@ -67,3 +67,9 @@ test("agent spec uses the compact instructions only for agent mode", () => {
   assert.match(full, /Verify by execution, never by assumption/);
   assert.match(inline, /inline editor/);
 });
+
+test("TrueForge's iteration limit is its own failure kind, never a model fault to fail over", () => {
+  const failure = classifyFailure("You have reached iteration limit of 60, please request again");
+  assert.equal(failure.kind, "limit");
+  assert.equal(failure.retrySameModel, false);
+});

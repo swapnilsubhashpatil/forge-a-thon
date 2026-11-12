@@ -65,6 +65,10 @@ export function needsFinishFollowUp(turn: { status: string; finish?: FinishRepor
   return turn.status === "done" && turn.editedFiles > 0 && turn.finish === undefined;
 }
 
+export const WRAP_UP =
+  "You reached the step limit. Do not call any tool except finish_task. Call finish_task now: summarise what is done, " +
+  "list what remains and the next step, and set verified=true only if a check ran after your last accepted edit and passed.";
+
 export const FINISH_FOLLOW_UP =
   "You changed files but did not call finish_task. If you have not run the relevant tests since your last accepted edit, " +
   "run them now with run_command and fix failures you caused. Then call finish_task: verified=true only if a command after " +
