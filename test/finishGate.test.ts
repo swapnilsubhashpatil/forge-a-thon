@@ -34,9 +34,15 @@ test("not verified is accepted with a reason, rejected without one", () => {
 
 test("follow-up only for completed turns with edits and no finish", () => {
   const finish = { summary: "s", filesChanged: [], verified: false, verification: "v" };
-  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 2 }), true);
-  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 2, finish }), false);
-  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 0 }), false);
-  assert.equal(needsFinishFollowUp({ status: "cancelled", editedFiles: 2 }), false);
-  assert.equal(needsFinishFollowUp({ status: "error", editedFiles: 2 }), false);
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 2 }), "verify");
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 2, finish }), undefined);
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 0 }), undefined);
+  assert.equal(needsFinishFollowUp({ status: "cancelled", editedFiles: 2 }), undefined);
+  assert.equal(needsFinishFollowUp({ status: "error", editedFiles: 2 }), undefined);
+});
+
+test("a turn that ends after edits that never applied gets a retry follow-up", () => {
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 0, failedEdits: 4 }), "retry-edits");
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 1, failedEdits: 4 }), "verify");
+  assert.equal(needsFinishFollowUp({ status: "done", editedFiles: 0, failedEdits: 0 }), undefined);
 });
