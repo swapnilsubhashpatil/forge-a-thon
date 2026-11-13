@@ -149,40 +149,68 @@ async function undoAll(api: AnvilApi): Promise<void> {
   assert.equal(git("status --porcelain -- . :!.vscode"), "", "undo restores a clean tree");
 }
 
+/** Resets the workspace when Undo could not (e.g. a task failed half way), so every task starts clean. */
+function resetTree(): void {
+  git("checkout -- .");
+  git("clean -fdq -e .vscode");
+}
+
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension<AnvilApi>("anvil-forge.anvil")!;
   const api = await extension.activate();
   await api.ready;
   assert.equal(api.store.state.harness.state, "ready", `harness: ${JSON.stringify(api.store.state.harness)}`);
 
+  // Each task is scored on its own: a weak model failing Task A must not hide its Task B behaviour.
+  const checks: Record<string, { ok: boolean; error?: string }> = {};
+  const check = async (label: string, action: () => Promise<void>) => {
+    try {
+      await action();
+      checks[label] = { ok: true };
+    } catch (error) {
+      checks[label] = { ok: false, error: (error instanceof Error ? error.message : String(error)).split("\n")[0].slice(0, 300) };
+      console.log(`${label} FAILED:`, checks[label].error);
+      await api.runner.cancel().catch(() => undefined);
+    }
+    for (const changeSet of api.store.state.changeSets.filter((set) => !set.undone)) await api.ledger.undo(changeSet.id).catch(() => undefined);
+    if (git("status --porcelain -- . :!.vscode") !== "") resetTree();
+  };
+
   const settings = vscode.workspace.getConfiguration("anvil");
   await settings.update("models.reasoningEffort", process.env.ANVIL_E2E_REASONING ?? "none", vscode.ConfigurationTarget.Workspace);
   await settings.update("resilience.firstEventTimeoutSeconds", 120, vscode.ConfigurationTarget.Workspace);
-  await useChain([PRIMARY]);
-  await taskA(api, "taskA");
-  await undoAll(api);
 
-  await registerBrokenProvider();
-  await useChain(["broken/unreachable", PRIMARY]);
-  const failover = await taskA(api, "taskC");
-  assert.ok(failover.steps.some((step) => step.kind === "notice" && step.tone === "warning" && step.text.includes("Switched to")), "failover notice shown");
-  assert.equal(failover.model, PRIMARY);
-  await undoAll(api);
+  await useChain([PRIMARY]);
+  await check("taskA", async () => {
+    await taskA(api, "taskA");
+  });
+
+  await check("taskC", async () => {
+    await registerBrokenProvider();
+    await useChain(["broken/unreachable", PRIMARY]);
+    const failover = await taskA(api, "taskC");
+    assert.ok(failover.steps.some((step) => step.kind === "notice" && step.tone === "warning" && step.text.includes("Switched to")), "failover notice shown");
+    assert.equal(failover.model, PRIMARY);
+  });
   await useChain([PRIMARY]);
 
-  const pending = api.sendPrompt("Explain how the Flask CLI locates the application and suggest one improvement to src/flask/cli.py with a propose_edit call.", []);
-  await sleep(6_000);
-  await timed("cancel", () => api.runner.cancel());
-  await pending;
-  console.log("cancel:", describe(lastTurn(api)));
-  assert.equal(lastTurn(api).status, "cancelled");
-  assert.equal(git("status --porcelain -- . :!.vscode"), "", "cancel leaves the tree clean");
+  await check("cancel", async () => {
+    const pending = api.sendPrompt("Explain how the Flask CLI locates the application and suggest one improvement to src/flask/cli.py with a propose_edit call.", []);
+    await sleep(6_000);
+    await timed("cancel", () => api.runner.cancel());
+    await pending;
+    console.log("cancel:", describe(lastTurn(api)));
+    assert.equal(lastTurn(api).status, "cancelled");
+    assert.equal(git("status --porcelain -- . :!.vscode"), "", "cancel leaves the tree clean");
+  });
 
   let taskB: Record<string, unknown> | undefined;
   if (process.env.ANVIL_E2E_TASK_B === "1") {
     const stop = autoReview(api);
     try {
       await timed("taskB", () => api.sendPrompt(TASK_B, []));
+    } catch (error) {
+      console.log("taskB FAILED:", String(error));
     } finally {
       stop();
     }
@@ -192,6 +220,7 @@ export async function run(): Promise<void> {
     console.log("taskB check:", JSON.stringify(taskB));
   }
 
+  console.log("checks:", JSON.stringify(checks));
   console.log("timings:", JSON.stringify(timings));
-  if (process.env.ANVIL_E2E_REPORT) writeFileSync(process.env.ANVIL_E2E_REPORT, JSON.stringify({ model: PRIMARY, timings, taskB, turns: api.store.state.turns }, null, 2));
+  if (process.env.ANVIL_E2E_REPORT) writeFileSync(process.env.ANVIL_E2E_REPORT, JSON.stringify({ model: PRIMARY, timings, checks, taskB, turns: api.store.state.turns }, null, 2));
 }
