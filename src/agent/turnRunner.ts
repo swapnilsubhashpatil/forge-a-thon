@@ -95,8 +95,13 @@ export class TurnRunner {
   private noteCounter = 0;
   /** Set when the last turn ended at TrueForge's iteration limit (M10). */
   private hitStepLimit = false;
-  /** Main-thread model calls in the running turn, for the turn-budget hint. */
-  private mainModelCalls = 0;
+  /**
+   * Main-thread model calls in the running turn, for the turn-budget hint. Keyed by event id: the event log re-emits
+   * the same model.message on every streamed delta, so counting events would overcount many times over.
+   */
+  private readonly mainModelCalls = new Set<string>();
+  /** Tool call ids already counted into expectedMain (model.message is re-emitted on every delta). */
+  private readonly announcedCalls = new Set<string>();
   private readonly loopGuard = new LoopGuard();
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
@@ -208,7 +213,7 @@ export class TurnRunner {
     result = this.guardLoop(active, name, args, result);
     if (name !== "update_plan") result += planReminder(this.deps.store.state.turns.find((entry) => entry.id === active.turnId)?.plan) ?? "";
     const limit = this.deps.settings().iterationLimit;
-    if (this.mainModelCalls * 2 >= limit) result += turnBudget(this.mainModelCalls, limit);
+    if (this.mainModelCalls.size * 2 >= limit) result += turnBudget(this.mainModelCalls.size, limit);
     if (!this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
     const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
     const step = (turn?.steps.filter((entry) => entry.kind === "tool" && entry.threadTitle === undefined).length ?? 0) || 1;
@@ -333,7 +338,8 @@ export class TurnRunner {
     this.expectedMain.clear();
     this.loopGuard.reset();
     this.hitStepLimit = false;
-    this.mainModelCalls = 0;
+    this.mainModelCalls.clear();
+    this.announcedCalls.clear();
     if (!request.followUp) this.turnEdits = 0;
     this.deps.onBusyChange(true);
 
@@ -677,7 +683,7 @@ export class TurnRunner {
     switch (event.type) {
       case "model.message": {
         const threadId = event.threadId;
-        if (threadId === MAIN_THREAD) this.mainModelCalls += 1;
+        if (threadId === MAIN_THREAD) this.mainModelCalls.add(event.id);
         if (threadId === MAIN_THREAD && event.usage && turn.context) {
           const usage = event.usage;
           const context = turn.context;
@@ -698,7 +704,8 @@ export class TurnRunner {
         for (const call of event.toolCalls ?? []) {
           if (!call.function?.name) continue;
           const { name, args } = parseArguments(call.function.name, call.function.arguments ?? "");
-          if (threadId === MAIN_THREAD) {
+          if (threadId === MAIN_THREAD && !this.announcedCalls.has(call.id)) {
+            this.announcedCalls.add(call.id);
             const signature = callSignature(name, args);
             this.expectedMain.set(signature, (this.expectedMain.get(signature) ?? 0) + 1);
           }
