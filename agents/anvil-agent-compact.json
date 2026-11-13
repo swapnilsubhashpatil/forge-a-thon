@@ -21,7 +21,7 @@
   ],
   "preloadTools": true,
   "subagents": false,
-  "compactionInputTokens": 60000,
+  "compactionInputTokens": 12000,
   "iterationLimit": 60,
   "params": {
     "temperature": 0.2,
