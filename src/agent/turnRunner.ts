@@ -306,6 +306,58 @@ export class TurnRunner {
     return { ranges: mergeRanges([...(this.seen.get(path) ?? []), ...fromPack]), label: "edited without reading", slack: 1 };
   }
 
+  /**
+   * "Restore" on a past message: rewinds the agent's conversation to just before that turn (TrueForge continues the
+   * session from the turn it chained from, so later turns drop out of its history), optionally undoing the code of
+   * that turn and every later one, newest first. Files edited by hand since are skipped, never overwritten.
+   */
+  async restoreTo(turnId: string, withCode: boolean): Promise<{ prompt: string; mentions: string[]; restored: string[]; skipped: string[]; rewound: boolean } | undefined> {
+    if (this.busy) throw new Error("Stop the running turn before restoring.");
+    const turns = this.deps.store.state.turns;
+    const index = turns.findIndex((turn) => turn.id === turnId);
+    if (index < 0) return undefined;
+    const target = turns[index];
+    const later = turns.slice(index).filter((turn) => !turn.reverted);
+    const restored: string[] = [];
+    const skipped: string[] = [];
+    if (withCode) {
+      for (const turn of [...later].reverse()) {
+        if (!turn.changeSetId) continue;
+        const result = await this.deps.ledger.undo(turn.changeSetId);
+        restored.push(...result.restored);
+        skipped.push(...result.skipped);
+      }
+    }
+    // Rewind the conversation: only possible while the session the turn ran in is still the current one.
+    let rewound = false;
+    const chain = target.chain;
+    if (chain && this.agentSession?.id === chain.sessionId) {
+      this.agentSession.lastCompletedTurnId = chain.previousTurnId === "none" ? undefined : chain.previousTurnId;
+      rewound = true;
+    } else if (chain) {
+      this.agentSession = undefined;
+      rewound = true;
+    }
+    this.work = {};
+    this.seen.clear();
+    this.shifted.clear();
+    this.deps.store.update(() => {
+      for (const turn of later) turn.reverted = true;
+    });
+    if (rewound || withCode) {
+      const what = withCode ? `Restored the conversation and code to before “${target.prompt.slice(0, 60)}”.` : `Restored the conversation to before “${target.prompt.slice(0, 60)}”; code left as it is.`;
+      this.deps.store.notice(target.id, skipped.length ? "warning" : "info", skipped.length ? `${what} Skipped (edited since): ${[...new Set(skipped)].join(", ")}.` : what);
+    }
+    return { prompt: target.prompt, mentions: target.mentions, restored, skipped, rewound };
+  }
+
+  /** Undo only one turn's accepted code changes, leaving the conversation as it is. */
+  async undoTurn(turnId: string): Promise<{ restored: string[]; skipped: string[] }> {
+    const turn = this.deps.store.state.turns.find((entry) => entry.id === turnId);
+    if (!turn?.changeSetId) return { restored: [], skipped: [] };
+    return this.deps.ledger.undo(turn.changeSetId);
+  }
+
   resetSession(): void {
     this.work = {};
     this.seen.clear();
@@ -366,6 +418,9 @@ export class TurnRunner {
     });
     const changeSetId = ledger.begin(request.title);
     edits.beginTurn(changeSetId);
+    store.update(() => {
+      turn.changeSetId = changeSetId;
+    });
 
     try {
       const chain = this.deps.settings().modelChain;
@@ -546,6 +601,11 @@ export class TurnRunner {
     try {
       const session = await this.ensureSession(request, model, active, overrides);
       sessionId = session.id;
+      if (request.mode === "agent") {
+        this.deps.store.update(() => {
+          turn.chain = { sessionId: session.id, previousTurnId: session.previousTurnId };
+        });
+      }
       const log = new EventLog();
       const answered = new Set<string>();
       const pending: TrueForgeApi.ToolApprovalRequiredEvent[] = [];

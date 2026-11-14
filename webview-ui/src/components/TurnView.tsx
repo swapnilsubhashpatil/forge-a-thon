@@ -1,5 +1,6 @@
-import { memo } from "react";
-import type { PlanItem, Step, Turn } from "../../../src/shared/protocol.ts";
+import { memo, useState } from "react";
+import type { ChangeSetSummary, PlanItem, Step, Turn } from "../../../src/shared/protocol.ts";
+import { post } from "../state/vscode.ts";
 import { cx, formatDuration, formatTokens, shortModel } from "../format.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
 import { ContextCard } from "./ContextCard.tsx";
@@ -36,9 +37,52 @@ function gapBefore(step: Step, previous: Step | undefined): string {
   return isCompact(step) && isCompact(previous) ? "mt-0.5" : "mt-3";
 }
 
-function Prompt({ turn }: { turn: Turn }) {
+function RestoreMenu({ turn, disabled }: { turn: Turn; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const restore = (withCode: boolean) => {
+    setOpen(false);
+    post({ type: "restore", turnId: turn.id, withCode });
+  };
   return (
-    <div className="rounded border border-border bg-input/60 px-3 py-2">
+    <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+      {open ? (
+        <>
+          <button type="button" onClick={() => restore(false)} className="rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover" title="Rewind the conversation to before this message and put it back in the input. Code stays as it is.">
+            Restore message
+          </button>
+          <button type="button" onClick={() => restore(true)} className="rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover" title="Also undo the code changes of this turn and every later turn. Files you edited since are skipped.">
+            Restore message and code
+          </button>
+          <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="grid size-5 place-items-center rounded text-muted hover:bg-hover">
+            <Icon name="close" />
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          title={disabled ? "Stop the running turn to restore" : "Restore to this message"}
+          className="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover disabled:opacity-50"
+        >
+          <Icon name="discard" />
+          Restore
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Prompt({ turn, busy }: { turn: Turn; busy: boolean }) {
+  return (
+    <div className="group relative rounded border border-border bg-input/60 px-3 py-2">
+      {!turn.reverted && !turn.followUp && turn.status !== "running" && turn.status !== "paused" && <RestoreMenu turn={turn} disabled={busy} />}
+      {turn.reverted && (
+        <span className="mb-1 flex items-center gap-1 text-2xs text-muted">
+          <Icon name="history" />
+          Reverted: no longer part of the agent's history
+        </span>
+      )}
       <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
       {turn.mentions.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
@@ -90,6 +134,29 @@ function PlanChecklist({ plan }: { plan: PlanItem[] }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+function TurnChanges({ changeSet, turnId }: { changeSet: ChangeSetSummary; turnId: string }) {
+  const added = changeSet.files.reduce((sum, file) => sum + file.added, 0);
+  const removed = changeSet.files.reduce((sum, file) => sum + file.removed, 0);
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted">
+      <Icon name="diff" />
+      <span>
+        {changeSet.files.length} {changeSet.files.length === 1 ? "file" : "files"} <span className="text-added">+{added}</span> <span className="text-removed">−{removed}</span>
+      </span>
+      <span className="min-w-0 truncate" title={changeSet.files.map((file) => file.path).join("\n")}>
+        {changeSet.files.map((file) => file.path.split("/").pop()).join(", ")}
+      </span>
+      {changeSet.undone ? (
+        <span className="rounded bg-secondary px-1.5 text-secondary-fg">undone</span>
+      ) : (
+        <button type="button" onClick={() => post({ type: "undoTurn", turnId })} className="rounded bg-secondary px-1.5 text-secondary-fg hover:bg-secondary-hover" title="Undo this turn's code changes only; the conversation stays">
+          Undo these changes
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -148,14 +215,14 @@ function showsWorking(turn: Turn): boolean {
   return !(last.kind === "tool" && last.status === "running");
 }
 
-export const TurnView = memo(function TurnView({ turn, latest }: { turn: Turn; latest: boolean }) {
+export const TurnView = memo(function TurnView({ turn, latest, busy, changeSet }: { turn: Turn; latest: boolean; busy: boolean; changeSet?: ChangeSetSummary }) {
   const running = turn.status === "running";
   const live = running || turn.status === "paused";
   const last = turn.steps.at(-1);
 
   return (
-    <article className={cx("flex flex-col px-3 py-4", !live && "turn-finished")}>
-      <Prompt turn={turn} />
+    <article className={cx("flex flex-col px-3 py-4", !live && "turn-finished", turn.reverted && "opacity-50")}>
+      <Prompt turn={turn} busy={busy} />
       {turn.context && (
         <div className="mt-3">
           <ContextCard report={turn.context} defaultOpen={latest} />
@@ -173,6 +240,7 @@ export const TurnView = memo(function TurnView({ turn, latest }: { turn: Turn; l
       ))}
       {showsWorking(turn) && <Working paused={turn.status === "paused" || turn.steps.some((step) => step.kind === "tool" && step.status === "awaiting-approval")} />}
       {!live && <Footer turn={turn} />}
+      {!live && changeSet && changeSet.files.length > 0 && <TurnChanges changeSet={changeSet} turnId={turn.id} />}
     </article>
   );
 });

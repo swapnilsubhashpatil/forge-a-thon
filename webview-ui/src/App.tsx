@@ -33,6 +33,11 @@ export function App() {
 
   useEffect(() => post({ type: "ready" }), []);
 
+  const restored = useStore((snapshot) => snapshot.restoredDraft);
+  useEffect(() => {
+    if (restored) changeDraft({ text: restored.text, mentions: restored.mentions, attachments: [] });
+  }, [restored?.seq]);
+
   const incoming = useStore((snapshot) => snapshot.incoming);
   useEffect(() => {
     const attachments = takeIncoming();
@@ -58,7 +63,13 @@ export function App() {
           <EmptyState onPick={(text) => changeDraft({ text, mentions: [] })} />
         ) : (
           chat.turns.map((turn, index) => (
-            <TurnView key={turn.id} turn={turn} latest={index === chat.turns.length - 1} />
+            <TurnView
+              key={turn.id}
+              turn={turn}
+              latest={index === chat.turns.length - 1}
+              busy={chat.busy}
+              changeSet={chat.changeSets.find((set) => set.id === turn.changeSetId)}
+            />
           ))
         )}
       </main>

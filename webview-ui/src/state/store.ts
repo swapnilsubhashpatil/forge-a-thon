@@ -7,6 +7,8 @@ export interface Snapshot {
   focusRequests: number;
   /** Attachments sent from the editor or terminal, not yet merged into the draft. */
   incoming: Attachment[];
+  /** Text put back into the composer by "Restore". */
+  restoredDraft?: { text: string; mentions: string[]; seq: number };
 }
 
 const initialChat: ChatState = {
@@ -42,6 +44,9 @@ function handle(message: HostMessage): void {
       break;
     case "focusInput":
       update({ focusRequests: snapshot.focusRequests + 1 });
+      break;
+    case "setDraft":
+      update({ restoredDraft: { text: message.text, mentions: message.mentions, seq: (snapshot.restoredDraft?.seq ?? 0) + 1 }, focusRequests: snapshot.focusRequests + 1 });
       break;
     case "attach":
       update({ incoming: [...snapshot.incoming, message.attachment], focusRequests: snapshot.focusRequests + 1 });

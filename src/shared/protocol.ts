@@ -160,6 +160,12 @@ export interface Turn {
   plan?: PlanItem[];
   /** Set on Anvil's own follow-up turns. */
   followUp?: boolean;
+  /** Change set holding this turn's accepted edits (per-turn undo). */
+  changeSetId?: string;
+  /** Where this turn continued the TrueForge session from, so the conversation can be rewound to before it. */
+  chain?: { sessionId: string; previousTurnId: string };
+  /** Rewound by "Restore": kept visible but greyed out, no longer part of the agent's history. */
+  reverted?: boolean;
   startedAt: number;
   endedAt?: number;
 }
@@ -222,13 +228,16 @@ export type HostMessage =
   | { type: "state"; state: ChatState }
   | { type: "mentionResults"; requestId: number; items: MentionItem[] }
   | { type: "focusInput" }
-  | { type: "attach"; attachment: Attachment };
+  | { type: "attach"; attachment: Attachment }
+  | { type: "setDraft"; text: string; mentions: string[] };
 
 export type WebviewMessage =
   | { type: "ready" }
   | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[] }
   | { type: "cancel" }
   | { type: "removeNote"; id: string }
+  | { type: "restore"; turnId: string; withCode: boolean }
+  | { type: "undoTurn"; turnId: string }
   | { type: "stopAndSend"; id: string }
   | { type: "newSession" }
   | { type: "approve"; toolCallId: string; allow: boolean }
