@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from "react";
-import type { ChatState, HostMessage, MentionItem } from "../../../src/shared/protocol.ts";
+import type { Attachment, ChatState, HostMessage, MentionItem } from "../../../src/shared/protocol.ts";
 
 export interface Snapshot {
   chat: ChatState;
   mentions: { requestId: number; items: MentionItem[] };
   focusRequests: number;
+  /** Attachments sent from the editor or terminal, not yet merged into the draft. */
+  incoming: Attachment[];
 }
 
 const initialChat: ChatState = {
@@ -20,6 +22,7 @@ let snapshot: Snapshot = {
   chat: initialChat,
   mentions: { requestId: 0, items: [] },
   focusRequests: 0,
+  incoming: [],
 };
 
 const listeners = new Set<() => void>();
@@ -40,6 +43,9 @@ function handle(message: HostMessage): void {
     case "focusInput":
       update({ focusRequests: snapshot.focusRequests + 1 });
       break;
+    case "attach":
+      update({ incoming: [...snapshot.incoming, message.attachment], focusRequests: snapshot.focusRequests + 1 });
+      break;
   }
 }
 
@@ -50,6 +56,13 @@ window.addEventListener("message", (event: MessageEvent<HostMessage>) => {
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+/** Hands pending attachments to the draft exactly once. */
+export function takeIncoming(): Attachment[] {
+  const taken = snapshot.incoming;
+  if (taken.length) update({ incoming: [] });
+  return taken;
 }
 
 export function useStore<T>(select: (snapshot: Snapshot) => T): T {

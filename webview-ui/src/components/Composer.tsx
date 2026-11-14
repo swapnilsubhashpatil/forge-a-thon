@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { ChatState, MentionItem, QueuedNote } from "../../../src/shared/protocol.ts";
+import type { Attachment, ChatState, MentionItem, QueuedNote } from "../../../src/shared/protocol.ts";
 import { cx, shortModel } from "../format.ts";
 import { useStore } from "../state/store.ts";
 import { post, type Draft } from "../state/vscode.ts";
@@ -88,6 +88,23 @@ function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
   );
 }
 
+function AttachmentChip({ attachment, onRemove }: { attachment: Attachment; onRemove: () => void }) {
+  const lines = attachment.text.split(/\r?\n/).length;
+  return (
+    <li
+      className="flex items-center gap-1 rounded border border-border bg-badge/30 px-1.5 py-0.5 text-2xs text-fg"
+      title={attachment.text.slice(0, 600)}
+    >
+      <Icon name={attachment.kind === "terminal" ? "terminal" : "code"} className="text-muted" />
+      <span className="font-mono">{attachment.label}</span>
+      <span className="text-muted">{lines} lines</span>
+      <button type="button" aria-label={`Remove ${attachment.label}`} onClick={onRemove} className="grid size-4 place-items-center rounded text-muted hover:bg-hover hover:text-fg">
+        <Icon name="close" />
+      </button>
+    </li>
+  );
+}
+
 interface ComposerProps {
   chat: ChatState;
   draft: Draft;
@@ -143,8 +160,8 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
   function send() {
     const text = draft.text.trim();
     if (!text || !ready) return;
-    post({ type: "send", text, mentions: usedMentions(draft) });
-    onDraftChange({ text: "", mentions: [] });
+    post({ type: "send", text, mentions: usedMentions(draft), attachments: draft.attachments });
+    onDraftChange({ text: "", mentions: [], attachments: [] });
     setMention(undefined);
   }
 
@@ -204,6 +221,17 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
         </ul>
       )}
       <div className="relative rounded border border-input-border bg-input focus-within:border-focus">
+        {(draft.attachments?.length ?? 0) > 0 && (
+          <ul className="flex flex-wrap gap-1 px-2 pt-2" aria-label="Attached to this message">
+            {draft.attachments!.map((attachment) => (
+              <AttachmentChip
+                key={attachment.id}
+                attachment={attachment}
+                onRemove={() => onDraftChange({ ...draft, attachments: draft.attachments!.filter((entry) => entry.id !== attachment.id) })}
+              />
+            ))}
+          </ul>
+        )}
         {menuOpen && <MentionMenu items={items} activeIndex={activeIndex} onSelect={select} onHover={setActiveIndex} />}
         <textarea
           ref={inputRef}

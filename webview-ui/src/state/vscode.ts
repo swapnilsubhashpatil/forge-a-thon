@@ -1,4 +1,4 @@
-import type { WebviewMessage } from "../../../src/shared/protocol.ts";
+import type { Attachment, WebviewMessage } from "../../../src/shared/protocol.ts";
 
 interface VsCodeApi {
   postMessage(message: unknown): void;
@@ -11,6 +11,8 @@ declare function acquireVsCodeApi(): VsCodeApi;
 export interface Draft {
   text: string;
   mentions: string[];
+  /** Selections and terminal output sent to the chat, sent with the next message. */
+  attachments?: Attachment[];
 }
 
 let api: VsCodeApi | undefined;
