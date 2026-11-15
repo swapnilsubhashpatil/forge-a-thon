@@ -1,0 +1,6402 @@
+[
+  {
+    "sha": "c17f379390731543eea33a570a47bd4ef76a54fa",
+    "subject": "request context tracks session access",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/ctx.py",
+      "src/flask/sessions.py",
+      "src/flask/templating.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.8,
+      "recall10": 0.8,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "src/flask/app.py",
+      "src/flask/ctx.py",
+      "tests/test_basic.py",
+      "src/flask/testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.4,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "3709c4a9a87e6ce8c26dc4a951e1df52ac9ecad0",
+    "subject": "update ruff hook and noqa",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/sessions.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/globals.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.05
+    }
+  },
+  {
+    "sha": "dbd4c2882593f6118103120aa96fa9acdf7deedb",
+    "subject": "Changed the static annotated type of select_jinja_autoescape method in src/flask/sansio/app.py",
+    "truth": [
+      "src/flask/sansio/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/sansio/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9822a0351574790cb66c652fcc396ad7aa2b09d8",
+    "subject": "refactor stream_with_context for async views",
+    "truth": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_async.py",
+      "tests/test_helpers.py",
+      "docs/patterns/streaming.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "d44f1c65239c3e33509224aa1931631243dbfa7f",
+    "subject": "relax type hint for bytes io",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.14285714285714285
+    },
+    "anvilTop5": [
+      "tests/type_check/typing_route.py",
+      "src/flask/json/__init__.py",
+      "src/flask/json/provider.py",
+      "tests/type_check/typing_app_decorators.py",
+      "tests/type_check/typing_error_handler.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "53b8f08218796d95764c5252bccd8a50a173a6fb",
+    "subject": "push preserved contexts in correct order",
+    "truth": [
+      "src/flask/testing.py",
+      "tests/test_testing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/testing.py",
+      "tests/templates/context_template.html",
+      "src/flask/ctx.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "fb54159861708558b5f5658ebdc14709d984361c",
+    "subject": "secret key rotation: fix key list ordering",
+    "truth": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "src/flask/sansio/app.py",
+      "src/flask/json/tag.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "410e5ab7ed0ef326fa8b5164a633863f137ffff5",
+    "subject": "Accept `AsyncIterable` for responses",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "tests/test_async.py",
+      "docs/async-await.rst",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "7d5d1874581209f66ad7bcdfb7f85b2b9a7ca471",
+    "subject": "better type checking during deprecation",
+    "truth": [
+      "src/flask/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.058823529411764705
+    },
+    "anvilTop5": [
+      "tests/type_check/typing_route.py",
+      "src/flask/debughelpers.py",
+      "tests/type_check/typing_app_decorators.py",
+      "tests/type_check/typing_error_handler.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    }
+  },
+  {
+    "sha": "da600394865c06a4772c433c1a560453dcf4f868",
+    "subject": "Handle help arg by itself the same as no args",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/cli.py",
+      "src/flask/views.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "54c3f87af9f6c0d6622cec2c3d9695b0229fb8fa",
+    "subject": "fix type hint for `cli_runner.invoke`",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "src/flask/testing.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "b394a994e6d632643d0061e0e67772f076925951",
+    "subject": "update `__version__` deprecation",
+    "truth": [
+      "src/flask/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/__init__.py",
+      "CHANGES.rst",
+      "src/flask/cli.py",
+      "src/flask/testing.py",
+      "docs/conf.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "f49dbfd3e451006a485e81ebce030495131c4454",
+    "subject": "use generic bases for session",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py",
+      "src/flask/app.py",
+      "tests/test_session_interface.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "4f7156f2c3271613b34d04040b502b9d7ae35eb9",
+    "subject": "configure and check trusted_hosts",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/app.py",
+      "tests/test_request.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "tests/type_check/typing_app_decorators.py",
+      "tests/type_check/typing_error_handler.py",
+      "tests/type_check/typing_route.py",
+      "src/flask/app.py",
+      "src/flask/sansio/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    }
+  },
+  {
+    "sha": "4995a775df21a206b529403bc30d71795a994fd4",
+    "subject": "fix subdomain_matching=False behavior",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/sansio/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/cli.py",
+      "src/flask/sansio/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "e13373f838ab34027c5a80e16a6cb8262d41eab7",
+    "subject": "enable secret key rotation",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/app.py",
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 0.75,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/sansio/app.py",
+      "src/flask/sessions.py",
+      "src/flask/app.py",
+      "docs/config.rst",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "2c3160304278d323da8485057770926d1b582579",
+    "subject": "update env file precedence",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/sansio/app.py",
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "src/flask/config.py",
+      "src/flask/templating.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "6c44dd4bb8e4f2ca5f135f172de4725b2cada155",
+    "subject": "update helpers.send_from_directory docstring",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/app.py",
+      "src/flask/__init__.py",
+      "src/flask/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "98ae71897600a3162f529b1b30c70b8abdf0961b",
+    "subject": "fix mypy finding",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/scaffold.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.03225806451612903
+    }
+  },
+  {
+    "sha": "9efc1ebeeb431769897798cdf8de2c67dcbbc9c0",
+    "subject": "add SESSION_COOKIE_PARTITIONED config",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/app.py",
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py",
+      "src/flask/config.py",
+      "src/flask/helpers.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "c7a53888a1a514619b0611fd8b7928592f4ed612",
+    "subject": "add config and docs for limits",
+    "truth": [
+      "docs/config.rst",
+      "docs/web-security.rst",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.2,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "docs/config.rst",
+      "src/flask/config.py",
+      "tests/test_instance_config.py",
+      "tests/test_config.py",
+      "tests/static/config.json"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.4,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "dffe3034825edc4f84aded013fc9c6590e545ed5",
+    "subject": "fix mypy findings",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.06666666666666667
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "requirements/typing.txt",
+      "src/flask/ctx.py",
+      "requirements/typing.in",
+      "requirements/dev.txt"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "176fdfa0002360670f698d3828cfff11f97349f0",
+    "subject": "fix mypy findings",
+    "truth": [
+      "src/flask/helpers.py",
+      "src/flask/json/provider.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.06666666666666667
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "requirements/typing.txt",
+      "src/flask/ctx.py",
+      "requirements/typing.in",
+      "requirements/dev.txt"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "28d5a4d71824ff5823ae310e3fd014b48b33d583",
+    "subject": "add encoding parameter to open_resource",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "d718ecf6d3dfc4656d262154c59672437c1ea075",
+    "subject": "Provide a configuration option to control automatic option responses",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/app.py",
+      "src/flask/sansio/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/sansio/app.py",
+      "tests/test_instance_config.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "c7da8c2aa3a923fc620ad480a8831a8a0f21ab37",
+    "subject": "Added python type annotation and return type.",
+    "truth": [
+      "src/flask/sansio/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/globals.py",
+      "src/flask/json/tag.py",
+      "src/flask/helpers.py",
+      "src/flask/sansio/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.125
+    }
+  },
+  {
+    "sha": "860a25c390eba8e6c089a818b02800dd9d789864",
+    "subject": "fix mypy finding",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/scaffold.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.04
+    }
+  },
+  {
+    "sha": "eb1182a10e757b5e76009c69fdf3a88a5afc6840",
+    "subject": "fix mypy finding",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/scaffold.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "a363642a32880114c7944b1017f2f69bd4cc00eb",
+    "subject": "fix mypy finding with new werkzeug endpoint type",
+    "truth": [
+      "src/flask/wrappers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "src/flask/wrappers.py",
+      "src/flask/sansio/app.py",
+      "docs/cli.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "ccf125bf30102beedafb3ecef72376bfb6c90a4d",
+    "subject": "fix mypy findings",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07692307692307693
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "requirements/typing.txt",
+      "src/flask/ctx.py",
+      "requirements/typing.in",
+      "requirements/dev.txt"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "5fdce4c331ac530280cc941179d364a07f4a1088",
+    "subject": "Don't set the cli attribute in the sansio scaffold",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.75,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sansio/scaffold.py",
+      "src/flask/cli.py",
+      "src/flask/sansio/app.py",
+      "src/flask/sansio/blueprints.py",
+      "tests/test_cli.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "db461112c70d5f2bf93c7a6ac27eeb665c232dd0",
+    "subject": "access sha1 lazily",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "docs/patterns/requestchecksum.rst",
+      "docs/patterns/lazyloading.rst",
+      "src/flask/wrappers.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "1af8f95785b85d0937153ee63d504c0b51934d80",
+    "subject": "fix super call in list comprehension",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/cli.py",
+      "src/flask/sansio/app.py",
+      "src/flask/app.py",
+      "src/flask/views.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "ecc057dd4857e655f0844b781899a917852042a4",
+    "subject": "fix jinja_loader annotation",
+    "truth": [
+      "src/flask/sansio/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sansio/scaffold.py",
+      "src/flask/templating.py",
+      "src/flask/sansio/app.py",
+      "src/flask/helpers.py",
+      "src/flask/debughelpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "700fc7d928b7a625b04e6865b3eb282043e90f7d",
+    "subject": "untag without object_hook",
+    "truth": [
+      "src/flask/json/tag.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/tag.py",
+      "src/flask/wrappers.py",
+      "tests/test_json.py",
+      "src/flask/helpers.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "1d5abfadd7132c9a78e14e5ba6c07aed47115280",
+    "subject": "Fixing issue 5342: 'The double quote is missing in the string'",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "docs/security.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.016666666666666666
+    }
+  },
+  {
+    "sha": "4104f29956b16f3e351462651ec3c6cc5a0dd069",
+    "subject": "type hint fix for flask.send_file",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_helpers.py",
+      "src/flask/blueprints.py",
+      "src/flask/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "438edcdf01c392619449a6bdbb18f6cf72ef7bb9",
+    "subject": "Allow self as an argument to url_for",
+    "truth": [
+      "src/flask/app.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_helpers.py",
+      "src/flask/wrappers.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "293041a290178dc1d526075372960c3ca589d366",
+    "subject": "deprecate __version__ attribute",
+    "truth": [
+      "src/flask/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "CHANGES.rst",
+      "src/flask/cli.py",
+      "src/flask/__init__.py",
+      "src/flask/wrappers.py",
+      "src/flask/ctx.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "65271c105f7c247ecffc9a7121815276e092bd10",
+    "subject": "Remove print left in by accident",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.125
+    },
+    "anvilTop5": [
+      "src/flask/testing.py",
+      "docs/patterns/sqlite3.rst",
+      "src/flask/cli.py",
+      "docs/reqcontext.rst",
+      "src/flask/sessions.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.037037037037037035
+    }
+  },
+  {
+    "sha": "80cf589a26d792820f135591eb8007bca891bf4f",
+    "subject": "Correct the error handler typing",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "tests/test_user_error_handler.py",
+      "src/flask/wrappers.py",
+      "tests/typing/typing_error_handler.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.14285714285714285
+    }
+  },
+  {
+    "sha": "cc80a47f5be6c60e53c42ef9378e6db3b0e183b1",
+    "subject": "Widen the response typing",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "tests/typing/typing_route.py",
+      "tests/typing/typing_app_decorators.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "3f6b243cec6859185ea4064e84b33c07cc7febf6",
+    "subject": "Support async template context processors",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/sansio/scaffold.py",
+      "docs/async-await.rst",
+      "src/flask/templating.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "72c85e80c8ef9e6d5b5644f7bb23cdc175ca3873",
+    "subject": "Provide an extendable merge blueprint funcs method",
+    "truth": [
+      "src/flask/sansio/blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sansio/blueprints.py",
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "04994df59f2f642e52ba46ca656088bcdb931262",
+    "subject": "remove deprecated code",
+    "truth": [
+      "docs/api.rst",
+      "src/flask/__init__.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "src/flask/helpers.py",
+      "src/flask/signals.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.8333333333333334,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/globals.py",
+      "src/flask/helpers.py",
+      "src/flask/__init__.py",
+      "src/flask/signals.py",
+      "CODE_OF_CONDUCT.md"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.6666666666666666,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "17e146ad949b3d80438faf95e81b53c543cb50f5",
+    "subject": "Pass maxsplit via kwarg to re.split",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "src/flask/json/__init__.py",
+      "src/flask/wrappers.py",
+      "src/flask/json/provider.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "bda295d37fa3809c95a93d01dd605d0222109889",
+    "subject": "fix use of importlib.util.find_spec",
+    "truth": [
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "84e11a1e827c0f55f9b9ee15952eddcf8a6492e0",
+    "subject": "use importlib instead of pkgutil",
+    "truth": [
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "tests/conftest.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "2abb7513dc52e9d9f2c73dde91f3b89d8f9492e4",
+    "subject": "Allow for PathLike types for config file variables",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/app.py",
+      "tests/test_instance_config.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "1d7281fe0770a97229a2a75189a712cff866b448",
+    "subject": "remove egg test",
+    "truth": [
+      "src/flask/scaffold.py",
+      "tests/conftest.py",
+      "tests/test_instance_config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "tests/conftest.py",
+      "tests/test_instance_config.py",
+      "tests/test_apps/.env",
+      "tests/test_apps/.flaskenv",
+      "examples/javascript/.gitignore"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "8646edca6f47e2cd57464081b3911218d4734f8d",
+    "subject": "set `Vary: Cookie` header consistently for session",
+    "truth": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "src/flask/helpers.py",
+      "tests/test_session_interface.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "3fbfbad79fe294918459b70eb409d555b20de2c8",
+    "subject": "werkzeug 2.3.3 compatibility",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.125
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "docs/installation.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1
+    }
+  },
+  {
+    "sha": "e1aedecdc689cc9a79131851dbdabf6c3bc49c9e",
+    "subject": "update werkzeug",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/globals.py",
+      "src/flask/testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "8705dd39c4fa563ea0fe0bf84c85da8fcc98b88d",
+    "subject": "set `Vary: Cookie` header consistently for session",
+    "truth": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py",
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_session_interface.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9532cba45d2339e90ebf04f178b1e4f2064e7328",
+    "subject": "fix mypy finding",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/scaffold.py",
+      "src/flask/logging.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.047619047619047616
+    }
+  },
+  {
+    "sha": "0ec9192cf25f5187d6521f2539489fa8d55336bb",
+    "subject": "fix importing Markup from flask",
+    "truth": [
+      "src/flask/__init__.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/__init__.py",
+      "src/flask/json/tag.py",
+      "src/flask/app.py",
+      "src/flask/json/provider.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "79ebf6c39cba01b240a926b899b7d0828e63fc4b",
+    "subject": "update minimum requirements",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "requirements/tests-pallets-min.txt",
+      "requirements/typing.txt",
+      "requirements/docs.txt",
+      "requirements/tests.txt",
+      "requirements/dev.txt"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.041666666666666664
+    }
+  },
+  {
+    "sha": "84c007d34f7f0b8737310fe4d67be12c463e0130",
+    "subject": "show subdomain or host in routes output",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "tests/typing/typing_route.py",
+      "src/flask/testing.py",
+      "src/flask/blueprints.py",
+      "docs/patterns/appdispatch.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.125
+    }
+  },
+  {
+    "sha": "8239765a4410d13d489e299a99e4a4c6951e190b",
+    "subject": "allow async signal receivers",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/ctx.py",
+      "src/flask/helpers.py",
+      "src/flask/templating.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/signals.py",
+      "docs/signals.rst",
+      "tests/test_signals.py",
+      "docs/async-await.rst",
+      "tests/test_async.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.25,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "b626a9387900a9f717eb42765275adc0bf0875e3",
+    "subject": "Allow Response subclasses to set default_mimetype as None",
+    "truth": [
+      "src/flask/wrappers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "docs/patterns/subclassing.rst",
+      "tests/test_subclassing.py",
+      "src/flask/json/provider.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "c24f8c8199f8ceda7a7cfb5e91773eba595f5b67",
+    "subject": "no cookie domain by default",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/helpers.py",
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "tests/test_basic.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 0.75,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "04c21387dbc454fb59cae9c9bb21a13358cb5a34",
+    "subject": "update test cookie handling for Werkzeug 2.3",
+    "truth": [
+      "src/flask/testing.py",
+      "tests/test_basic.py",
+      "tests/test_json.py",
+      "tests/test_testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/sessions.py",
+      "tests/test_basic.py",
+      "tests/test_reqctx.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "b8b410014d85f9861acc87c5f21c9a55a42d09c9",
+    "subject": "require a non-empty name for blueprints",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "c4b39ba2f3fede0555f18fc03b0f2499bb0d424b",
+    "subject": "replace werkzeug.urls with urllib.parse",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "src/flask/testing.py",
+      "docs/conf.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "b10b6d4af1127fdfb0a74221af0c020ced71fece",
+    "subject": "add text parameter to config.from_file",
+    "truth": [
+      "src/flask/config.py",
+      "tests/test_config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "tests/test_instance_config.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "4256fc63044fa0d9c2135443461689b1adaf386d",
+    "subject": "deprecate locked_cached_property",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_helpers.py",
+      "docs/patterns/caching.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "fc03d0dfab64945169e1114cdc1fb39519a1e0c1",
+    "subject": "setup method on registered blueprint is error",
+    "truth": [
+      "src/flask/blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "2a33c1785412075c09f9f55b3e25f2bc995ca461",
+    "subject": "deprecate got_first_request property",
+    "truth": [
+      "src/flask/app.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "aa040c085c8c560616069f06c34cf796c10b05f1",
+    "subject": "run latest black format",
+    "truth": [
+      "src/flask/templating.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/scaffold.py",
+      "src/flask/globals.py",
+      "CONTRIBUTING.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "ab93222bd6d4ea26e3aa832a0409489530f3f5e0",
+    "subject": "point to app-scoped blueprint methods",
+    "truth": [
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "a7487701999fee55bb76a393e72c96ac8e277fcf",
+    "subject": "clarify `View.as_view` docstring",
+    "truth": [
+      "src/flask/views.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "tests/test_views.py",
+      "docs/views.rst",
+      "docs/tutorial/views.rst",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "cabda5935322d75e7aedb3ee6d59fb7ab62bd674",
+    "subject": "Ensure that blueprint subdomains suffix-chain",
+    "truth": [
+      "docs/blueprints.rst",
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "d7b6c1f6703df405c69da45e7e0ba3d1aed512ce",
+    "subject": "Fix subdomain inheritance for nested blueprints.",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "4bc0e4943dfa637361aec2bb18dc9e1fabeaad12",
+    "subject": "Add --debug option to flask run",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/debughelpers.py",
+      "src/flask/wrappers.py",
+      "docs/server.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "79032ca5f1c4747e5aeaa193bdeb2e4eae410ea6",
+    "subject": "Add .svg to select_jinja_autoescape",
+    "truth": [
+      "docs/templating.rst",
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/templating.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "09112cfc477a270f4b2990e1daf39db1dbe30e98",
+    "subject": "template_folder type allows pathlib",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "cc66213e579d6b35d9951c21b685d0078f373c44",
+    "subject": "Add .svg to select_jinja_autoescape",
+    "truth": [
+      "docs/templating.rst",
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/blueprints.py",
+      "src/flask/templating.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "0d8c8ba71bc6362e6ea9af08146dc97e1a0a8abc",
+    "subject": "Fix docstring of test_request_context",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/ctx.py",
+      "tests/templates/context_template.html",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "e7b2ce9a50c4a3a1ff5d032f201ed43d8cd39f17",
+    "subject": "Add missing .dev to version",
+    "truth": [
+      "src/flask/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    },
+    "anvilTop5": [
+      "requirements/dev.txt",
+      "requirements/tests-pallets-dev.txt",
+      "requirements/dev.in",
+      "requirements/tests-pallets-dev.in",
+      "tox.ini"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.025
+    }
+  },
+  {
+    "sha": "746455d1038fd5479f396cbf2d19b48edfeb8290",
+    "subject": "Fix misrendered docstring",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    }
+  },
+  {
+    "sha": "de16718b39e3544688130339a0813997e3790c48",
+    "subject": "require werkzeug >= 2.2.2",
+    "truth": [
+      "setup.py",
+      "src/flask/cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "setup.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "e3df23374cdb9342a823556170c53c9d987d0d33",
+    "subject": "remove env from shell banner",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "docs/shell.rst",
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/templating.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "a6a7a57380cd8f7410753c3b819ba6d09198d8c9",
+    "subject": "fix default value of app.env",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/config.py",
+      "src/flask/cli.py",
+      "src/flask/templating.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "714ccefeca33db9e87e8ef4abd0008af05c32a4d",
+    "subject": "show deprecation warning on json_encoder/decoder access",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/json/provider.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "tests/test_json.py",
+      "src/flask/json/provider.py",
+      "docs/api.rst",
+      "tests/test_json_tag.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 0.75,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "ef95998d79eed3b8350d8db825e3d98f25c179f2",
+    "subject": "deprecate FLASK_ENV",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/helpers.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 0.75,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/cli.py",
+      "src/flask/templating.py",
+      "docs/server.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "7d53a129cf1b28f1a88491ae50877473b68bdb54",
+    "subject": "remove __traceback_hide__",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "src/flask/ctx.py",
+      "src/flask/testing.py",
+      "src/flask/app.py",
+      "src/flask/debughelpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "5d8e35653fca0d7ee01519d556c7851089de82ea",
+    "subject": "refactor lazy loading",
+    "truth": [
+      "docs/quickstart.rst",
+      "docs/server.rst",
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.4,
+      "recall10": 0.8,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "docs/patterns/lazyloading.rst",
+      "src/flask/cli.py",
+      "src/flask/json/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6,
+      "recall10": 0.8,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "095651be9eec58ddb0c2eb6158318b1c703c67c5",
+    "subject": "fix has_app_context and has_request_context",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/app.py",
+      "src/flask/testing.py",
+      "src/flask/__init__.py",
+      "tests/test_testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "4bf7415a9692b0c1a69cd50a17c1cbda4a75931b",
+    "subject": "allow TypedDict as a response value",
+    "truth": [
+      "src/flask/typing.py",
+      "tests/typing/typing_route.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "tests/typing/typing_route.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "58f3536a8f5dfc18e559c518ae38cba52bec90a9",
+    "subject": "error for render_template outside app context",
+    "truth": [
+      "src/flask/templating.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/templating.py",
+      "src/flask/app.py",
+      "src/flask/ctx.py",
+      "tests/test_templating.py",
+      "docs/templating.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "d597db67ded68d4aedf42b9d1d4570573fb79cd6",
+    "subject": "contexts no longer use LocalStack",
+    "truth": [
+      "src/flask/__init__.py",
+      "src/flask/ctx.py",
+      "src/flask/globals.py",
+      "src/flask/testing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/globals.py",
+      "tests/templates/context_template.html",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/ctx.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "0b2f809f9b56861dae3ae5154d73b4afaf632a0a",
+    "subject": "access names as proxies directly",
+    "truth": [
+      "src/flask/globals.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "docs/deploying/proxy_fix.rst",
+      "src/flask/globals.py",
+      "src/flask/app.py",
+      "src/flask/logging.py",
+      "src/flask/sessions.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.05555555555555555
+    }
+  },
+  {
+    "sha": "9b44bf2818d8e3cde422ad7f43fb33dfc6737289",
+    "subject": "Improve decorator typing",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py",
+      "src/flask/views.py",
+      "tests/typing/typing_route.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.8333333333333334,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "tests/typing/typing_route.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9dfcb90c92e13f2d92cb723cb834b5e0d666a2f5",
+    "subject": "Document serialization of Decimal in JSONEncoder",
+    "truth": [
+      "docs/api.rst",
+      "src/flask/json/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "tests/test_json.py",
+      "src/flask/json/tag.py",
+      "tests/test_json_tag.py",
+      "docs/api.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "60b845ebabeb77e401186f4b83de21d3f9c6a9d7",
+    "subject": "update typing tests for json",
+    "truth": [
+      "src/flask/typing.py",
+      "tests/typing/typing_route.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "tests/typing/typing_route.py",
+      "tests/test_json.py",
+      "tests/test_json_tag.py",
+      "src/flask/typing.py",
+      "src/flask/json/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.125
+    }
+  },
+  {
+    "sha": "f8cb0b0dd5ea30729db6b131aeeb30915ea4860b",
+    "subject": "update docs about json",
+    "truth": [
+      "docs/quickstart.rst",
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.125
+    },
+    "anvilTop5": [
+      "tests/test_json.py",
+      "tests/test_json_tag.py",
+      "src/flask/json/__init__.py",
+      "src/flask/json/tag.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "ca2bfbb0ac66fbbeeedbf6bbe317bee45cb23d29",
+    "subject": "Support returning list as JSON",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/typing.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/json/tag.py",
+      "tests/test_json.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.14285714285714285
+    }
+  },
+  {
+    "sha": "c2810ffdd2f2becbc37d35f63b69034b8b9ed5b8",
+    "subject": "remove deprecated send_file argument names",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/json/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "9e686d93b69f0e73f801cc11a57839f4dfe2ca1a",
+    "subject": "remove deprecated RequestContext.g",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "tests/test_testing.py",
+      "src/flask/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "5544d09477af3221d988ec18b086930c2d9e67cd",
+    "subject": "re-add flag to skip unguarded app.run from CLI",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "src/flask/app.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "46433e9807a1c960d6b2bb0e125cf16a90167d97",
+    "subject": "add generate_template and generate_template_string functions",
+    "truth": [
+      "docs/api.rst",
+      "docs/patterns/streaming.rst",
+      "docs/templating.rst",
+      "src/flask/__init__.py",
+      "src/flask/templating.py",
+      "tests/test_templating.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.125
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.3333333333333333,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "762382e436062183b1e1fa6f3bda594090a452e7",
+    "subject": "view functions can return generators as responses directly",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/typing.py",
+      "tests/test_basic.py",
+      "tests/typing/typing_route.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.5,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "docs/tutorial/views.rst",
+      "docs/views.rst",
+      "tests/test_views.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "ed42e9292811a95f2a68e06a9ae50cb5872216a3",
+    "subject": "session expiration datetime is UTC timezone-aware",
+    "truth": [
+      "src/flask/sessions.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_session_interface.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "tests/test_json_tag.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "c9e000b9cea2e117218d460874d86301fbb43c43",
+    "subject": "with_appcontext lasts for the lifetime of the click context",
+    "truth": [
+      "docs/cli.rst",
+      "docs/tutorial/database.rst",
+      "examples/tutorial/flaskr/db.py",
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6,
+      "recall10": 0.6,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "docs/appcontext.rst",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.4,
+      "recall10": 0.8,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "99fa3c36abc03cd5b3407df34dce74e879ea377a",
+    "subject": "add --app, --env, --debug, and --env-file CLI options",
+    "truth": [
+      "src/flask/cli.py",
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "src/flask/app.py",
+      "src/flask/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "aa801c431ad1f979bce3ea1afbd88e7796ebfd7e",
+    "subject": "FlaskGroup can be nested",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "tests/templates/nested/nested.txt",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "4f03a769d44f6740490dd4ddf70e094c12a6090c",
+    "subject": "edit some cli messages",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/debughelpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "tests/test_apps/cliapp/message.txt",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    }
+  },
+  {
+    "sha": "9934528c8f7e3aa6f4a1c800cba439e5425a5093",
+    "subject": "Update send_from_directory docstring",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/app.py",
+      "src/flask/__init__.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "45174bf9a1e96e51ce589c7aa2c151249d1fdf11",
+    "subject": "use __init_subclass__ instead of metaclass for MethodView",
+    "truth": [
+      "src/flask/views.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "docs/views.rst",
+      "tests/test_views.py",
+      "docs/tutorial/views.rst",
+      "src/flask/json/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "bab5a65e6eaee20ac1706fc9439ee538f59e652f",
+    "subject": "rewrite class-based view docs",
+    "truth": [
+      "docs/views.rst",
+      "src/flask/views.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "docs/views.rst",
+      "tests/test_views.py",
+      "docs/tutorial/views.rst",
+      "examples/javascript/js_example/views.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "6e23239567efde1c2e272db87c53444d6c22a1bb",
+    "subject": "add View.init_every_request attribute",
+    "truth": [
+      "src/flask/views.py",
+      "tests/test_views.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "src/flask/app.py",
+      "docs/views.rst",
+      "docs/tutorial/views.rst",
+      "tests/test_views.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "96c97dec095f204b8a557c5ea804afdd329e3c43",
+    "subject": "deprecate before_first_request",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "tests/test_async.py",
+      "tests/test_basic.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.4,
+      "recall10": 0.6,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "3ba37d2afe6511c3f3153248f7342174bea5b131",
+    "subject": "fix uninstalled package tests under tox",
+    "truth": [
+      "src/flask/scaffold.py",
+      "tests/test_instance_config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "tox.ini",
+      "docs/patterns/packages.rst",
+      "tests/test_instance_config.py",
+      "docs/extensiondev.rst",
+      "requirements/dev.txt"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "88bcf78439b66b5fcba9f4d3a1c56307f98dbf1d",
+    "subject": "instance_path for namespace packages uses path closest to submodule",
+    "truth": [
+      "src/flask/scaffold.py",
+      "tests/test_instance_config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "tests/test_instance_config.py",
+      "docs/patterns/packages.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "3351a8677e5bd1e1b8cfe2860b73b3422cde4f31",
+    "subject": "add errorhandler type check tests",
+    "truth": [
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.16666666666666666
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "src/flask/globals.py",
+      "tests/test_user_error_handler.py",
+      "docs/cli.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "81be290ec8889c157c84bc7ce857f883396c5daf",
+    "subject": "view function is actually type checked",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py",
+      "tests/typing/typing_route.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.2,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "docs/tutorial/views.rst",
+      "docs/views.rst",
+      "tests/test_views.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.09090909090909091
+    }
+  },
+  {
+    "sha": "72cae9ce2b6a5a296b7328df8dd73240e14718e6",
+    "subject": "Remove extra backtick",
+    "truth": [
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.05
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/sessions.py",
+      "src/flask/cli.py",
+      "setup.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.03125
+    }
+  },
+  {
+    "sha": "61f62e6005f72c44a90026e2589b6bc5234f2f24",
+    "subject": "access flask types through namespace alias",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/ctx.py",
+      "src/flask/scaffold.py",
+      "src/flask/views.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.4,
+      "recall10": 0.6,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/ctx.py",
+      "src/flask/signals.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.2,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "8cb950671f39c64707b6aaebfc60d7a8f1157da5",
+    "subject": "use bound typevar to accept Flask and Werkzeug Response classes",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.05263157894736842
+    }
+  },
+  {
+    "sha": "1232d698600e11dcb83bb5dc349ca785eae02d2f",
+    "subject": "inline conditional imports for cli behaviors",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "src/flask/app.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "a406c297aafa28074d11ec6fd27c246c70418cb4",
+    "subject": "apply setupmethod consistently",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "docs/license.rst",
+      "docs/signals.rst",
+      "examples/tutorial/flaskr/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "eb36135cfe6a17350617e47b70b9ad383206eded",
+    "subject": "always warn on blueprint setupmethod after registration",
+    "truth": [
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "docs/blueprints.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "69e2300608497bba103fd05735c878c0d642dd68",
+    "subject": "use app.url_for as template global",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "src/flask/helpers.py",
+      "src/flask/blueprints.py",
+      "tests/test_helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "39f93632964ecabfcb9c1980e2add922098aad80",
+    "subject": "finish moving url_for to app",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "92acd05d9bd33419ab885e4472b28a1d5cc15d2e",
+    "subject": "add url_for method to app",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "src/flask/app.py",
+      "tests/test_helpers.py",
+      "src/flask/wrappers.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "fac630379d31baaa1667894c2b5613304285a4bb",
+    "subject": "update app.redirect docs",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/debughelpers.py",
+      "src/flask/helpers.py",
+      "docs/patterns/favicon.rst",
+      "docs/testing.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "eb5dd9f5ef255c578cbbe13c1cb4dd11389d5519",
+    "subject": "add aborter object to app",
+    "truth": [
+      "src/flask/__init__.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.5,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/globals.py",
+      "src/flask/app.py",
+      "src/flask/json/__init__.py",
+      "src/flask/ctx.py",
+      "src/flask/sessions.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.037037037037037035
+    }
+  },
+  {
+    "sha": "fdab801fbbd9de5adbdb3320ca4a1cb116c892f5",
+    "subject": "add redirect method to app",
+    "truth": [
+      "src/flask/__init__.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "tests/test_helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.75,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/debughelpers.py",
+      "src/flask/testing.py",
+      "src/flask/globals.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "1e5dd430223369d13ea94ffffe22bca53a98e730",
+    "subject": "refactor error checks in register_error_handler",
+    "truth": [
+      "src/flask/scaffold.py",
+      "tests/test_basic.py",
+      "tests/test_user_error_handler.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "tests/test_user_error_handler.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "8ddbad9ccdc176b9d57a4aff0076c1c58c455318",
+    "subject": "Fix linting error.",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    },
+    "anvilTop5": [
+      "tests/test_user_error_handler.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "src/flask/wrappers.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.03225806451612903
+    }
+  },
+  {
+    "sha": "5050a18a0057df4cda6f6b00483d12d29cb59239",
+    "subject": "evaluate --cert before --key",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/ctx.py",
+      "tests/test_cli.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "eede1a3685e21deaeb6686e9de9b76a73b6a510c",
+    "subject": "fix annotation for json.loads",
+    "truth": [
+      "src/flask/json/__init__.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/json/tag.py",
+      "tests/test_json.py",
+      "tests/test_json_tag.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "41aaaf7fa07f28ef15fd1d343142e96440889a8b",
+    "subject": "clean up unused function from prefixed_env pr",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/app.py",
+      "src/flask/cli.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "4eb5e9455b2a8f15f3dc5065a47f8e43ac47e539",
+    "subject": "more from_prefixed_env features",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/config.py",
+      "tests/test_config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "08a283af5efc999d4f1e29275317a5c0c05c6f7b",
+    "subject": "Allow loading of environment variables into the config",
+    "truth": [
+      "docs/config.rst",
+      "src/flask/config.py",
+      "tests/test_config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/app.py",
+      "tests/test_instance_config.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "81c7ff7f8db09b5d609a09722785f70ec6f7af68",
+    "subject": "update tests for relative redirects",
+    "truth": [
+      "docs/tutorial/tests.rst",
+      "examples/tutorial/tests/test_auth.py",
+      "examples/tutorial/tests/test_blog.py",
+      "src/flask/wrappers.py",
+      "tests/test_regression.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "docs/blueprints.rst",
+      "docs/testing.rst",
+      "docs/design.rst",
+      "src/flask/testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.4,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "6578b493c8c8d5d9b4135cb964dbbc43318cfb12",
+    "subject": "better override for json BadRequest error",
+    "truth": [
+      "src/flask/wrappers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/wrappers.py",
+      "src/flask/json/__init__.py",
+      "src/flask/app.py",
+      "tests/test_json.py",
+      "tests/test_user_error_handler.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "0a300d007d3a5ef902e0b3c91f6189267fbed182",
+    "subject": "better replacement of original form KeyError",
+    "truth": [
+      "src/flask/debughelpers.py",
+      "src/flask/wrappers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "tests/test_user_error_handler.py",
+      "src/flask/debughelpers.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/json/tag.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "c9a1f7ad6545c9cc27c41c385f1d4cd9c7cf1a98",
+    "subject": "don't intercept 307/308 routing redirects",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/debughelpers.py",
+      "tests/test_basic.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/debughelpers.py",
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/helpers.py",
+      "src/flask/views.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "faaa5594b2406260c3e4197fa6e80c3d19b6ab23",
+    "subject": "accurate type for __exit__",
+    "truth": [
+      "src/flask/ctx.py",
+      "src/flask/testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/testing.py",
+      "tests/test_testing.py",
+      "src/flask/app.py",
+      "docs/testing.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "190dd4df86874495f56bb088fbd0cb1d9f0e77a0",
+    "subject": "don't use AnyStr for ResponseValue type",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/json/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "88863288225d5ee13a79c463f2a39391b6a52c61",
+    "subject": "relax errorhandler function arg type",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.75,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/wrappers.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.25,
+      "recall10": 0.25,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "b707bf443afe856b77e09b7a41592f10d46e02df",
+    "subject": "Preserve HttpOnly flag when deleting session cookie",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_session_interface.py",
+      "src/flask/app.py",
+      "src/flask/testing.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "af34b8c9e7adbf0b060738fee12f04c1e46a98fd",
+    "subject": "Add better types for app decorators",
+    "truth": [
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "src/flask/app.py",
+      "docs/cli.rst",
+      "src/flask/globals.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "aa13521d42bfdb66bb0d89005cbe54a84eaa4fda",
+    "subject": "lazy loading preserves click context",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "tests/templates/context_template.html",
+      "src/flask/cli.py",
+      "src/flask/testing.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "6f79cb8a23467aa01f94f6ad53790f468ba77c76",
+    "subject": "Fix typing on `app.session_interface`",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_session_interface.py",
+      "src/flask/globals.py",
+      "src/flask/typing.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.125
+    }
+  },
+  {
+    "sha": "beae1249f7e580779ae18d2d831f7ec51e5aff98",
+    "subject": "add `exclude-patterns` option to `flask run`",
+    "truth": [
+      "docs/cli.rst",
+      "src/flask/cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "docs/tutorial/install.rst",
+      "src/flask/debughelpers.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "1be65b1b699b0512e3b38e3e05d42d083cfd12f1",
+    "subject": "overriding FlaskClient.open works with redirects",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/testing.py",
+      "src/flask/app.py",
+      "docs/testing.rst",
+      "tests/test_testing.py",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9a134da31bafc12d31f75474a4b354c80545b9b5",
+    "subject": "Match typing declaration with implementation.",
+    "truth": [
+      "src/flask/templating.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/wrappers.py",
+      "src/flask/app.py",
+      "src/flask/sessions.py",
+      "src/flask/blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.025
+    }
+  },
+  {
+    "sha": "751d85f3de3f726446bb12e4ddfae885a6645ba1",
+    "subject": "cli: use importlib.metadata instead of pkg_resources",
+    "truth": [
+      "setup.py",
+      "src/flask/cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "aab064fee164aa9f0ee35ba3065b031655888ce5",
+    "subject": "remove deprecated as_tuple parameter from test_client",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "b1a00ebc4c6f15055ddf15ecb17243a089f52a60",
+    "subject": "update error message for after_this_request and copy_current_request_context",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "src/flask/scaffold.py",
+      "tests/test_testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "633449a36c959d25577799eb3da76005a803d5cd",
+    "subject": "fix error message",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "tests/test_user_error_handler.py",
+      "src/flask/helpers.py",
+      "src/flask/signals.py",
+      "src/flask/logging.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.016666666666666666
+    }
+  },
+  {
+    "sha": "a841cfabb58d3c1ac1d11b09353f458e759a63c2",
+    "subject": "Only use a custom JSONDecoder if needed",
+    "truth": [
+      "src/flask/json/__init__.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "tests/test_json.py",
+      "docs/api.rst",
+      "tests/test_json_tag.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "c8ddb948f6af35998f99521627396c0ea7fa62c1",
+    "subject": "deprecate RequestContext.g",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "tests/test_converters.py",
+      "tests/test_testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "47e4bd5059fbe1e7f39b56f52c821ba0b39ded1c",
+    "subject": "copy_current_request_context can decorate async functions",
+    "truth": [
+      "src/flask/ctx.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/ctx.py",
+      "src/flask/app.py",
+      "tests/test_basic.py",
+      "tests/test_testing.py",
+      "tests/test_converters.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "282d8621dd4bdc3ee74e0d67b180e03f5f23899f",
+    "subject": "document session lifetime and possible concurrency issues",
+    "truth": [
+      "src/flask/sessions.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/sessions.py",
+      "tests/test_session_interface.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "docs/security.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "e679a85b80df354f8632f8ab3e40135f16f5e6d0",
+    "subject": "made ImportError verbose in cli.py",
+    "truth": [
+      "src/flask/cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "tests/test_user_error_handler.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "46b39e2698697408c6f8f8693e526cd1bb085684",
+    "subject": "fix errorhandler type check",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.14285714285714285
+    },
+    "anvilTop5": [
+      "src/flask/globals.py",
+      "src/flask/wrappers.py",
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/json/tag.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "564bb27efa8638c40e1dcfdccda5832ba42e9929",
+    "subject": "deprecate as_tuple",
+    "truth": [
+      "src/flask/testing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.2
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/templating.py",
+      "src/flask/app.py",
+      "src/flask/json/tag.py",
+      "src/flask/testing.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "15a3e82823c894185771486510027a65295bcf94",
+    "subject": "extend deprecation for renamed send_file params",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "tests/test_basic.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "48f2afbf900560af061d50c73e4d3f9422ce4dbe",
+    "subject": "same blueprint cannot be registered with same name",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "f8cdc78ce10f32a46390799e7ac16d231fb35803",
+    "subject": "remove deprecated total_seconds",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "tests/test_async.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "b7501776a12c15e64b6cdac1e3b903a00df7d285",
+    "subject": "remove deprecated safe_join",
+    "truth": [
+      "docs/api.rst",
+      "src/flask/__init__.py",
+      "src/flask/helpers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "src/flask/__init__.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "218534a9f20c98600e7c41321edb4063a8e158ca",
+    "subject": "remove deprecated json encoding parameter",
+    "truth": [
+      "src/flask/json/__init__.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "tests/test_json.py",
+      "tests/test_json_tag.py",
+      "src/flask/json/tag.py",
+      "docs/api.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "2bd7aed1a4e257b00df4282b96e7e96edc4567f6",
+    "subject": "remove deprecated config.from_json",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/json/__init__.py",
+      "tests/test_json.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "e21e003f62b57c35e1832c0bf14e9cd27f4e5bea",
+    "subject": "remove deprecated script_info factory arg",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "docs/tutorial/factory.rst",
+      "examples/tutorial/tests/test_factory.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "1b552d0b0163e1c1ae3d4895438a9ce2b2bc098e",
+    "subject": "remove ContextVar compat",
+    "truth": [
+      "docs/async-await.rst",
+      "docs/installation.rst",
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "tests/templates/context_template.html",
+      "src/flask/sessions.py",
+      "src/flask/globals.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "e609dddd604bd8c808145973d91dcb8bb56a9906",
+    "subject": "drop Python 3.6",
+    "truth": [
+      "docs/cli.rst",
+      "docs/extensiondev.rst",
+      "docs/installation.rst",
+      "src/flask/json/__init__.py",
+      "tests/test_async.py",
+      "tests/test_basic.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.16666666666666666,
+      "recall10": 0.16666666666666666,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "examples/tutorial/flaskr/schema.sql",
+      "docs/tutorial/database.rst",
+      "src/flask/json/__init__.py",
+      "src/flask/app.py",
+      "docs/index.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.16666666666666666,
+      "mrr": 0.1111111111111111
+    }
+  },
+  {
+    "sha": "3f6cdbd8b35f2b887dddbdac5ef6461833b6dd3b",
+    "subject": "use similar code for all callback-applying methods",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/cli.py",
+      "src/flask/blueprints.py",
+      "src/flask/sessions.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.041666666666666664
+    }
+  },
+  {
+    "sha": "166a2a6207027bff07fdfc5590ce04f9b37e9e8f",
+    "subject": "Fix callback order for nested blueprints",
+    "truth": [
+      "src/flask/app.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "22933a8cb424ffd65f2bec5bbfdbfa7e42105470",
+    "subject": "fix docs for Flask.test_client_class",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/testing.py",
+      "src/flask/app.py",
+      "tests/test_testing.py",
+      "docs/testing.rst",
+      "src/flask/wrappers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "6a4bf9eec13e035cf10ecc16e462049b4c967e41",
+    "subject": "use exception chaining",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/cli.py",
+      "src/flask/debughelpers.py",
+      "src/flask/scaffold.py",
+      "src/flask/signals.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.8,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/wrappers.py",
+      "src/flask/logging.py",
+      "src/flask/ctx.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.2,
+      "recall10": 0.4,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "aa1d34dc51fc63dabc46f388822ba73b15d3ef97",
+    "subject": "Fix grammatical error",
+    "truth": [
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.1111111111111111
+    },
+    "anvilTop5": [
+      "tests/test_user_error_handler.py",
+      "src/flask/app.py",
+      "src/flask/globals.py",
+      "src/flask/wrappers.py",
+      "src/flask/debughelpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07692307692307693
+    }
+  },
+  {
+    "sha": "9f0da9b770abfe3376ca0bbb09c535b42071feeb",
+    "subject": "cli loader handles kwargs in app factory",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "docs/tutorial/factory.rst",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "aa6dd09c2cab5eb15a45d73b5ade24b7b4131c5a",
+    "subject": "correctly handle raising deferred errors in cli lazy loading",
+    "truth": [
+      "src/flask/cli.py",
+      "tests/test_cli.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/cli.py",
+      "tests/test_cli.py",
+      "docs/cli.rst",
+      "tests/test_user_error_handler.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "892ae955093cc3b7925230ff7bc346a6afb14f5d",
+    "subject": "jsonify encodes decimal to str",
+    "truth": [
+      "src/flask/json/__init__.py",
+      "tests/test_json.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/app.py",
+      "src/flask/__init__.py",
+      "src/flask/debughelpers.py",
+      "src/flask/typing.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9a2adfba4d4310b005c222fcdfb85e96e3e6661d",
+    "subject": "static_folder can be a pathlib.Path",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py",
+      "docs/tutorial/static.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "e18ed45c8863ac645f3ce17a155034b8384e726f",
+    "subject": "document return value for config loading methods",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/config.py",
+      "docs/config.rst",
+      "tests/test_config.py",
+      "src/flask/json/__init__.py",
+      "src/flask/app.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "6e1b72096d5ae1e2cc4d8592ff8271b62548d9cf",
+    "subject": "Fix typo in docs",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0
+    },
+    "anvilTop5": [
+      "docs/quickstart.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.014925373134328358
+    }
+  },
+  {
+    "sha": "a44c7228600044f530856a33c7da147c528644ff",
+    "subject": "Fix registering a blueprint twice with differing names",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "6a4e7e948d7e5bd5b2b76c1b7f1a0392644bee1e",
+    "subject": "improve typing for `app.errorhandler` decorator",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.75,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/typing.py",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "docs/blueprints.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.75,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "270eb2df2a1606383f50ff079a32240966b43fbc",
+    "subject": "Support View and MethodView instances with async handlers",
+    "truth": [
+      "docs/async-await.rst",
+      "src/flask/views.py",
+      "tests/test_async.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/views.py",
+      "docs/views.rst",
+      "tests/test_views.py",
+      "docs/tutorial/views.rst",
+      "docs/async-await.rst"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "491ea32803cb05fb8fc4dfb81ec6c96f94529eb0",
+    "subject": "Optimize loop in Flask._find_error_handler()",
+    "truth": [
+      "src/flask/app.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/blueprints.py",
+      "tests/test_user_error_handler.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "8e589daaf2cec6a10262b8ff88801127f2fa14fd",
+    "subject": "Fix typing of jinja decorators",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/views.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.024390243902439025
+    }
+  },
+  {
+    "sha": "a960236117442bec67f89c30dfa014e05483da5a",
+    "subject": "Fix type annotation for `before_request` and `before_app_request` decorators",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 0.6666666666666666,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "tests/test_blueprints.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.3333333333333333,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "f7adb2c813c5c10dcab5bc81ee173a6f9fbd406a",
+    "subject": "improve typing for `teardown_request`",
+    "truth": [
+      "src/flask/typing.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "src/flask/scaffold.py",
+      "src/flask/app.py",
+      "src/flask/typing.py",
+      "src/flask/blueprints.py",
+      "src/flask/helpers.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.08333333333333333
+    }
+  },
+  {
+    "sha": "7ab934f6bc2380a322c77d92c0b6cfd10b7de991",
+    "subject": "improve typing for `stream_with_context`",
+    "truth": [
+      "src/flask/helpers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/helpers.py",
+      "tests/test_helpers.py",
+      "src/flask/typing.py",
+      "src/flask/app.py",
+      "docs/patterns/streaming.rst"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "3257b7574e7f010686a617197e0fb4596986f7f7",
+    "subject": "Fix blueprint renaming",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.25
+    }
+  },
+  {
+    "sha": "714b0a467acab54091d8aeb73403d808abfbcf5b",
+    "subject": "Fix blueprint self registration",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "9409be6e34e153bfdb0aac2c9eb7f60110109172",
+    "subject": "warn when registering same blueprint with same name",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "63b306743fccdd52079034e82cbbeee182a4361d",
+    "subject": "changelog for blueprint registered name",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 0.5,
+      "mrr": 0.5
+    }
+  },
+  {
+    "sha": "67b0b7e30d2304f628e966896748032022ac0257",
+    "subject": "cache blueprint path calculation",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/helpers.py",
+      "src/flask/wrappers.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 1,
+      "mrr": 0.25
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.3333333333333333,
+      "mrr": 0.3333333333333333
+    }
+  },
+  {
+    "sha": "c2920e2bd98cdb3dcccc2868c25b695d4780c620",
+    "subject": "Bugfix allow blueprints to be registered with a different name",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 1,
+      "mrr": 0.16666666666666666
+    }
+  },
+  {
+    "sha": "141fde1d8ec8663b4be98777750d2f58c6fe44ad",
+    "subject": "Bugfix blueprint naming",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/wrappers.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.6666666666666666,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "docs/blueprints.rst",
+      "tests/test_blueprints.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0.6666666666666666,
+      "mrr": 0.125
+    }
+  },
+  {
+    "sha": "99afbb277d25d3b052e00b9a8da216054d51d62a",
+    "subject": "Fix blueprint nested url_prefix",
+    "truth": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "tests/test_blueprints.py",
+      "docs/blueprints.rst",
+      "src/flask/app.py",
+      "src/flask/scaffold.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "10a36cb60e10594aa5dbf3c5aba6abbd5f6fcd70",
+    "subject": "Improve decorator factory type signatures",
+    "truth": [
+      "src/flask/app.py",
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.3333333333333333,
+      "recall10": 0.6666666666666666,
+      "mrr": 0.3333333333333333
+    },
+    "anvilTop5": [
+      "docs/tutorial/factory.rst",
+      "src/flask/cli.py",
+      "src/flask/app.py",
+      "examples/tutorial/tests/test_factory.py",
+      "tests/test_apps/cliapp/factory.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.07142857142857142
+    }
+  },
+  {
+    "sha": "8796b2a784bc45fcc6865cd80b2cba0601448727",
+    "subject": "Use TypeVar for setupmethod()",
+    "truth": [
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "src/flask/globals.py",
+      "src/flask/wrappers.py",
+      "src/flask/sessions.py"
+    ],
+    "bm25": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    }
+  },
+  {
+    "sha": "bf982718cf30615f2dd17fa71fe17d565ebb1d3e",
+    "subject": "Make add_url_rule() signature consistent",
+    "truth": [
+      "src/flask/blueprints.py",
+      "src/flask/scaffold.py"
+    ],
+    "split": "test",
+    "anvil": {
+      "hit1": 1,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 1
+    },
+    "anvilTop5": [
+      "src/flask/blueprints.py",
+      "src/flask/app.py",
+      "src/flask/scaffold.py",
+      "src/flask/helpers.py",
+      "tests/test_blueprints.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 0,
+      "recall5": 0.5,
+      "recall10": 1,
+      "mrr": 0.2
+    }
+  },
+  {
+    "sha": "10425fb9b13d977128f18c1051fb93edc9aee2de",
+    "subject": "re-add deprecated Config.from_json method",
+    "truth": [
+      "src/flask/config.py"
+    ],
+    "split": "dev",
+    "anvil": {
+      "hit1": 0,
+      "hit5": 1,
+      "all5": 1,
+      "recall5": 1,
+      "recall10": 1,
+      "mrr": 0.5
+    },
+    "anvilTop5": [
+      "src/flask/json/__init__.py",
+      "src/flask/config.py",
+      "tests/test_json.py",
+      "docs/config.rst",
+      "tests/test_config.py"
+    ],
+    "bm25": {
+      "hit1": 0,
+      "hit5": 0,
+      "all5": 0,
+      "recall5": 0,
+      "recall10": 0,
+      "mrr": 0.04
+    }
+  }
+]

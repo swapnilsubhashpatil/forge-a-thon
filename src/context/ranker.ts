@@ -37,7 +37,13 @@ interface Signals {
   reasons: string[];
 }
 
-const WEIGHTS = { path: 3, bm25: 2, sibling: 2, defines: 3, active: 1.5, rank: 1, companion: 0.6 };
+const WEIGHTS = { path: 3, bm25: 2, sibling: 2, defines: 3, active: 1.5, rank: 1, companion: 0.6, coChange: 0.6 };
+
+/** Repository housekeeping (dependency pins, CI, changelogs, community files): rarely where a change belongs. */
+const META_FILE =
+  /(^|\/)(requirements[^/]*\/|\.github\/|\.circleci\/)|(^|\/)(CHANGES|CHANGELOG|HISTORY|CODE_OF_CONDUCT|CONTRIBUTING|LICENSE|SECURITY|AUTHORS)[^/]*$|(^|\/)requirements[^/]*\.(txt|in)$|\.(lock|in)$|(^|\/)(tox\.ini|setup\.cfg|pyproject\.toml|package-lock\.json|\.pre-commit-config\.yaml)$/;
+/** Words that mean the request is about that housekeeping, so it is not demoted. */
+const META_TERMS = new Set(["requirement", "requirements", "dependency", "dependencies", "depend", "pin", "upgrade", "ci", "workflow", "github", "action", "actions", "tox", "pyproject", "changelog", "changes", "contributing", "license", "release", "version", "packaging", "build"]);
 const SYNONYMS: Record<string, string[]> = {
   app: ["application"],
   application: ["app"],
@@ -67,6 +73,7 @@ export function rankFiles(index: WorkspaceIndex, query: RankQuery): RankedFile[]
   const pathIdf = pathFrequencies(files);
   const active = new Set((query.activeFiles ?? []).map(normalize));
   const wantsAuxiliary = tokens.some((token) => INTENT_TERMS.has(token.term));
+  const wantsMeta = tokens.some((token) => META_TERMS.has(token.term));
 
   const signals = files.map((file): Signals => {
     const { base, dirs } = pathTerms(file.path);
@@ -118,6 +125,7 @@ export function rankFiles(index: WorkspaceIndex, query: RankQuery): RankedFile[]
       WEIGHTS.active * (signal.active ? 1 : 0);
     if (signal.file.path.startsWith(".")) signal.score *= 0.5;
     if (!wantsAuxiliary && isAuxiliary(signal.file.path)) signal.score *= 0.6;
+    if (!wantsMeta && META_FILE.test(signal.file.path)) signal.score *= 0.3;
   }
 
   applyPageRank(signals);
@@ -128,13 +136,12 @@ export function rankFiles(index: WorkspaceIndex, query: RankQuery): RankedFile[]
     if (strongPath || signal.siblings.length || signal.defines.length) signal.role = "target";
     signal.reasons = describe(signal, byPath);
   }
-  addCompanions(signals, byPath);
+  addCompanions(signals, byPath, index);
   pinMentions(query.mentions ?? [], byPath);
 
   const queryTerms = [...plain, ...compounds, ...synonyms];
-  return signals
-    .filter((signal) => signal.score > 0.05)
-    .sort((a, b) => b.score - a.score || compare(a.file.path, b.file.path))
+  const sorted = signals.filter((signal) => signal.score > 0.05).sort((a, b) => b.score - a.score || compare(a.file.path, b.file.path));
+  return sorted
     .slice(0, query.limit ?? 15)
     .map((signal) => ({
       path: signal.file.path,
@@ -242,7 +249,7 @@ function strongest(candidates: Signals[], self: string): string | undefined {
   return best?.file.path;
 }
 
-function addCompanions(signals: Signals[], byPath: Map<string, Signals>): void {
+function addCompanions(signals: Signals[], byPath: Map<string, Signals>, index: WorkspaceIndex): void {
   const ordered = [...signals].sort((a, b) => b.score - a.score || compare(a.file.path, b.file.path));
   const top = ordered[0]?.score ?? 0;
   const parents = ordered
@@ -256,6 +263,20 @@ function addCompanions(signals: Signals[], byPath: Map<string, Signals>): void {
       companion.score = score;
       companion.role = "target";
       companion.reasons.unshift(`${kind} companion of ${basename(parent.file.path)}`);
+    }
+    // Co-change: files that changed in the same commits as the parent, weighted by how often (share of its commits).
+    const changes = index.changeCount.get(parent.file.path) ?? 0;
+    const partners = index.coChange.get(parent.file.path);
+    if (!partners || changes < 3) continue;
+    for (const [path, together] of partners) {
+      const candidate = byPath.get(path);
+      const share = together / changes;
+      if (!candidate || together < 2 || share < 0.12 || META_FILE.test(path)) continue;
+      const score = parent.score * WEIGHTS.coChange * Math.min(1, share * 2.5) + candidate.score * 0.25;
+      if (score <= candidate.score) continue;
+      candidate.score = score;
+      candidate.role = "target";
+      candidate.reasons.unshift(`changes with ${basename(parent.file.path)} (${together} of ${changes} commits)`);
     }
   }
 }

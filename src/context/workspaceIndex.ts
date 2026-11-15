@@ -42,6 +42,10 @@ export class WorkspaceIndex {
   private contents = new Map<string, { mtimeMs: number; text: string }>();
   private modules = new Map<string, string>();
   private realRoot?: Promise<string>;
+  /** How often each pair of files changed in the same commit (git history), for the co-change signal. */
+  coChange = new Map<string, Map<string, number>>();
+  /** How many commits touched each file. */
+  changeCount = new Map<string, number>();
   private identifierCache?: { version: number; names: Set<string> };
 
   constructor(root: string) {
@@ -57,6 +61,7 @@ export class WorkspaceIndex {
     this.modules = moduleMap([...this.parsed.keys()]);
     for (const parsed of this.parsed.values()) parsed.entry.imports = this.resolveImports(parsed);
     this.entries = new Map([...this.entries].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+    await this.loadCoChange();
     this.version++;
   }
 
@@ -175,6 +180,35 @@ export class WorkspaceIndex {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Co-change from the last commits (Aider and others mine history the same way): tests and docs that keep changing
+   * with a file are its real companions even when their names do not match (Flask's app.py -> tests/test_basic.py).
+   * Commits touching many files are skipped as sweeping refactors. No git, or a shallow clone, just means no signal.
+   */
+  private async loadCoChange(commits = 1500): Promise<void> {
+    this.coChange = new Map();
+    this.changeCount = new Map();
+    try {
+      const { stdout } = await run("git", ["log", "--no-merges", `-n${commits}`, "--name-only", "--format=%x1e"], {
+        cwd: this.root,
+        maxBuffer: 64 * 1024 * 1024,
+        windowsHide: true,
+      });
+      for (const record of stdout.split("\x1e")) {
+        const files = [...new Set(record.split(/\r?\n/).map((line) => line.trim()).filter((path) => path && this.entries.has(path)))];
+        if (files.length < 1 || files.length > 12) continue;
+        for (const file of files) {
+          this.changeCount.set(file, (this.changeCount.get(file) ?? 0) + 1);
+          const partners = this.coChange.get(file) ?? new Map<string, number>();
+          for (const other of files) if (other !== file) partners.set(other, (partners.get(other) ?? 0) + 1);
+          this.coChange.set(file, partners);
+        }
+      }
+    } catch {
+      // Not a git repository or git unavailable.
     }
   }
 
