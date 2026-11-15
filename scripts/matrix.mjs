@@ -121,6 +121,16 @@ function metrics(report) {
     usage,
     cacheHit: usage.input ? usage.cached / usage.input : 0,
     seconds: (report.timings?.taskB ?? 0) / 1000,
+    // Context and state: did Anvil's prediction contain what the agent ended up editing, and how much did it look outside it.
+    predictedShare: report.taskB?.filesChanged ? (report.taskB.files.filter((file) => top5.includes(file)).length / report.taskB.filesChanged) : undefined,
+    readsOutsidePack: context?.fetched?.length ?? 0,
+    readCalls: tools.read_file ?? 0,
+    // Feed-forward guardrails that fired (visible in tool results the model saw).
+    loopNudges: steps.filter((step) => /Loop warning/.test(step.output ?? "")).length,
+    scopeFlags: steps.filter((step) => /The user was warned about/.test(step.output ?? "")).length,
+    groundingFlags: steps.filter((step) => /Grounding check/.test(step.output ?? "")).length,
+    gateRejections: steps.filter((step) => step.name === "finish_task" && /Not accepted/.test(step.output ?? "")).length,
+    restore: report.checks?.restore ? report.checks.restore.ok === true : undefined,
     taskA: report.checks ? report.checks.taskA?.ok === true : undefined,
     taskC: report.checks ? report.checks.taskC?.ok === true : undefined,
     cancel: report.checks ? report.checks.cancel?.ok === true : undefined,
@@ -129,12 +139,14 @@ function metrics(report) {
 
 function aggregate() {
   if (!existsSync(runsDir)) throw new Error("no runs yet");
-  const rows = readdirSync(runsDir)
+  let rows = readdirSync(runsDir)
     .filter((file) => file.endsWith(".json"))
     .map((file) => {
       const [variant, model, n] = file.replace(/\.json$/, "").split("__");
       return { variant, model: model.replace("_", "/"), run: Number(n), ...metrics(JSON.parse(readFileSync(join(runsDir, file), "utf8"))) };
     });
+  // --only <regex> limits the report to providers that actually answered (see agent-mode-findings.md).
+  if (args.only) rows.splice(0, rows.length, ...rows.filter((row) => new RegExp(args.only).test(row.model)));
   writeFileSync(join(root, "docs/benchmarks/agent-mode.json"), JSON.stringify(rows, null, 2));
 
   const pct = (list, pick) => (list.length ? `${list.filter(pick).length}/${list.length}` : "–");
@@ -171,6 +183,31 @@ function aggregate() {
   lines.push(`| Task B: tool calls per run (avg) | ${avg(before, (r) => r.toolCalls).toFixed(1)} | ${avg(after, (r) => r.toolCalls).toFixed(1)} |`);
   lines.push(`| Task B: files changed (avg) | ${avg(before, (r) => r.filesChanged).toFixed(1)} | ${avg(after, (r) => r.filesChanged).toFixed(1)} |`);
   lines.push(`| Runs with harness errors (no report) | ${rows.filter((r) => r.variant === "main" && r.harnessError).length} | ${rows.filter((r) => r.variant === "branch" && r.harnessError).length} |`);
+
+  const traitRow = (label, pick, format = (v) => v) => lines.push(`| ${label} | ${format(pick(before))} | ${format(pick(after))} |`);
+  const share = (list, pick) => pct(list, pick);
+  const mean = (list, pick) => (list.length ? (list.reduce((sum, row) => sum + (pick(row) ?? 0), 0) / list.length).toFixed(2) : "–");
+  const withB = (list) => list.filter((row) => row.filesChanged > 0);
+  lines.push("", "## By harness trait", "", "| Trait / metric | Before | After |", "|---|---|---|");
+  lines.push("| **Objective verification loops** | | |");
+  traitRow("Ended Task B with untested edits", (l) => share(l, (r) => r.untestedEdits));
+  traitRow("Finished with a verified claim backed by a passing check", (l) => share(l, (r) => r.verifiedFinish));
+  traitRow("Failed test runs per Task B", (l) => mean(l, (r) => r.failedTestRuns));
+  traitRow("finish_task claims rejected by the gate", (l) => mean(l, (r) => r.gateRejections));
+  lines.push("| **Feed-forward guardrails** | | |");
+  traitRow("Scope warnings shown to the model per run", (l) => mean(l, (r) => r.scopeFlags));
+  traitRow("Grounding (undefined name) warnings per run", (l) => mean(l, (r) => r.groundingFlags));
+  traitRow("Loop nudges per run", (l) => mean(l, (r) => r.loopNudges));
+  lines.push("| **Context and state management** | | |");
+  traitRow("Edited files that were in Anvil's top-5 prediction", (l) => mean(withB(l), (r) => r.predictedShare));
+  traitRow("read_file calls per Task B", (l) => mean(l, (r) => r.readCalls));
+  traitRow("Files read outside the context pack", (l) => mean(l, (r) => r.readsOutsidePack));
+  traitRow("Input tokens per Task B", (l) => Math.round(avg(l, (r) => r.usage?.input ?? 0)).toLocaleString("en-US"));
+  traitRow("Prompt-cache hit", (l) => `${Math.round(avg(l, (r) => r.cacheHit ?? 0) * 100)}%`);
+  lines.push("| **Safe execution and harness reliability** | | |");
+  traitRow("Cancel left the tree clean", (l) => share(l, (r) => r.cancel === true));
+  traitRow("Dead endpoint → automatic failover", (l) => share(l, (r) => r.taskC === true));
+  traitRow("Restore (message + code) left the tree clean", (l) => share(l.filter((r) => r.restore !== undefined), (r) => r.restore === true));
 
   lines.push(
     "",
