@@ -22,6 +22,8 @@ export interface ContextReport {
   live?: ContextLive;
   /** Detected test command offered to the agent, if any. */
   verify?: string;
+  /** Project rule files included (AGENTS.md, CLAUDE.md, …). */
+  rules?: string[];
   /** What the user attached (selections, terminal output), shown as "attached by you". */
   attachments?: Array<{ label: string; kind: Attachment["kind"]; tokens: number }>;
   /** Line ranges (1-based, inclusive) the pack showed the agent; whole-file mentions use end = Infinity. */

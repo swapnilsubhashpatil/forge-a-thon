@@ -192,6 +192,13 @@ export function ContextCard({ report, defaultOpen }: { report: ContextReport; de
               </ul>
             </div>
           )}
+          {(report.rules?.length ?? 0) > 0 && (
+            <p className="mt-1.5 flex items-center gap-1 px-2 text-xs text-muted">
+              <Icon name="book" />
+              <span>project rules from</span>
+              <span className="font-mono text-fg">{report.rules!.join(", ")}</span>
+            </p>
+          )}
           {report.verify && (
             <p className="mt-1.5 flex items-center gap-1 px-2 text-xs text-muted">
               <Icon name="beaker" />
