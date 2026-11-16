@@ -35,3 +35,14 @@ test("reset after an accepted edit clears the history; different args never loop
   const varied = new LoopGuard();
   for (let i = 0; i < 6; i++) assert.equal(varied.record("read_file", { path: `f${i}.py` }, "x").action, "ok");
 });
+
+test("a repeated failing test with different wall times, alternating with finish_task, is caught", () => {
+  const guard = new LoopGuard();
+  const verdicts: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    verdicts.push(guard.record("run_command", { command: "pytest" }, `exit 1 · 1 failed · ${(0.8 + i / 10).toFixed(1)}s`).action);
+    verdicts.push(guard.record("finish_task", { verified: true }, "Not accepted: the last command exited with 1.").action);
+  }
+  assert.ok(verdicts.includes("nudge"));
+  assert.equal(verdicts.at(-1), "stop");
+});

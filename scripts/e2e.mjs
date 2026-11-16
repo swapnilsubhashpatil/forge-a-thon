@@ -11,9 +11,9 @@ if (!existsSync(flask)) throw new Error(`Flask checkout not found at ${flask}. S
 
 // The matrix builds the suite once and runs many copies in parallel, so it skips this step.
 if (!process.env.ANVIL_E2E_SKIP_BUILD) await build({
-  entryPoints: [join(root, "test/e2e/suite.ts")],
+  entryPoints: [join(root, `test/e2e/${process.env.ANVIL_E2E_SUITE ?? "suite"}.ts`)],
   bundle: true,
-  outfile: join(root, "dist/test/suite.js"),
+  outfile: join(root, `dist/test/${process.env.ANVIL_E2E_SUITE ?? "suite"}.js`),
   platform: "node",
   format: "cjs",
   external: ["vscode"],
@@ -26,6 +26,6 @@ await runTests({
   vscodeExecutablePath: process.env.VSCODE_PATH,
   // ANVIL_E2E_EXTENSION points at another build of Anvil (e.g. a worktree of main) to benchmark it with this suite.
   extensionDevelopmentPath: process.env.ANVIL_E2E_EXTENSION ?? root,
-  extensionTestsPath: join(root, "dist/test/suite.js"),
+  extensionTestsPath: join(root, `dist/test/${process.env.ANVIL_E2E_SUITE ?? "suite"}.js`),
   launchArgs: [workspace, "--disable-extensions", "--skip-welcome", "--skip-release-notes", ...(process.env.ANVIL_E2E_USER_DATA ? ["--user-data-dir", process.env.ANVIL_E2E_USER_DATA] : [])],
 });

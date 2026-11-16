@@ -79,3 +79,29 @@ Limits, stated plainly:
   200 real commits instead: [context-history.md](context-history.md) (test split hit@5 0.825 → 0.854, all@5 0.466 → 0.515).
 - Haiku used more tokens after (313k vs 268k: more tool calls); the overall drop comes from Sonnet, Opus and the GPT models.
 - Local 7–8B models still fail Tasks A–C on both builds; their "after" numbers are not meaningful.
+
+## Guard scenarios with a scripted model (16 Nov)
+
+`node scripts/e2e-guards.mjs` starts `scripts/fake-model.mjs` (an OpenAI-compatible server that misbehaves on purpose,
+registered in TrueForge as a custom provider) and drives the real extension, TrueForge and MCP tool server through
+`test/e2e/guards.ts`. Result: **9/9 pass**.
+
+| Scenario | What the scripted model does | Passes when |
+|---|---|---|
+| G3 + G2 (agent) | edits lines it never read, calling `get_secret_keys()` | the tool result it receives contains both the grounding and the "edited without reading" warning |
+| G2 (inline) | selection is `get_debug_flag`, edits `get_load_dotenv` | "outside selection" reaches the model |
+| M7 | repeats the same `read_file` | nudge at 3, turn stopped at 5, tree clean |
+| M8 | edits, then says "Done, it should work." | exactly one follow-up, a test run, `finish_task` verified |
+| M3 | one edit, two hunks; test rejects the first | the model receives "new baseline" and the current text |
+| M11 | slow reads; test sends a note mid-turn | the note arrives inside the next tool result, not as a new turn |
+| M10 | distinct searches past `iterationLimit=5` | no failover, notice, one wrap-up turn with `finish_task` |
+| Attachments | none | the selection is in the request and on the Context card |
+| M2 | starts a subagent through TrueForge's own tool; child edits, runs pytest, runs `git log` | edit and pytest refused as read-only, `git log` allowed |
+
+Bugs these scenarios found and fixed:
+1. **G2:** a one-line change just past the selection slack was treated as an insertion (one extra line of tolerance) and not flagged.
+2. **M7:** a failing test re-run alternating with rejected `finish_task` calls was not caught (wall time differed, `finish_task` was excluded). Timings are now ignored in the result hash and `finish_task` counts.
+3. **Settings:** changing `anvil.agent.iterationLimit` (or reasoning effort) mid-session never reached TrueForge; they are now part of the spec key.
+4. **M10:** the wrap-up turn continued from the turn *before* the one that hit the limit, so the agent summarised work it could not see. It now continues from the limited turn (TrueForge accepts this).
+
+Not covered end to end: the terminal-to-chat command (the test VS Code has no shell integration; formatting is unit-tested).

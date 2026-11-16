@@ -27,9 +27,10 @@ export function hunkSpan(hunk: Hunk): LineRange {
 export function flagHunks(hunks: Hunk[], fence: ScopeFence | undefined): Array<string | undefined> {
   if (!fence) return hunks.map(() => undefined);
   const slack = fence.slack ?? 0;
-  const inside = (span: LineRange) =>
-    fence.ranges.some((range) => span.start >= range.start - slack && span.end <= range.end + slack + (span.start === span.end ? 1 : 0));
-  return hunks.map((hunk) => (inside(hunkSpan(hunk)) ? undefined : fence.label));
+  // A pure insertion right after the range ("add a line at the end") is still inside; a one-line *change* is not.
+  const inside = (span: LineRange, insertion: boolean) =>
+    fence.ranges.some((range) => span.start >= range.start - slack && span.end <= range.end + slack + (insertion ? 1 : 0));
+  return hunks.map((hunk) => (inside(hunkSpan(hunk), hunk.removed === 0) ? undefined : fence.label));
 }
 
 /** Merges overlapping or touching ranges. */

@@ -246,7 +246,6 @@ export class TurnRunner {
 
   /** M7: appends a loop warning, or stops the turn, when the main agent keeps repeating an identical call. */
   private guardLoop(active: ActiveTurn, name: string, args: Record<string, unknown>, result: string): string {
-    if (name === "finish_task") return result;
     const verdict = this.loopGuard.record(name, args, result);
     if (verdict.action === "ok") return result;
     if (verdict.action === "nudge") {
@@ -559,7 +558,9 @@ export class TurnRunner {
   private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn, overrides: SpecOverrides): Promise<{ id: string; previousTurnId: string }> {
     const client = this.deps.client();
     const spec = this.deps.profiles.spec(request.mode, model, this.specOptions(overrides));
-    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, this.deps.settings().promptProfile ?? "auto"]);
+    // Everything that changes the spec must be in the key, or a settings change never reaches TrueForge mid-session.
+    const settings = this.deps.settings();
+    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, settings.promptProfile ?? "auto", settings.iterationLimit, settings.reasoningEffort ?? null]);
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;
@@ -639,7 +640,10 @@ export class TurnRunner {
             if (event.state.status === "cancelled") {
               return active.cancelled ? { kind: "cancelled" } : { kind: "failed", failure: classifyFailure(`timeout: turn cancelled by the server (${event.state.reason})`) };
             }
-            return { kind: "failed", failure: classifyFailure(event.state.message) };
+            const failure = classifyFailure(event.state.message);
+            // A turn stopped by the step limit did real work; the wrap-up must continue from it, not from the turn before.
+            if (failure.kind === "limit" && this.agentSession && request.mode === "agent" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
+            return { kind: "failed", failure };
           }
           this.render(turn, event);
         }
