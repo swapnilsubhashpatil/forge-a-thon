@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import type { DiffStat } from "../shared/protocol.ts";
 import { ChangeLedger, fullRange } from "./changeLedger.ts";
-import { computeHunks, diffStat, formatPatch, renderReview, resolveText } from "./hunks.ts";
+import { computeHunks, diffStat, formatPatch, renderReview, resolveText, sameText } from "./hunks.ts";
 import type { Hunk, HunkDecision, ReviewRender } from "./hunks.ts";
 
 export interface ReviewRequest {
@@ -58,6 +58,7 @@ export class ReviewController implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[];
   private inflight = 0;
   private epoch = 0;
+  private proposalSeq = 0;
 
   readonly onDidChangeState = this.stateEmitter.event;
 
@@ -81,6 +82,8 @@ export class ReviewController implements vscode.Disposable {
       }),
       vscode.workspace.onDidChangeTextDocument((event) => this.onEdited(event)),
       vscode.workspace.onDidCloseTextDocument((document) => this.onClosed(document)),
+      vscode.workspace.onDidSaveTextDocument((document) => this.onSaved(document)),
+      vscode.window.tabGroups.onDidChangeTabs((event) => this.onTabsChanged(event)),
       vscode.window.onDidChangeVisibleTextEditors(() => this.paint()),
     ];
   }
@@ -113,6 +116,10 @@ export class ReviewController implements vscode.Disposable {
     return this.inflight > 0;
   }
 
+  isReviewing(uri: vscode.Uri): boolean {
+    return this.sessions.has(uri.toString());
+  }
+
   dispose(): void {
     void this.discardAll().finally(() => this.disposables.forEach((d) => d.dispose()));
   }
@@ -130,7 +137,7 @@ export class ReviewController implements vscode.Disposable {
         render: renderReview(request.baseline, hunks, decisions),
         wasDirty: false,
         settling: false,
-        proposalUri: request.uri.with({ scheme: PROPOSAL_SCHEME, query: "proposal" }),
+        proposalUri: request.uri.with({ scheme: PROPOSAL_SCHEME, query: `proposal-${++this.proposalSeq}` }),
         done,
       };
       this.sessions.set(session.key, session);
@@ -146,6 +153,9 @@ export class ReviewController implements vscode.Disposable {
   private async showInline(session: Session): Promise<void> {
     const document = await vscode.workspace.openTextDocument(session.request.uri);
     session.wasDirty = document.isDirty;
+    if (vscode.workspace.getConfiguration("files", document.uri).get<string>("autoSave", "off") !== "off") {
+      void vscode.window.showWarningMessage("Auto Save is on. Saving while a review is open discards it and restores the original file. Turn off Auto Save to review Anvil's changes.");
+    }
     const editor = await vscode.window.showTextDocument(document, { preview: false });
     await this.writeBuffer(session, document);
     if (session.settling) return;
@@ -160,12 +170,11 @@ export class ReviewController implements vscode.Disposable {
     await vscode.commands.executeCommand("vscode.diff", empty, session.proposalUri, `${path} (new file)`, { preview: false });
     void vscode.window
       .showInformationMessage(`Anvil wants to create ${path}.`, "Create file", "Discard")
-      .then((choice) => {
-        if (choice) this.decide(session, [0], choice === "Create file" ? "accepted" : "rejected");
-      });
+      .then((choice) => this.decide(session, session.hunks.map((hunk) => hunk.index), choice === "Create file" ? "accepted" : "rejected"));
   }
 
   private async writeBuffer(session: Session, document: vscode.TextDocument): Promise<void> {
+    if (session.settling || this.sessions.get(session.key) !== session) return;
     session.render = renderReview(session.request.baseline, session.hunks, session.decisions);
     await setText(document, session.render.text);
     this.paint();
@@ -220,7 +229,10 @@ export class ReviewController implements vscode.Disposable {
     const document = await vscode.workspace.openTextDocument(request.uri);
     if (!apply) return restoreBaseline(document, request.baseline, session.wasDirty);
     await setText(document, finalText);
-    await document.save();
+    if (!(await document.save())) {
+      await setText(document, request.baseline);
+      throw new Error("the file could not be saved");
+    }
     this.ledger.record(request.changeSetId, request.uri, request.baseline, document.getText());
   }
 
@@ -228,14 +240,31 @@ export class ReviewController implements vscode.Disposable {
     await closeTabsFor(session.proposalUri);
     if (!apply) return;
     await vscode.workspace.fs.writeFile(session.request.uri, new TextEncoder().encode(finalText));
-    this.ledger.record(session.request.changeSetId, session.request.uri, undefined, finalText);
-    await vscode.window.showTextDocument(session.request.uri, { preview: false });
+    const document = await vscode.workspace.openTextDocument(session.request.uri);
+    this.ledger.record(session.request.changeSetId, session.request.uri, undefined, document.getText());
+    await vscode.window.showTextDocument(document, { preview: false });
+  }
+
+  private onSaved(document: vscode.TextDocument): void {
+    const session = this.sessions.get(document.uri.toString());
+    if (!session || session.request.isNewFile || session.settling) return;
+    session.wasDirty = false;
+    void vscode.window.showWarningMessage("Anvil review discarded because the file was saved mid-review; the original content was restored.");
+    void this.settle(session, true);
+  }
+
+  private onTabsChanged(event: vscode.TabChangeEvent): void {
+    for (const tab of event.closed) {
+      if (!(tab.input instanceof vscode.TabInputTextDiff)) continue;
+      const session = this.findSession(tab.input.modified.toString());
+      if (session?.request.isNewFile) this.decide(session, session.hunks.map((hunk) => hunk.index), "rejected");
+    }
   }
 
   private onEdited(event: vscode.TextDocumentChangeEvent): void {
     const session = this.sessions.get(event.document.uri.toString());
     if (!session || session.request.isNewFile || session.settling || event.contentChanges.length === 0) return;
-    if (event.document.getText() === session.render.text) return;
+    if (sameText(event.document.getText(), session.render.text)) return;
     void vscode.window.showWarningMessage(`${session.request.title}: the file was edited during review, so Anvil discarded its proposed changes.`);
     void this.settle(session, true);
   }
@@ -269,7 +298,7 @@ export class ReviewController implements vscode.Disposable {
 
   private lenses(document: vscode.TextDocument): vscode.CodeLens[] {
     const session = this.sessions.get(document.uri.toString());
-    if (!session || session.settling || session.request.isNewFile || document.getText() !== session.render.text) return [];
+    if (!session || session.settling || session.request.isNewFile || !sameText(document.getText(), session.render.text)) return [];
     const args = [session.key];
     const pending = session.decisions.filter((d) => d === "pending").length;
     const top = new vscode.Range(0, 0, 0, 0);
@@ -327,7 +356,7 @@ function lineRange(line: number): vscode.Range {
 }
 
 async function setText(document: vscode.TextDocument, text: string): Promise<void> {
-  if (document.getText() === text) return;
+  if (sameText(document.getText(), text)) return;
   const edit = new vscode.WorkspaceEdit();
   edit.replace(document.uri, fullRange(document), text);
   if (!(await vscode.workspace.applyEdit(edit))) throw new Error(`could not update ${document.uri.fsPath}`);
@@ -337,9 +366,7 @@ async function restoreBaseline(document: vscode.TextDocument, baseline: string, 
   if (document.isClosed) return;
   await setText(document, baseline);
   if (wasDirty || !document.isDirty) return;
-  await vscode.window.showTextDocument(document, { preview: false });
-  await vscode.commands.executeCommand("workbench.action.files.revert");
-  if (document.isDirty) await document.save();
+  if (!(await document.save())) throw new Error("the restored file could not be saved");
 }
 
 async function closeTabsFor(uri: vscode.Uri): Promise<void> {

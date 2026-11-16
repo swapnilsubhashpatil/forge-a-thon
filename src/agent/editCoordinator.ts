@@ -1,3 +1,5 @@
+import { realpath } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import * as vscode from "vscode";
 import { applyReplacement } from "../edits/editMatcher.ts";
 import type { ReviewController, ReviewOutcome } from "../edits/reviewController.ts";
@@ -13,8 +15,11 @@ export class EditCoordinator {
   private readonly root: vscode.Uri;
   private readonly review: ReviewController;
   private readonly results = new Map<string, Promise<EditResult>>();
+  private readonly fileQueue = new Map<string, Promise<unknown>>();
   private readonly onApplied: (path: string, stat: DiffStat) => void;
-  changeSetId = "";
+  private currentSet = "";
+  private generation = 0;
+  private cancelled = false;
 
   constructor(root: vscode.Uri, review: ReviewController, onApplied: (path: string, stat: DiffStat) => void) {
     this.root = root;
@@ -22,81 +27,129 @@ export class EditCoordinator {
     this.onApplied = onApplied;
   }
 
+  get changeSetId(): string {
+    return this.currentSet;
+  }
+
+  set changeSetId(id: string) {
+    this.currentSet = id;
+    this.cancelled = false;
+  }
+
+  beginTurn(changeSetId: string): void {
+    this.changeSetId = changeSetId;
+  }
+
+  cancelPending(): void {
+    this.generation++;
+    this.cancelled = true;
+  }
+
   resolve(tool: string, args: Record<string, unknown>): Promise<EditResult> {
     const key = callKey(tool, args);
-    let pending = this.results.get(key);
-    if (!pending) {
-      pending = this.run(tool, args);
-      this.results.set(key, pending);
-    }
+    const cached = this.results.get(key);
+    if (cached) return cached;
+    const pending = this.run(tool, args);
+    this.results.set(key, pending);
+    const evict = () => {
+      if (this.results.get(key) === pending) this.results.delete(key);
+    };
+    pending.then((result) => {
+      if (!result.ok || result.outcome.accepted === 0) evict();
+    }, evict);
     return pending;
   }
 
   async execute(tool: string, args: Record<string, unknown>): Promise<string> {
     const result = await this.resolve(tool, args);
-    this.results.delete(callKey(tool, args));
+    this.drop(tool, args);
     return describeForModel(result);
   }
 
   denialReason(result: EditResult): string | undefined {
     if (!result.ok) return result.reason;
-    if (result.outcome.accepted > 0 || result.outcome.total === 0) return undefined;
+    if (result.outcome.accepted > 0 || isNoChange(result.outcome)) return undefined;
     return describeForModel(result);
+  }
+
+  drop(tool: string, args: Record<string, unknown>): void {
+    this.results.delete(callKey(tool, args));
   }
 
   forget(): void {
     this.results.clear();
   }
 
-  private async run(tool: string, args: Record<string, unknown>): Promise<EditResult> {
-    const path = String(args.path ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
-    const uri = this.toUri(path);
-    if (!uri) return { ok: false, path, reason: `Path "${path}" is outside the workspace. Use a workspace-relative path.` };
+  private run(tool: string, args: Record<string, unknown>): Promise<EditResult> {
+    const path = normalizePath(args.path);
+    const generation = this.generation;
+    const changeSetId = this.changeSetId;
+    const run = (this.fileQueue.get(path) ?? Promise.resolve()).then(() => this.apply(tool, args, path, generation, changeSetId));
+    const tail = run.catch(() => undefined);
+    this.fileQueue.set(path, tail);
+    void tail.then(() => {
+      if (this.fileQueue.get(path) === tail) this.fileQueue.delete(path);
+    });
+    return run;
+  }
 
-    const baseline = await readIfExists(uri);
-    let proposal: string;
-    if (tool === "create_file") {
-      proposal = String(args.content ?? "");
-    } else {
-      const oldString = String(args.old_string ?? "");
-      const newString = String(args.new_string ?? "");
-      if (baseline === undefined) {
-        if (oldString) return { ok: false, path, reason: `File ${path} does not exist. Use create_file to create it.` };
-        proposal = newString;
-      } else {
-        const match = applyReplacement(baseline, oldString, newString, args.replace_all === true);
-        if (!match.ok) return { ok: false, path, reason: `${match.reason}\n${match.hint}` };
-        proposal = match.text;
-      }
+  private async apply(tool: string, args: Record<string, unknown>, path: string, generation: number, changeSetId: string): Promise<EditResult> {
+    if (!isRelativeInside(path)) return { ok: false, path, reason: `Path "${path}" is outside the workspace. Use a workspace-relative path.` };
+    const uri = vscode.Uri.joinPath(this.root, ...path.split("/"));
+    if (!(await resolvesInside(this.root.fsPath, uri.fsPath))) return { ok: false, path, reason: "Path resolves outside the workspace" };
+    if (isDirty(uri) && !this.review.isReviewing(uri)) {
+      return { ok: false, path, reason: `${path} has unsaved changes in the editor; ask the user to save or revert it first` };
     }
 
-    if (baseline !== undefined && proposal === baseline) {
-      return { ok: true, path, outcome: { status: "accepted", accepted: 0, rejected: 0, total: 0, finalText: baseline, rejectedPatch: "", stat: { added: 0, removed: 0 } } };
+    let baseline: string | undefined;
+    try {
+      baseline = await readIfExists(uri);
+    } catch {
+      return { ok: false, path, reason: "file exists but is not a text file" };
     }
+    const proposal = propose(tool, args, path, baseline);
+    if (typeof proposal !== "string") return proposal;
+
+    if (baseline !== undefined && proposal === baseline) return { ok: true, path, outcome: unchanged(baseline, "accepted") };
+    if (this.cancelled || generation !== this.generation) return { ok: true, path, outcome: unchanged(baseline ?? "", "discarded") };
 
     const outcome = await this.review.review({
       uri,
       baseline: baseline ?? "",
       proposal,
       title: path,
-      changeSetId: this.changeSetId,
+      changeSetId,
       isNewFile: baseline === undefined,
     });
     if (outcome.accepted > 0) this.onApplied(path, outcome.stat);
     return { ok: true, path, outcome };
   }
+}
 
-  private toUri(path: string): vscode.Uri | undefined {
-    if (!path || path.startsWith("/") || /^[a-zA-Z]:/.test(path) || path.split("/").includes("..")) return undefined;
-    return vscode.Uri.joinPath(this.root, ...path.split("/"));
+function propose(tool: string, args: Record<string, unknown>, path: string, baseline: string | undefined): string | EditResult {
+  if (tool === "create_file") return String(args.content ?? "");
+  const oldString = String(args.old_string ?? "");
+  const newString = String(args.new_string ?? "");
+  if (baseline === undefined) {
+    return oldString ? { ok: false, path, reason: `File ${path} does not exist. Use create_file to create it.` } : newString;
   }
+  const match = applyReplacement(baseline, oldString, newString, args.replace_all === true);
+  return match.ok ? match.text : { ok: false, path, reason: `${match.reason}\n${match.hint}` };
+}
+
+function unchanged(text: string, status: "accepted" | "discarded"): ReviewOutcome {
+  return { status, accepted: 0, rejected: 0, total: 0, finalText: text, rejectedPatch: "", stat: { added: 0, removed: 0 } };
+}
+
+function isNoChange(outcome: ReviewOutcome): boolean {
+  return outcome.total === 0 && outcome.status !== "discarded";
 }
 
 function describeForModel(result: EditResult): string {
   if (!result.ok) return `Edit not applied: ${result.reason}`;
   const { outcome, path } = result;
   const stat = `+${outcome.stat.added} −${outcome.stat.removed}`;
-  if (outcome.total === 0) return `No changes: the proposed text for ${path} is identical to the current file.`;
+  if (isNoChange(outcome)) return `No changes: the proposed text for ${path} is identical to the current file.`;
   switch (outcome.status) {
     case "accepted":
       return `Applied to ${path} (${stat}). The user accepted all ${outcome.total} change(s).`;
@@ -115,15 +168,50 @@ function describeForModel(result: EditResult): string {
   }
 }
 
+function normalizePath(value: unknown): string {
+  return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
 function callKey(tool: string, args: Record<string, unknown>): string {
-  return `${tool}:${JSON.stringify(Object.keys(args).sort().map((key) => [key, args[key]]))}`;
+  const path = normalizePath(args.path);
+  const fields = tool === "create_file" ? [path, args.content] : [path, args.old_string, args.new_string, args.replace_all === true];
+  return `${tool}:${JSON.stringify(fields)}`;
+}
+
+function isRelativeInside(path: string): boolean {
+  return Boolean(path) && !path.startsWith("/") && !/^[a-zA-Z]:/.test(path) && !path.split("/").includes("..");
+}
+
+async function resolvesInside(root: string, target: string): Promise<boolean> {
+  try {
+    const rel = relative(await realpath(root), await nearestRealpath(target));
+    return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  } catch {
+    return false;
+  }
+}
+
+async function nearestRealpath(target: string): Promise<string> {
+  try {
+    return await realpath(target);
+  } catch (error) {
+    const parent = dirname(target);
+    if (parent === target) throw error;
+    return join(await nearestRealpath(parent), basename(target));
+  }
+}
+
+function isDirty(uri: vscode.Uri): boolean {
+  const key = uri.toString();
+  return vscode.workspace.textDocuments.some((document) => document.uri.toString() === key && document.isDirty);
 }
 
 async function readIfExists(uri: vscode.Uri): Promise<string | undefined> {
   try {
-    const document = await vscode.workspace.openTextDocument(uri);
-    return document.getText();
-  } catch {
-    return undefined;
+    await vscode.workspace.fs.stat(uri);
+  } catch (error) {
+    if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") return undefined;
+    throw error;
   }
+  return (await vscode.workspace.openTextDocument(uri)).getText();
 }

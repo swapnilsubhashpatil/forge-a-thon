@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { applyReplacement } from "../src/edits/editMatcher.ts";
-import { computeHunks, diffStat, renderReview, resolveText } from "../src/edits/hunks.ts";
+import { computeHunks, diffStat, renderReview, resolveText, sameText } from "../src/edits/hunks.ts";
 
 const source = ["def add(a, b):", "    total = a + b", "    return total", "", "def sub(a, b):", "    return a - b", ""].join("\n");
 
@@ -91,4 +91,9 @@ test("trailing newline and CRLF round-trip", () => {
   assert.equal(resolveText(before, hunks, hunks.map(() => "rejected")), before);
   assert.equal(renderReview(before, hunks, ["pending"]).text, "one\r\ntwo\r\ntwo\r\nthree\r\n");
   assert.equal(renderReview(before, hunks, ["rejected"]).text, before);
+});
+
+test("sameText ignores CRLF versus LF differences only", () => {
+  assert.ok(sameText("a\r\nb\r\n", "a\nb\n"));
+  assert.ok(!sameText("a\nb\n", "a\nc\n"));
 });
