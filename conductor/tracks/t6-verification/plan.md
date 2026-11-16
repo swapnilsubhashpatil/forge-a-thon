@@ -1,4 +1,7 @@
 # T6 Verification
-- [x] Unit tests: context ranking, edit matcher, hunks
-- [ ] E2E in VS Code: agent edit + accept + undo; cancel leaves tree clean
-- [ ] Independent code review pass; fix findings
+- [x] Unit tests: context ranking (both Task B phrasings), edit matcher, hunks, EOL
+- [x] Live spike: provider, loopback MCP, approval pause/resume (qwen3:4b / qwen3:8b)
+- [x] E2E harness in VS Code: activation → TrueForge → streamed turn
+- [x] Independent five-lens review; all findings fixed
+- [ ] `npm run e2e` green with a hosted model (Task A, failover, cancel)
+- [ ] Manual Tasks A/B/C on camera
