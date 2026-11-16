@@ -52,3 +52,30 @@ Reading it:
 GPT-5.4-mini (after, run 2) proposed 4 edits whose `old_string` did not match, then ended without `finish_task`.
 The M8 follow-up only fires after accepted edits, so it did not trigger. Extending it to "turn ended after failed edit
 attempts" is a small, targeted next step.
+
+## Re-run after context work (10 Nov, evening): by harness trait
+
+Branch re-run on the 7 answering models (co-change ranking, project rules, retry follow-up, restore), 2 runs each,
+against the same main runs. Full table in [agent-mode.md](agent-mode.md) ("By harness trait").
+
+| Trait | Metric | Before | After |
+|---|---|---|---|
+| Verification loops | Task B ended with untested edits | 11/14 | **0/14** |
+| | Verified finish backed by a passing check | 0/14 | **10/14** (every passing run) |
+| | Failed test runs per Task B | 3.1 | **0.3** |
+| | Task B fully passed | 9/14 | **10/14** (GPT-5.4-mini 1/2 → 2/2) |
+| Context and state | read_file calls per Task B | 5.2 | 4.3 |
+| | Input tokens per Task B | 193k | **141k (−27%)** |
+| | Edited files inside Anvil's top-5 prediction | 100% | 100% |
+| Safe execution | Cancel clean / failover | 14/14 · 10/14 | 14/14 · 10/14 |
+| | Restore (message + code) left the tree clean | n/a | **14/14** |
+| Guardrails | Scope / grounding / loop warnings fired | 0 | 0 |
+
+Limits, stated plainly:
+- **Guardrails never fired on Task B.** The models that pass it stay in scope, call real functions and do not loop, so
+  this task cannot show G2/G3/M7 working. They are covered by unit tests only; a scripted misbehaving "fake model"
+  (ticket 00) is the way to exercise them end to end and is not built yet.
+- **Task B is easy for retrieval:** both builds predicted 100% of the edited files. Retrieval quality is measured on
+  200 real commits instead: [context-history.md](context-history.md) (test split hit@5 0.825 → 0.854, all@5 0.466 → 0.515).
+- Haiku used more tokens after (313k vs 268k: more tool calls); the overall drop comes from Sonnet, Opus and the GPT models.
+- Local 7–8B models still fail Tasks A–C on both builds; their "after" numbers are not meaningful.
