@@ -22,6 +22,8 @@ export interface RunnerSettings {
   modelChain: string[];
   firstEventTimeoutMs: number;
   iterationLimit: number;
+  reasoningEffort?: string;
+  toolServerName: string;
 }
 
 export interface TurnRunnerDeps {
@@ -37,7 +39,11 @@ export interface TurnRunnerDeps {
   log: (line: string) => void;
 }
 
-type AttemptResult = { kind: "done" } | { kind: "cancelled" } | { kind: "failed"; failure: Failure };
+type AttemptResult =
+  | { kind: "done" }
+  | { kind: "cancelled" }
+  | { kind: "failed"; failure: Failure }
+  | { kind: "harness"; message: string; sessionMissing: boolean };
 
 interface ActiveTurn {
   turnId: string;
@@ -47,13 +53,21 @@ interface ActiveTurn {
   approvals: Map<string, (allow: boolean) => void>;
 }
 
+interface AgentSession {
+  id: string;
+  model: string;
+  lastCompletedTurnId?: string;
+}
+
 const MAIN_THREAD = "main";
 const MAX_OUTPUT_CHARS = 4_000;
+const MAX_RESUMES = 200;
 
 export class TurnRunner {
   private readonly deps: TurnRunnerDeps;
-  private agentSession: { id: string; model: string } | undefined;
+  private agentSession: AgentSession | undefined;
   private active: ActiveTurn | undefined;
+  private starting = false;
   private readonly healthy = new Set<string>();
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
@@ -63,7 +77,14 @@ export class TurnRunner {
   }
 
   get busy(): boolean {
-    return this.active !== undefined;
+    return this.active !== undefined || this.starting;
+  }
+
+  markStarting(starting: boolean): void {
+    this.starting = starting;
+    this.deps.store.update((state) => {
+      state.busy = starting || this.active !== undefined;
+    });
   }
 
   currentContext(): ContextReport | undefined {
@@ -92,6 +113,7 @@ export class TurnRunner {
     }));
     this.deps.store.update((state) => {
       state.models = models;
+      if (!this.active) state.activeModel = breaker.order(models.map((entry) => entry.model))[0];
     });
   }
 
@@ -102,6 +124,7 @@ export class TurnRunner {
     const turnId = `turn-${Date.now().toString(36)}-${this.turnCounter}`;
     const active: ActiveTurn = { turnId, abort: new AbortController(), cancelled: false, approvals: new Map() };
     this.active = active;
+    this.starting = false;
     this.deps.onBusyChange(true);
 
     const turn: Turn = {
@@ -119,7 +142,8 @@ export class TurnRunner {
       state.turns.push(turn);
       state.busy = true;
     });
-    edits.changeSetId = ledger.begin(request.title);
+    const changeSetId = ledger.begin(request.title);
+    edits.beginTurn(changeSetId);
 
     try {
       const chain = this.deps.settings().modelChain;
@@ -128,9 +152,8 @@ export class TurnRunner {
         this.finish(turn, "error");
         return;
       }
-      const ordered = breaker.order(chain);
       let previous: { model: string; failure: Failure } | undefined;
-      for (const model of ordered) {
+      for (const model of breaker.order(chain)) {
         if (previous) {
           store.notice(turnId, "warning", `${previous.model} ${describeFailure(previous.failure)} (${previous.failure.message}). Switched to ${model}.`);
         } else if (breaker.isOpen(model)) {
@@ -141,6 +164,11 @@ export class TurnRunner {
           state.activeModel = model;
         });
         let result = await this.attempt(request, model, turn, active);
+        if (result.kind === "harness" && result.sessionMissing && request.mode === "agent" && !active.cancelled) {
+          this.agentSession = undefined;
+          store.notice(turnId, "info", "The TrueForge session was no longer available. Started a new session.");
+          result = await this.attempt(request, model, turn, active);
+        }
         if (result.kind === "failed" && result.failure.retrySameModel && !active.cancelled) {
           store.notice(turnId, "info", `${model} ${describeFailure(result.failure)}. Retrying once.`);
           await delay(backoffDelay(0));
@@ -156,13 +184,21 @@ export class TurnRunner {
           this.finish(turn, "cancelled");
           return;
         }
-        breaker.trip(model, result.failure.message);
+        if (result.kind === "harness") {
+          store.notice(turnId, "error", `TrueForge request failed: ${result.message}. Models were not blamed; check the harness and press Reconnect if needed.`);
+          this.finish(turn, "error");
+          return;
+        }
+        if (result.failure.kind !== "context") breaker.trip(model, result.failure.message);
         this.healthy.delete(model);
         this.refreshModelHealth();
         this.deps.log(`Model ${model} failed: ${result.failure.message}`);
         previous = { model, failure: result.failure };
       }
-      store.notice(turnId, "error", `All models in the fallback chain failed. Last error: ${previous?.failure.message ?? "unknown"}. Your files were not modified by the failed attempts.`);
+      const workspaceNote = ledger.hasWrites(changeSetId)
+        ? "Changes you accepted before the failure were kept; use Undo to revert them."
+        : "Your files were not modified.";
+      store.notice(turnId, "error", `All models in the fallback chain failed. Last error: ${previous?.failure.message ?? "unknown"}. ${workspaceNote}`);
       this.finish(turn, "error");
     } catch (error) {
       store.notice(turnId, "error", error instanceof Error ? error.message : String(error));
@@ -184,6 +220,7 @@ export class TurnRunner {
     if (!active || active.cancelled) return;
     active.cancelled = true;
     active.abort.abort();
+    this.deps.edits.cancelPending();
     for (const resolve of active.approvals.values()) resolve(false);
     active.approvals.clear();
     await this.deps.review.discardAll();
@@ -192,10 +229,10 @@ export class TurnRunner {
     }
   }
 
-  resolveApproval(toolCallId: string, allow: boolean): void {
-    const resolve = this.active?.approvals.get(toolCallId);
+  resolveApproval(approvalKey: string, allow: boolean): void {
+    const resolve = this.active?.approvals.get(approvalKey);
     if (!resolve) return;
-    this.active?.approvals.delete(toolCallId);
+    this.active?.approvals.delete(approvalKey);
     resolve(allow);
   }
 
@@ -213,20 +250,25 @@ export class TurnRunner {
     });
   }
 
-  private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn): Promise<string> {
+  private specOptions() {
+    const settings = this.deps.settings();
+    return { toolServerName: settings.toolServerName, iterationLimit: settings.iterationLimit, reasoningEffort: settings.reasoningEffort };
+  }
+
+  private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn): Promise<{ id: string; previousTurnId: string }> {
     const client = this.deps.client();
-    const spec = this.deps.profiles.spec(request.mode, model, this.deps.settings().iterationLimit);
+    const spec = this.deps.profiles.spec(request.mode, model, this.specOptions());
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;
-      return id;
+      return { id, previousTurnId: "none" };
     }
     if (this.agentSession && this.agentSession.model !== model) {
       try {
         await client.updateSessionSpec(this.agentSession.id, spec);
         this.agentSession.model = model;
       } catch (error) {
-        this.deps.log(`Could not switch session model, starting a new session: ${String(error)}`);
+        this.deps.log(`Could not switch the session model, starting a new session: ${errorText(error)}`);
         this.agentSession = undefined;
       }
     }
@@ -239,7 +281,7 @@ export class TurnRunner {
       });
     }
     active.sessionId = this.agentSession.id;
-    return this.agentSession.id;
+    return { id: this.agentSession.id, previousTurnId: this.agentSession.lastCompletedTurnId ?? "none" };
   }
 
   private async attempt(request: TurnRequest, model: string, turn: Turn, active: ActiveTurn): Promise<AttemptResult> {
@@ -258,12 +300,15 @@ export class TurnRunner {
     const disarm = () => clearTimeout(watchdog);
 
     try {
-      sessionId = await this.ensureSession(request, model, active);
+      const session = await this.ensureSession(request, model, active);
+      sessionId = session.id;
       const log = new EventLog();
+      const answered = new Set<string>();
+      const pending: TrueForgeApi.ToolApprovalRequiredEvent[] = [];
       let harnessTurnId: string | undefined;
-      let stream = await client.startTurn(sessionId, request.message, attemptAbort.signal);
-      for (let resumes = 0; resumes < 200; resumes += 1) {
-        const pending: TrueForgeApi.ToolApprovalRequiredEvent[] = [];
+      let pauseReason: string | undefined;
+      let stream = await client.startTurn(session.id, request.message, session.previousTurnId, attemptAbort.signal);
+      for (let resumes = 0; resumes < MAX_RESUMES; resumes += 1) {
         let paused = false;
         for await (const raw of stream) {
           const event = log.absorb(raw);
@@ -271,6 +316,8 @@ export class TurnRunner {
           if (producesOutput(raw)) disarm();
           if (event.type === "turn.created") harnessTurnId = event.turnId;
           if (event.type === "tool.approval_required") pending.push(event);
+          if (event.type === "mcp.auth_required") pauseReason = "the Anvil tool server rejected TrueForge's credentials";
+          if (event.type === "tool.response_required") pauseReason = "the agent asked for a client-side tool result Anvil does not provide";
           if (event.type === "turn.update" && event.state.status === "paused") {
             paused = true;
             break;
@@ -278,79 +325,106 @@ export class TurnRunner {
           if (event.type === "turn.done") {
             disarm();
             this.applyMetrics(turn, event.state.metrics);
-            if (event.state.status === "done") return { kind: "done" };
+            if (event.state.status === "done") {
+              if (this.agentSession && request.mode === "agent" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
+              return { kind: "done" };
+            }
             if (event.state.status === "cancelled") {
-              return active.cancelled ? { kind: "cancelled" } : { kind: "failed", failure: classifyFailure(`turn cancelled: ${event.state.reason}`) };
+              return active.cancelled ? { kind: "cancelled" } : { kind: "failed", failure: classifyFailure(`timeout: turn cancelled by the server (${event.state.reason})`) };
             }
             return { kind: "failed", failure: classifyFailure(event.state.message) };
           }
           this.render(turn, event);
         }
         if (active.cancelled) return { kind: "cancelled" };
-        if (!harnessTurnId) return { kind: "failed", failure: classifyFailure("stream ended before the turn started") };
-        if (paused && pending.length) {
+        if (!harnessTurnId) return { kind: "harness", message: "the event stream ended before the turn started", sessionMissing: false };
+        if (paused) {
           disarm();
-          const decisions = await this.decide(pending, log, turn, active);
+          const requests = this.unanswered(pending, answered);
+          pending.length = 0;
+          if (!requests.length) {
+            return { kind: "harness", message: `the turn paused because ${pauseReason ?? "it is waiting for input Anvil cannot provide"}`, sessionMissing: false };
+          }
+          this.setPaused(turn, true);
+          const decisions = await this.decide(requests, log, turn, active);
+          this.setPaused(turn, false);
           if (active.cancelled) return { kind: "cancelled" };
-          await client.answerApprovals(sessionId, harnessTurnId, decisions);
+          await client.answerApprovals(session.id, harnessTurnId, decisions);
+          for (const request of requests) answered.add(request.key);
         }
-        stream = await client.resumeTurn(sessionId, harnessTurnId, log.lastEventId, attemptAbort.signal);
+        stream = await client.resumeTurn(session.id, harnessTurnId, log.lastEventId, attemptAbort.signal);
       }
-      return { kind: "failed", failure: classifyFailure("turn did not finish") };
+      return { kind: "harness", message: "the turn did not finish after repeated resumes", sessionMissing: false };
     } catch (error) {
       if (active.cancelled) return { kind: "cancelled" };
       if (timedOut) {
         return { kind: "failed", failure: classifyFailure(`timeout: no model output within ${Math.round(this.deps.settings().firstEventTimeoutMs / 1000)}s`) };
       }
-      return { kind: "failed", failure: classifyFailure(errorText(error)) };
+      const status = (error as { statusCode?: number } | undefined)?.statusCode;
+      const message = errorText(error);
+      return { kind: "harness", message, sessionMissing: status === 404 && /session/i.test(message) };
     } finally {
       disarm();
       active.abort.signal.removeEventListener("abort", onCancel);
     }
   }
 
+  private unanswered(pending: TrueForgeApi.ToolApprovalRequiredEvent[], answered: Set<string>) {
+    const seen = new Set<string>();
+    const requests: Array<{ key: string; threadId: string; ref: TrueForgeApi.ToolCallRef }> = [];
+    for (const event of pending) {
+      for (const ref of event.toolCalls) {
+        const key = `${event.threadId}:${ref.id}`;
+        if (answered.has(key) || seen.has(key)) continue;
+        seen.add(key);
+        requests.push({ key, threadId: event.threadId, ref });
+      }
+    }
+    return requests;
+  }
+
+  private setPaused(turn: Turn, paused: boolean): void {
+    this.deps.store.update(() => {
+      if (turn.status === "running" || turn.status === "paused") turn.status = paused ? "paused" : "running";
+    });
+  }
+
   private async decide(
-    pending: TrueForgeApi.ToolApprovalRequiredEvent[],
+    requests: Array<{ key: string; threadId: string; ref: TrueForgeApi.ToolCallRef }>,
     log: EventLog,
     turn: Turn,
     active: ActiveTurn,
   ): Promise<ApprovalDecision[]> {
-    const requests = pending.flatMap((event) => event.toolCalls.map((ref) => ({ event, ref })));
-    return Promise.all(requests.map(async ({ event, ref }) => {
+    return Promise.all(requests.map(async ({ key, threadId, ref }) => {
+      const base = { threadId, toolCallId: ref.id };
       const source = log.get(ref.sourceEventId);
       const call = source?.type === "model.message" ? source.toolCalls?.find((candidate) => candidate.id === ref.id) : undefined;
-      const { name, args } = parseArguments(call?.function.name ?? "unknown", call?.function.arguments ?? "{}");
-      const base = { threadId: event.threadId, toolCallId: ref.id };
-      this.upsertTool(turn, { id: ref.id, status: "awaiting-approval" }, name, args, event.threadId);
+      if (!call) {
+        return { ...base, allow: false, reason: "Anvil could not display this tool call for review, so it was not approved. Try again." };
+      }
+      const { name, args } = parseArguments(call.function.name, call.function.arguments ?? "{}");
+      this.upsertTool(turn, { id: ref.id, status: "awaiting-approval" }, name, args, threadId);
 
       if (EDIT_TOOLS.has(name)) {
         const result = await this.deps.edits.resolve(name, args);
         const reason = active.cancelled ? "The user cancelled the turn." : this.deps.edits.denialReason(result);
+        if (reason) this.deps.edits.drop(name, args);
         this.upsertTool(turn, {
           id: ref.id,
           status: reason ? "denied" : "running",
           diff: result.ok && result.outcome.accepted > 0 ? result.outcome.stat : undefined,
           output: reason,
-        }, name, args, event.threadId);
+        }, name, args, threadId);
         return reason ? { ...base, allow: false, reason } : { ...base, allow: true };
       }
 
       const view = describeToolCall(name, args);
-      const approvalId = `approval-${ref.id}`;
-      this.deps.store.upsertStep(turn.id, {
-        kind: "approval",
-        id: approvalId,
-        toolCallId: ref.id,
-        toolName: name,
-        title: view.title,
-        detail: typeof args.command === "string" ? args.command : JSON.stringify(args, null, 2),
-        status: "pending",
-      });
-      const allow = active.cancelled ? false : await new Promise<boolean>((resolve) => active.approvals.set(ref.id, resolve));
-      this.deps.store.upsertStep(turn.id, { kind: "approval", id: approvalId, toolCallId: ref.id, toolName: name, title: view.title, detail: "", status: allow ? "allowed" : "denied" }, (step) => {
-        step.status = allow ? "allowed" : "denied";
-      });
-      this.upsertTool(turn, { id: ref.id, status: allow ? "running" : "denied" }, name, args, event.threadId);
+      const approvalId = `approval-${key}`;
+      const detail = typeof args.command === "string" ? args.command : JSON.stringify(args, null, 2);
+      this.deps.store.upsertStep(turn.id, { kind: "approval", id: approvalId, toolCallId: key, toolName: name, title: view.title, detail, status: "pending" });
+      const allow = active.cancelled ? false : await new Promise<boolean>((resolve) => active.approvals.set(key, resolve));
+      this.deps.store.upsertStep(turn.id, { kind: "approval", id: approvalId, toolCallId: key, toolName: name, title: view.title, detail, status: allow ? "allowed" : "denied" });
+      this.upsertTool(turn, { id: ref.id, status: allow ? "running" : "denied" }, name, args, threadId);
       return allow ? { ...base, allow: true } : { ...base, allow: false, reason: "The user declined to run this. Continue without it or ask what they prefer." };
     }));
   }

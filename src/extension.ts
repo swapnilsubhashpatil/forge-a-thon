@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import { AgentProfiles } from "./agent/agentProfile.ts";
@@ -36,16 +37,24 @@ export async function activate(context: vscode.ExtensionContext) {
   const readCache = new ReadCache();
   let availableModels: string[] = [];
 
+  const toolServerName = `anvil-editor-${createHash("sha1").update(folder?.uri.toString() ?? "none").digest("hex").slice(0, 8)}`;
   const settings = (): RunnerSettings => {
     const configured = config().get<string[]>("models.chain", []).filter(Boolean);
+    const reasoningEffort = config().get<string>("models.reasoningEffort", "default");
     return {
       modelChain: configured.length ? configured : availableModels.slice(0, 3),
       firstEventTimeoutMs: config().get<number>("resilience.firstEventTimeoutSeconds", 45) * 1000,
       iterationLimit: config().get<number>("agent.iterationLimit", 60),
+      reasoningEffort: reasoningEffort === "default" ? undefined : reasoningEffort,
+      toolServerName,
     };
   };
 
-  const chatView = new ChatViewProvider(context.extensionUri, (message, reply) => void handleMessage(message, reply));
+  let started = false;
+  const chatView = new ChatViewProvider(context.extensionUri, (message, reply) => {
+    if (started) void handleMessage(message, reply);
+    else if (message.type !== "ready") void vscode.window.showInformationMessage("Open a folder to use Anvil.");
+  });
   context.subscriptions.push(
     output,
     review,
@@ -59,6 +68,10 @@ export async function activate(context: vscode.ExtensionContext) {
     store.update((state) => {
       state.harness = { state: "offline", url: client.baseUrl, message: "Open a folder to use Anvil." };
     });
+    const needsFolder = () => void vscode.window.showInformationMessage("Open a folder to use Anvil.");
+    for (const command of ["anvil.inlineEdit", "anvil.newSession", "anvil.cancel", "anvil.undoLastChange", "anvil.openSessionInHarness", "anvil.selectModels", "anvil.restartHarness"]) {
+      context.subscriptions.push(vscode.commands.registerCommand(command, needsFolder));
+    }
     return;
   }
 
@@ -102,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
         onFileRead: (path) => runner.noteFileRead(path),
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
       }, readCache), log);
-      await client.registerToolServer(toolServer.url, toolServer.token);
+      await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
       store.update((state) => {
         state.harness = { state: "ready", url: client.baseUrl };
@@ -123,7 +136,19 @@ export async function activate(context: vscode.ExtensionContext) {
   };
 
   const sendPrompt = async (text: string, mentions: string[]) => {
-    if (runner.busy) return;
+    if (runner.busy) {
+      void vscode.window.showWarningMessage("Anvil is still working on the previous request. Stop it or wait for it to finish.");
+      return;
+    }
+    runner.markStarting(true);
+    try {
+      await runTurn(text, mentions);
+    } finally {
+      runner.markStarting(false);
+    }
+  };
+
+  const runTurn = async (text: string, mentions: string[]) => {
     await indexReady;
     const mentionPaths = [...new Set(mentions.map((mention) => mention.split("#")[0]).filter((path) => index.get(path)))];
     const activeFiles = vscode.window.visibleTextEditors
@@ -158,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (!picks?.length) return;
     const chain = await orderModels(picks.map((pick) => pick.label));
     if (!chain) return;
-    await config().update("models.chain", chain, vscode.ConfigurationTarget.Workspace);
+    await config().update("models.chain", chain, vscode.ConfigurationTarget.Global);
     runner.refreshModelHealth();
   };
 
@@ -182,9 +207,14 @@ export async function activate(context: vscode.ExtensionContext) {
         runner.resolveApproval(message.toolCallId, message.allow);
         break;
       case "openFile": {
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder!.uri, ...message.path.split("/")));
-        const line = Math.max(0, (message.line ?? 1) - 1);
-        await vscode.window.showTextDocument(document, { selection: new vscode.Range(line, 0, line, 0), preview: true });
+        const relativePath = message.path.replaceAll("\\", "/").replace(/^\.\//, "");
+        try {
+          const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder!.uri, ...relativePath.split("/")));
+          const line = Math.max(0, (message.line ?? 1) - 1);
+          await vscode.window.showTextDocument(document, { selection: new vscode.Range(line, 0, line, 0), preview: true });
+        } catch {
+          void vscode.window.showWarningMessage(`Cannot open ${relativePath}`);
+        }
         break;
       }
       case "undo": {
@@ -238,6 +268,7 @@ export async function activate(context: vscode.ExtensionContext) {
     { dispose: () => void toolServer?.close() },
   );
 
+  started = true;
   const ready = connect();
   const runInline = async (path: string, firstLine: number, lastLine: number, instruction: string) => {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...path.split("/")));

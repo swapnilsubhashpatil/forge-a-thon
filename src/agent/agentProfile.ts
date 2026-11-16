@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { TOOL_SERVER_NAME, type AgentSpec } from "../harness/harnessClient.ts";
+import type { AgentSpec } from "../harness/harnessClient.ts";
 
 export type AgentMode = "agent" | "inline";
+
+export interface SpecOptions {
+  toolServerName: string;
+  iterationLimit?: number;
+  reasoningEffort?: string;
+}
 
 interface AgentProfile {
   name: string;
@@ -23,14 +29,15 @@ export class AgentProfiles {
     this.profiles = { agent: load("anvil-agent.json"), inline: load("anvil-inline.json") };
   }
 
-  spec(mode: AgentMode, model: string, iterationLimit?: number): AgentSpec {
+  spec(mode: AgentMode, model: string, options: SpecOptions): AgentSpec {
     const profile = this.profiles[mode];
+    const reasoning = options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {};
     return {
-      model: { name: model, params: { temperature: profile.params.temperature, maxTokens: profile.params.maxTokens } },
+      model: { name: model, params: { temperature: profile.params.temperature, maxTokens: profile.params.maxTokens, ...reasoning } },
       instructions: profile.instructions.join("\n"),
       mcpServers: [
         {
-          name: TOOL_SERVER_NAME,
+          name: options.toolServerName,
           enableTools: ["@all"],
           preload: profile.preloadTools,
           requireApprovalForTools: ["@write", "@destructive", ...profile.toolsRequiringApproval],
@@ -44,7 +51,7 @@ export class AgentProfiles {
           compaction: { enabled: true, trigger: { type: "input_tokens", value: profile.compactionInputTokens } },
           largeToolResponse: { enabled: false },
         },
-        iterationLimit: mode === "agent" ? iterationLimit ?? profile.iterationLimit : profile.iterationLimit,
+        iterationLimit: mode === "agent" ? options.iterationLimit ?? profile.iterationLimit : profile.iterationLimit,
       },
     };
   }
