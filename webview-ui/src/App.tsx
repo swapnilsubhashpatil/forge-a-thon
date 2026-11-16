@@ -3,6 +3,7 @@ import { ChangesBar } from "./components/ChangesBar.tsx";
 import { Composer } from "./components/Composer.tsx";
 import { EmptyState } from "./components/EmptyState.tsx";
 import { Header } from "./components/Header.tsx";
+import { SessionStrip } from "./components/SessionStrip.tsx";
 import { ModelChain } from "./components/ModelChain.tsx";
 import { TurnView } from "./components/TurnView.tsx";
 import { takeIncoming, useStore } from "./state/store.ts";
@@ -58,6 +59,7 @@ export function App() {
     <div className="flex h-full flex-col">
       <Header chat={chat} chainOpen={chainOpen} onToggleChain={() => setChainOpen(!chainOpen)} />
       {chainOpen && <ModelChain models={chat.models} activeModel={chat.activeModel} />}
+      <SessionStrip chat={chat} />
       <main ref={scroller.ref} onScroll={scroller.onScroll} className="min-h-0 flex-1 overflow-y-auto">
         {chat.turns.length === 0 ? (
           <EmptyState onPick={(text) => changeDraft({ text, mentions: [] })} />

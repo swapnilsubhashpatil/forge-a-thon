@@ -3,6 +3,7 @@ import type { Attachment, ChatState, MentionItem, QueuedNote } from "../../../sr
 import { cx, shortModel } from "../format.ts";
 import { useStore } from "../state/store.ts";
 import { post, type Draft } from "../state/vscode.ts";
+import { LiveStrip } from "./LiveStrip.tsx";
 import { MentionMenu, mentionId } from "./MentionMenu.tsx";
 import { Icon } from "./primitives.tsx";
 
@@ -209,10 +210,14 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
   }
 
   const canSend = ready && draft.text.trim() !== "";
+  const runningTurn = [...chat.turns].reverse().find((turn) => turn.status === "running" || turn.status === "paused");
+  const primary = chat.models[0]?.model;
+  const pickable = [...new Set([...(primary ? [primary] : []), ...(chat.availableModels ?? [])])];
 
   return (
     <div className="shrink-0 border-t border-border px-3 pt-2 pb-2">
       {!ready && <OfflineHint chat={chat} />}
+      {chat.busy && runningTurn && <LiveStrip turn={runningTurn} />}
       {chat.queue.length > 0 && (
         <ul className="mb-2 flex flex-col gap-1" aria-label="Messages sent while Anvil works">
           {chat.queue.map((note) => (
@@ -298,9 +303,28 @@ export function Composer({ chat, draft, onDraftChange }: ComposerProps) {
         </div>
       </div>
       <div className="mt-1 flex items-center gap-2 px-0.5 text-2xs text-muted">
-        <span className="min-w-0 truncate" title={chat.activeModel}>
-          {chat.activeModel ? shortModel(chat.activeModel) : "No model selected"}
-        </span>
+        {pickable.length > 0 ? (
+          <label className="flex min-w-0 items-center gap-1" title="Primary model for the next message; the rest of the fallback chain stays behind it">
+            <Icon name="sparkle" />
+            <select
+              aria-label="Model for the next message"
+              value={primary ?? ""}
+              disabled={chat.busy}
+              onChange={(event) => post({ type: "setPrimaryModel", model: event.target.value })}
+              className="max-w-44 min-w-0 truncate rounded border border-transparent bg-transparent py-0.5 text-2xs text-fg hover:border-border focus:border-focus focus:outline-none disabled:opacity-60"
+            >
+              {pickable.map((model) => (
+                <option key={model} value={model} className="bg-input text-input-fg">
+                  {shortModel(model)} · {model.split("/")[0]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <span className="min-w-0 truncate" title={chat.activeModel}>
+            {chat.activeModel ? shortModel(chat.activeModel) : "No model selected"}
+          </span>
+        )}
         <span className="flex-1" />
         <span className="shrink-0">Enter to send · Shift+Enter for newline</span>
       </div>

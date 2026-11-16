@@ -12,7 +12,28 @@ const toolIcons: Record<string, string> = {
   create_file: "new-file",
   run_command: "terminal",
   explain_context: "info",
+  find_references: "references",
+  finish_task: "pass",
+  update_plan: "checklist",
 };
+
+/** One-glance outcome for a finished call: the run_command summary line, or why an edit was not applied. */
+function resultChip(step: ToolStep): { text: string; tone: string } | undefined {
+  if (!step.output) return undefined;
+  if (toolBaseName(step.name) === "run_command") {
+    const line = step.output.split(/\r?\n/).find((text) => /^exit /.test(text));
+    if (!line) return undefined;
+    const ok = /^exit 0(?!\d)/.test(line);
+    return { text: line.replace(/ · [\d.]+s$/, ""), tone: ok ? "bg-green/14 text-green" : "bg-red/14 text-red" };
+  }
+  if (toolBaseName(step.name) === "finish_task") {
+    return /^Recorded/.test(step.output) ? { text: step.output.replace(/^Recorded: /, ""), tone: "bg-green/14 text-green" } : { text: "rejected by the gate", tone: "bg-yellow/14 text-yellow" };
+  }
+  if (/Grounding check/.test(step.output)) return { text: "undefined name flagged", tone: "bg-red/14 text-red" };
+  if (/The user was warned about/.test(step.output)) return { text: "outside scope flagged", tone: "bg-yellow/14 text-yellow" };
+  if (/^Edit not applied/.test(step.output)) return { text: "not applied", tone: "bg-yellow/14 text-yellow" };
+  return undefined;
+}
 
 function StatusIcon({ status }: { status: ToolStatus }) {
   switch (status) {
@@ -67,6 +88,14 @@ export function ToolRow({ step }: { step: ToolStep }) {
             {step.threadTitle}
           </span>
         )}
+        {(() => {
+          const chip = step.status === "running" ? undefined : resultChip(step);
+          return chip ? (
+            <span className={cx("max-w-48 shrink-0 truncate rounded px-1.5 text-2xs", chip.tone)} title={chip.text}>
+              {chip.text}
+            </span>
+          ) : null;
+        })()}
         {step.diff && <DiffStat added={step.diff.added} removed={step.diff.removed} />}
         {expandable && (
           <Icon name="chevron-down" className={cx("text-muted opacity-0 transition group-hover:opacity-100", open && "rotate-180 opacity-100")} />
