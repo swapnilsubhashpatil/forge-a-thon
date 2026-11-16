@@ -104,4 +104,5 @@ API, React 19, Vite 8, Tailwind CSS 4, codicons, jsdiff, esbuild, `@vscode/test-
 - Failover classifies TrueForge's error text, because errors carry no codes. Unknown errors fail over, which can switch models when it isn't needed.
 - If the user types into a file while its review is open, that review is discarded (the baseline is restored and a warning shown) instead of being merged.
 - Small local models (around 4B parameters) sometimes write tool calls as text instead of calling the tool. The instructions forbid it, but the result still depends on the model.
+- With Auto Save on, a save during review discards that review, so the review text never reaches disk. Anvil warns when Auto Save is on.
 - Single-root workspaces only. Skills and Code Mode are not used, because they need a paid sandbox.

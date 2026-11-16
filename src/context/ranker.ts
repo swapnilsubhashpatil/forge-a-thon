@@ -122,8 +122,10 @@ export function rankFiles(index: WorkspaceIndex, query: RankQuery): RankedFile[]
 
   applyPageRank(signals);
   const byPath = new Map(signals.map((signal) => [signal.file.path, signal]));
+  const topScore = Math.max(0, ...signals.map((signal) => signal.score));
   for (const signal of signals) {
-    if (signal.pathHits.length || signal.siblings.length || signal.defines.length) signal.role = "target";
+    const strongPath = signal.pathHits.length > 0 && signal.score >= topScore * 0.6;
+    if (strongPath || signal.siblings.length || signal.defines.length) signal.role = "target";
     signal.reasons = describe(signal, byPath);
   }
   addCompanions(signals, byPath);
