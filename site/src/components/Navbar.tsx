@@ -6,10 +6,11 @@ import { scrollToId } from '../motion'
 import { REPO_URL } from '../links'
 
 const navItems = [
-  { id: 'features', label: 'Features' },
-  { id: 'how', label: 'How it works' },
-  { id: 'benchmarks', label: 'Benchmarks' },
-  { id: 'faq', label: 'FAQ' },
+  { id: 'problem', label: 'Problem' },
+  { id: 'before-after', label: 'Before / After' },
+  { id: 'benchmarks', label: 'Results' },
+  { id: 'trueforge', label: 'vs TrueForge' },
+  { id: 'limits', label: 'Limits' },
 ]
 
 export default function Navbar() {

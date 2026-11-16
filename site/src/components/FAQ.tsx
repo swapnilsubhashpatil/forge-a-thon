@@ -3,18 +3,20 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
 
 const faqs = [
-  ['Which models does Anvil work with?', 'Anything TrueForge can serve: OpenAI, Anthropic or Gemini with an API key, or a local Ollama model with tool calling. You set an ordered chain, for example a hosted primary, a fallback from another provider, and a local model as the last resort.'],
+  ['What do “before” and “after” mean on this page?', 'Before is the main branch: Anvil as it first passed the three fixed tasks. After is the agent-mode branch. The same end-to-end suite drove both builds on Flask 3.1.3, with every model whose provider answered (Claude Haiku, Sonnet and Opus 5.5, GPT-5.4-mini, GPT-6.1-sol and two local Ollama models), 2 runs each.'],
+  ['If pass rates barely changed, what improved?', 'How the agent finishes. On main, 11 of 14 Task B runs ended with edits that were never tested and none could prove they worked. On the branch, 0 of 14 end untested, every passing run finishes with a check that passed after the last edit, failed test runs fell from 3.1 to 0.3 per run, and input tokens fell 27%.'],
+  ['Which models does Anvil work with?', 'Anything TrueForge can serve: OpenAI, Anthropic or Gemini with an API key, or a local Ollama model with tool calling. You set an ordered chain, for example a hosted primary, a fallback from another provider, and a local model as the last resort. Small local models (7–8B) do not yet complete the fixed tasks on either build.'],
   ['Does my code leave my machine?', 'Ranking, the repo map and the MCP tool server all run locally. TrueForge runs in local mode. The only outbound traffic is to the model provider you choose, and with Ollama there is none.'],
   ['Is it a fork of Cline, Continue or Roo Code?', 'No. Anvil is a new extension. The agent loop is entirely TrueForge’s. The panel’s interaction ideas (compact activity rows, inline review) are inspired by Kilo Code and Cursor, but no upstream code is copied.'],
-  ['What happens if I reject part of an edit?', 'The accepted hunks are applied, and the rejected patch goes back to the model as the tool result, so it knows exactly what you didn’t want. Reject everything and the model receives a deny with your reason.'],
-  ['Why no embeddings?', 'Context is ranked with lexical and structural signals (BM25, symbols, import-graph PageRank). It is fast, deterministic, needs no extra model calls, and scores recall@5 = 1.00 on the Flask benchmark.'],
-  ['Which languages are supported?', 'Any language works for search and editing. Python and JS/TS also get symbol outlines and import-graph ranking; other languages are ranked by text and path.'],
+  ['What happens if I reject part of an edit?', 'The accepted hunks are applied. The model is told they are already written, that the rejection was your decision and not a tool failure, and gets the current text around the change as its new baseline. Reject everything and the model receives a deny with your reason.'],
+  ['Why no embeddings?', 'Context is ranked with lexical and structural signals (BM25, symbols, import-graph PageRank, git co-change). It is fast, deterministic and needs no extra model calls. On 103 held-out Flask commits a right file lands in the top five 85.4% of the time, against 69.9% for BM25 alone.'],
+  ['Which languages are supported?', 'Any language works for search and editing. Python and JS/TS also get symbol outlines and import-graph ranking; other languages are ranked by text and path. All benchmarks so far are on one Python repository.'],
 ]
 
 export default function FAQ() {
   const [open, setOpen] = useState<number | null>(0)
   return (
-    <section id="faq" className="py-24 md:py-32 bg-gray-50">
+    <section id="faq" className="py-24 md:py-32 bg-white">
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-20">
         <div>
           <h2 className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4">FAQ</h2>

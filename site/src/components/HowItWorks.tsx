@@ -8,14 +8,15 @@ type Step = { k: string; title: string; body: string; panel: { title: string; li
 const steps: Step[] = [
   {
     k: '01', title: 'Rank the repo, locally',
-    body: 'Before each turn Anvil scores every tracked file: @mentions, path segments, BM25 over symbols and docstrings, sibling symbols, test/docs companions and personalised PageRank over the import graph. No embeddings, no extra model calls.',
+    body: 'Before each turn Anvil scores every tracked file: @mentions, path segments, BM25 over symbols and docstrings, sibling symbols, test/docs companions, git co-change and personalised PageRank over the import graph. Project rules (AGENTS.md, CLAUDE.md…) go on top. No embeddings, no extra model calls.',
     panel: { title: 'context-pack', lines: [
       ['$ anvil rank "add a config command"', 'text-gray-400'],
       ['  src/flask/cli.py          target   siblings: routes_command', 'text-gray-200'],
       ['  tests/test_cli.py         test     companion of cli.py', 'text-gray-200'],
       ['  docs/cli.rst              docs     companion of cli.py', 'text-gray-200'],
       ['  src/flask/config.py       reference  content words only', 'text-gray-500'],
-      ['  pack 4,214 / 6,000 tokens · repo map + slices', 'text-amber-300'],
+      ['  Verify with (likely): python -m pytest tests/test_cli.py -q', 'text-emerald-300'],
+      ['  pack ≤ 6,000 tokens · repo map + slices', 'text-amber-300'],
     ] },
   },
   {
@@ -60,8 +61,21 @@ const steps: Step[] = [
     ] },
   },
   {
-    k: '05', title: 'Fail over, out loud',
-    body: 'Errors (or 45 s without output) are classified: auth, not-found, rate-limit, unavailable, timeout, context. Rate limits and 5xx get one jittered retry, then the circuit breaker opens for 60 s and the next model in the chain reruns the same request.',
+    k: '05', title: 'Prove it, then finish',
+    body: 'The agent ends by calling finish_task. A “verified” claim is rejected unless a command ran after the last accepted edit; a turn that stops with edits and no finish gets one follow-up. The change set shows a green or amber chip, so you know whether “done” was tested.',
+    panel: { title: 'finish_task', lines: [
+      ['→ propose_edit(cli.py)        accepted', 'text-gray-300'],
+      ['→ run_command  python -m pytest tests/test_cli.py -q', 'text-gray-300'],
+      ['  exit 0 · tests passed · wall time', 'text-emerald-300'],
+      ['→ finish_task { verified: true }', 'text-gray-200'],
+      ['  ✓ gate: a check ran after the last accepted edit', 'text-emerald-300'],
+      ['', ''],
+      ['  chip: verified: <command> passed', 'text-amber-300'],
+    ] },
+  },
+  {
+    k: '06', title: 'Fail over, out loud',
+    body: 'Errors (or 45 s without output) are classified: auth, not-found, rate-limit, unavailable, timeout, context. Rate limits and 5xx get one jittered retry, then the circuit breaker opens for 60 s and the next model in the chain reruns the same request. Hitting the step limit is not a model failure: it gets a wrap-up turn instead.',
     panel: { title: 'anvil.models.chain', lines: [
       ['1  broken/unreachable           ✗ unavailable (ECONNREFUSED)', 'text-rose-300'],
       ['   breaker open · 60s', 'text-gray-500'],
@@ -162,7 +176,7 @@ function Panel({ step, big }: { step: Step; big?: boolean }) {
         <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
         <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
         <span className="ml-2 font-mono text-xs text-gray-500 truncate">{step.panel.title}</span>
-        <span className="ml-auto font-mono text-xs text-gray-600">{step.k}/05</span>
+        <span className="ml-auto font-mono text-xs text-gray-600">{step.k}/{String(steps.length).padStart(2, '0')}</span>
       </div>
       <div className="flex-1 rounded-[1.5rem] bg-black/40 px-5 py-6 font-mono text-[11px] sm:text-[13px] leading-7 overflow-x-auto">
         {step.panel.lines.map(([text, tone], i) => (
