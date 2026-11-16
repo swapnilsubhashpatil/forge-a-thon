@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-11-16T19:29:34.015Z",
+  "corpus": "flask 3.1.3 src/flask/*.py",
+  "blocks": [
+    "__init__.py:47 __getattr__",
+    "app.py:308 send_static_file",
+    "app.py:546 run",
+    "app.py:953 make_default_options_response",
+    "app.py:1271 preprocess_request",
+    "blueprints.py:19 __init__",
+    "cli.py:200 prepare_import",
+    "cli.py:380 with_appcontext",
+    "cli.py:563 __init__",
+    "cli.py:665 make_context",
+    "config.py:35 __get__",
+    "ctx.py:67 get",
+    "ctx.py:168 index",
+    "ctx.py:309 __init__",
+    "ctx.py:368 session",
+    "debughelpers.py:81 attach_enctype_error_multidict",
+    "helpers.py:28 get_debug_flag",
+    "helpers.py:94 streamed_response",
+    "helpers.py:296 get_template_attribute",
+    "logging.py:16 wsgi_errors_stream",
+    "sessions.py:150 make_null_session",
+    "sessions.py:187 get_cookie_path",
+    "sessions.py:223 get_expiration_time",
+    "sessions.py:303 get_signing_serializer",
+    "templating.py:102 _iter_loaders",
+    "templating.py:208 stream_template_string",
+    "testing.py:125 __init__",
+    "views.py:78 dispatch_request",
+    "wrappers.py:93 max_form_memory_size",
+    "wrappers.py:181 blueprints"
+  ],
+  "rows": [
+    {
+      "perturbation": "none",
+      "cases": 30,
+      "exactOnly": 30,
+      "cascadeLocated": 30,
+      "cascadeExact": 30,
+      "kinds": "exact:30"
+    },
+    {
+      "perturbation": "trailing whitespace",
+      "cases": 30,
+      "exactOnly": 0,
+      "cascadeLocated": 30,
+      "cascadeExact": 30,
+      "kinds": "whitespace:30"
+    },
+    {
+      "perturbation": "tabs instead of spaces",
+      "cases": 30,
+      "exactOnly": 0,
+      "cascadeLocated": 30,
+      "cascadeExact": 30,
+      "kinds": "indentation:30"
+    },
+    {
+      "perturbation": "wrong indentation level",
+      "cases": 30,
+      "exactOnly": 0,
+      "cascadeLocated": 30,
+      "cascadeExact": 30,
+      "kinds": "indentation:30"
+    },
+    {
+      "perturbation": "CRLF file, LF old_string",
+      "cases": 30,
+      "exactOnly": 0,
+      "cascadeLocated": 30,
+      "cascadeExact": 30,
+      "kinds": "exact:30"
+    },
+    {
+      "perturbation": "one-character typo",
+      "cases": 30,
+      "exactOnly": 0,
+      "cascadeLocated": 25,
+      "cascadeExact": 25,
+      "kinds": "fuzzy:25"
+    },
+    {
+      "perturbation": "missing blank line",
+      "cases": 18,
+      "exactOnly": 0,
+      "cascadeLocated": 18,
+      "cascadeExact": 18,
+      "kinds": "fuzzy:18"
+    }
+  ],
+  "totals": {
+    "cases": 198,
+    "exact": 30,
+    "cascadeLocated": 193,
+    "cascadeExact": 193
+  },
+  "negatives": {
+    "cases": 60,
+    "falsePositives": 0
+  },
+  "corpusNegatives": {
+    "cases": 172,
+    "matched": [
+      "ctx.py:278 __exit__ (exact)",
+      "ctx.py:447 __exit__ (exact)",
+      "helpers.py:80 generate (exact)",
+      "helpers.py:95 generate (exact)"
+    ]
+  },
+  "avgFuzzyPathMs": 6.82
+}
