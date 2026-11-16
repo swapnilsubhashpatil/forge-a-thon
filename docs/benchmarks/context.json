@@ -4,9 +4,9 @@
   "node": "v25.5.0",
   "files": 226,
   "repoTokens": 294686,
-  "buildMsMedianOf5": 260.7,
-  "rankMsPerQuery": 13.5,
-  "packMsPerQuery": 14.9,
+  "buildMsMedianOf5": 184.9,
+  "rankMsPerQuery": 13.4,
+  "packMsPerQuery": 13.27,
   "quality": {
     "anvil": {
       "recall3": 0.833,
@@ -260,18 +260,18 @@
     "results": [
       {
         "query": "add_command",
-        "fallbackMs": 32.3,
-        "ripgrepMs": 71.9
+        "fallbackMs": 30.7,
+        "ripgrepMs": 76
       },
       {
         "query": "def .*_command",
-        "fallbackMs": 36.5,
-        "ripgrepMs": 75.4
+        "fallbackMs": 46.4,
+        "ripgrepMs": 90
       },
       {
         "query": "SESSION_COOKIE",
-        "fallbackMs": 33.8,
-        "ripgrepMs": 72
+        "fallbackMs": 57.4,
+        "ripgrepMs": 128.7
       }
     ]
   }

@@ -14,9 +14,9 @@ Run with `node scripts/bench.ts` (set `FLASK_REPO` to point elsewhere). Tokens a
 ## Speed
 | step | time |
 |---|---|
-| index build (median of 5) | 260.7 ms |
-| rank one query | 13.5 ms |
-| rank + build pack, one query | 14.9 ms |
+| index build (median of 5) | 184.9 ms |
+| rank one query | 13.4 ms |
+| rank + build pack, one query | 13.27 ms |
 
 ## Retrieval quality
 | ranker | recall@3 | recall@5 | MRR |
@@ -50,9 +50,9 @@ Run with `node scripts/bench.ts` (set `FLASK_REPO` to point elsewhere). Tokens a
 ## Code search (median of 5)
 | query | JS fallback | ripgrep |
 |---|---|---|
-| `add_command` | 32.3 ms | 71.9 ms |
-| `def .*_command` | 36.5 ms | 75.4 ms |
-| `SESSION_COOKIE` | 33.8 ms | 72 ms |
+| `add_command` | 30.7 ms | 76 ms |
+| `def .*_command` | 46.4 ms | 90 ms |
+| `SESSION_COOKIE` | 57.4 ms | 128.7 ms |
 
 ripgrep: VS Code bundled rg. The fallback scans the in-memory index cache; rg includes process spawn cost.
 
