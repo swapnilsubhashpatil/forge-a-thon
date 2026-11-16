@@ -11,6 +11,7 @@ import { buildContextPack } from "./context/contextPack.ts";
 import { formatAttachments } from "./context/attachments.ts";
 import { loadProjectRules } from "./context/projectRules.ts";
 import { registerAttachCommands } from "./ui/attachCommands.ts";
+import { registerAskSelection } from "./ui/askSelection.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
 import { FINISH_FOLLOW_UP, RETRY_EDITS_FOLLOW_UP, WRAP_UP } from "./agent/finishGate.ts";
 import { definedNames, ungroundedNames } from "./edits/grounding.ts";
@@ -350,6 +351,10 @@ export async function activate(context: vscode.ExtensionContext) {
     watcher.onDidCreate((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidDelete((uri) => !ignored(uri) && index.remove(relative(uri))),
     ...registerAttachCommands(folder.uri, (attachment) => chatView.attach(attachment)),
+    ...registerAskSelection(folder.uri, async (question, attachment) => {
+      await vscode.commands.executeCommand(`${ChatViewProvider.viewId}.focus`);
+      await sendPrompt(question, [], [attachment]).catch((error: unknown) => log(`Ask failed: ${String(error)}`));
+    }),
     vscode.commands.registerCommand("anvil.inlineEdit", async () => {
       await runInlineEdit(runner, folder.uri);
       await flushQueue();
