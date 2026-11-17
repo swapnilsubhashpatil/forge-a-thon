@@ -70,8 +70,17 @@ used, because the rules ban direct calls to model providers.
 ## Model setup
 Models are configured in TrueForge (Settings → Models, or `npm run harness`, which reads `.env`). The
 extension stores only an ordered chain of model names (`anvil.models.chain`). Recommended setup: a strong
-hosted primary, a fallback from a different provider, and a local Ollama model as the last resort. We
-developed and tested with a local `qwen3:8b` through a TrueForge custom provider.
+hosted primary, a fallback from a different provider, and a local Ollama model as the last resort.
+
+Models used:
+
+| Model | Where it ran | Approximate cost |
+|---|---|---|
+| `anthropic/claude-sonnet-5-5` | Anthropic API through TrueForge's catalog provider | One full e2e run of Tasks A, B and C (about 146k input tokens, most of them cached, and 3.8k output) cost well under US$1 |
+| `ollama/qwen3-8b` | Ollama on the laptop, through a TrueForge custom provider | Free; too weak for reliable tool calls |
+| `broken/unreachable` | Deliberately dead endpoint, used for Task C | None |
+
+To switch models, run **Anvil: Configure Model Fallback Chain** or edit `anvil.models.chain`.
 
 Failover is client-side because TrueForge has none. An error message, or no model output within 45 seconds,
 is classified as auth, not-found, rate-limit, unavailable, timeout or context. Rate-limit and 5xx errors get
