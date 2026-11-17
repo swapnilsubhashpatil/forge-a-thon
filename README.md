@@ -90,6 +90,15 @@ node scripts/bench-edits.ts
 npm run e2e           # VS Code + TrueForge + model, on a temporary Flask clone
 ```
 
+`npm run e2e` reads `ANVIL_E2E_MODEL` (e.g. `anthropic/claude-sonnet-5-5`), `ANVIL_E2E_REASONING` (`low` for hosted
+models), `ANVIL_E2E_TASK_B=1` to include Task B, and `ANVIL_E2E_PYTHON`. It needs a Python with Flask's dependencies
+(`werkzeug jinja2 itsdangerous click blinker pytest==8.3.5`) first on `PATH`. A passing run against Claude Sonnet is
+recorded in [docs/verification.md](docs/verification.md).
+
+Other repositories: open any folder. Python and JS/TS get symbol outlines and import-graph ranking. Other languages
+are ranked by text and path only. Files over 512 KB are skipped, and so are `node_modules`, `.git`, build output and
+virtualenvs.
+
 Layout: `src/` extension host (`agent/`, `context/`, `edits/`, `harness/`, `tools/`, `ui/`, `shared/`),
 `webview-ui/` React panel, `agents/` agent definitions, `docs/` architecture, benchmarks and write-up,
 `conductor/` project tracking (product, decisions, tracks).
