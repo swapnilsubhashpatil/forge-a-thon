@@ -42,9 +42,7 @@ export class WorkspaceIndex {
   private contents = new Map<string, { mtimeMs: number; text: string }>();
   private modules = new Map<string, string>();
   private realRoot?: Promise<string>;
-  /** How often each pair of files changed in the same commit (git history), for the co-change signal. */
   coChange = new Map<string, Map<string, number>>();
-  /** How many commits touched each file. */
   changeCount = new Map<string, number>();
   private identifierCache?: { version: number; names: Set<string> };
 
@@ -73,7 +71,6 @@ export class WorkspaceIndex {
     return this.entries.get(normalize(path));
   }
 
-  /** Every identifier that appears in any indexed file (G3 grounding check), cached per index version. */
   identifiers(): Set<string> {
     if (this.identifierCache?.version !== this.version) {
       const names = new Set<string>();
@@ -83,7 +80,6 @@ export class WorkspaceIndex {
     return this.identifierCache.names;
   }
 
-  /** Source of a workspace module by dotted name (`flask.helpers`), if the workspace defines it. */
   moduleText(module: string): string | undefined {
     const path = this.modules.get(module);
     return path ? this.text(path) : undefined;
@@ -183,11 +179,6 @@ export class WorkspaceIndex {
     }
   }
 
-  /**
-   * Co-change from the last commits (Aider and others mine history the same way): tests and docs that keep changing
-   * with a file are its real companions even when their names do not match (Flask's app.py -> tests/test_basic.py).
-   * Commits touching many files are skipped as sweeping refactors. No git, or a shallow clone, just means no signal.
-   */
   private async loadCoChange(commits = 1500): Promise<void> {
     this.coChange = new Map();
     this.changeCount = new Map();
@@ -208,7 +199,6 @@ export class WorkspaceIndex {
         }
       }
     } catch {
-      // Not a git repository or git unavailable.
     }
   }
 

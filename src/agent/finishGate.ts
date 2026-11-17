@@ -8,9 +8,7 @@ export interface CommandRecord {
 }
 
 export interface WorkLog {
-  /** Time of the last accepted hunk, if any. */
   lastEditAt?: number;
-  /** Last run_command result, if any. */
   lastCommand?: CommandRecord;
 }
 
@@ -23,10 +21,6 @@ export interface FinishArgs {
 
 export type FinishDecision = { ok: true; report: FinishReport; reply: string } | { ok: false; reply: string };
 
-/**
- * Cline's rule, made mechanical: "verified" needs a command that ran after the last accepted edit and passed.
- * An honest "not verified" with a reason is always accepted (tests denied, no tests, docs-only change).
- */
 export function evaluateFinish(args: FinishArgs, log: WorkLog, plan?: PlanItem[]): FinishDecision {
   const summary = args.summary.trim();
   if (!summary) return { ok: false, reply: "finish_task needs a summary of what you changed." };
@@ -67,11 +61,6 @@ export function evaluateFinish(args: FinishArgs, log: WorkLog, plan?: PlanItem[]
 
 export type FollowUpKind = "verify" | "retry-edits";
 
-/**
- * One follow-up when a turn ends without an accepted finish_task: after accepted edits ("verify and finish"), or
- * after edit attempts that never applied, e.g. old_string did not match ("re-read and retry, or explain").
- * Edits the user rejected do not count: that was a decision, not a failure.
- */
 export function needsFinishFollowUp(turn: { status: string; finish?: FinishReport; editedFiles: number; failedEdits?: number }): FollowUpKind | undefined {
   if (turn.status !== "done" || turn.finish !== undefined) return undefined;
   if (turn.editedFiles > 0) return "verify";

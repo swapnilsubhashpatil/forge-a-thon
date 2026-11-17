@@ -34,7 +34,6 @@ export async function buildContextPack(
   };
 
   tryAdd(`Strategy: ${strategy}`);
-  // Project rules go first: they are the repository's own instructions, small and always relevant.
   const rulesAdded = rules ? tryAdd(rules.text) : false;
   if (verify) tryAdd(`Verify with (likely): ${verify.command}  (${verify.reason})`);
   const rows = ranked.slice(0, TABLE_ROWS).map((file) => `| ${file.path} | ${file.role} | ${file.reasons.join("; ")} |`);

@@ -13,29 +13,19 @@ export interface ContextReport {
   budgetTokens: number;
   usedTokens: number;
   files: ContextFile[];
-  /** Files the agent read that were not in the pack. */
   fetched: string[];
-  /** Every file the agent read during the turn, pack files included. */
   read: string[];
-  /** Files with at least one accepted hunk during the turn. */
   edited: string[];
   live?: ContextLive;
-  /** Detected test command offered to the agent, if any. */
   verify?: string;
-  /** Project rule files included (AGENTS.md, CLAUDE.md, …). */
   rules?: string[];
-  /** What the user attached (selections, terminal output), shown as "attached by you". */
   attachments?: Array<{ label: string; kind: Attachment["kind"]; tokens: number }>;
-  /** Line ranges (1-based, inclusive) the pack showed the agent; whole-file mentions use end = Infinity. */
   slices?: Array<{ path: string; start: number; end: number }>;
 }
 
 export interface ContextLive {
-  /** Input tokens of the latest main-thread model call. */
   inputTokens: number;
-  /** Compaction trigger configured for the agent. */
   threshold: number;
-  /** Cache-read tokens of the latest call; undefined when the provider reports none. */
   cacheReadTokens?: number;
   compactions: number;
 }
@@ -122,7 +112,6 @@ export interface QueuedNote {
   text: string;
   mentions: string[];
   status: "queued" | "delivered";
-  /** Tool step (1-based) whose result carried the note. */
   deliveredAtStep?: number;
   turnId?: string;
 }
@@ -131,7 +120,6 @@ export interface TokenUsage {
   input: number;
   output: number;
   cached: number;
-  /** TrueForge's own cost estimate in USD (turn metrics); absent when the provider reports none. */
   costUsd?: number;
   reasoning?: number;
 }
@@ -148,7 +136,6 @@ export interface FinishReport {
   filesChanged: string[];
   verified: boolean;
   verification: string;
-  /** Command that verified the change, when verified. */
   command?: string;
 }
 
@@ -161,19 +148,12 @@ export interface Turn {
   status: TurnStatus;
   model: string;
   usage: TokenUsage;
-  /** Model calls completed in the attempt still running, not yet in `usage` (TrueForge totals arrive at turn end). */
   liveUsage?: TokenUsage & { calls: number };
-  /** Accepted finish_task report (M8). */
   finish?: FinishReport;
-  /** Latest plan from update_plan (M6). */
   plan?: PlanItem[];
-  /** Set on Anvil's own follow-up turns. */
   followUp?: boolean;
-  /** Change set holding this turn's accepted edits (per-turn undo). */
   changeSetId?: string;
-  /** Where this turn continued the TrueForge session from, so the conversation can be rewound to before it. */
   chain?: { sessionId: string; previousTurnId: string };
-  /** Rewound by "Restore": kept visible but greyed out, no longer part of the agent's history. */
   reverted?: boolean;
   startedAt: number;
   endedAt?: number;
@@ -258,9 +238,7 @@ export interface ChatState {
   activeModel?: string;
   busy: boolean;
   changeSets: ChangeSetSummary[];
-  /** Messages sent while a turn runs (M11). */
   queue: QueuedNote[];
-  /** Every model TrueForge has configured, for the composer's model picker. */
   availableModels?: string[];
 }
 

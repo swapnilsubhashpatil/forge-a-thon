@@ -111,7 +111,6 @@ async function taskA(api: AnvilApi, label: string): Promise<Turn> {
 
 const PY = () => process.env.ANVIL_E2E_PYTHON ?? "python";
 
-/** Checks Task B the way the problem statement verifies it: pytest, flask --help, masked JSON, at least three files. */
 function verifyTaskB(): Record<string, unknown> {
   const cwd = root().fsPath.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase());
   const env = { ...process.env, PYTHONPATH: `${cwd}/src` };
@@ -148,7 +147,6 @@ function verifyTaskB(): Record<string, unknown> {
   };
 }
 
-/** Resets the workspace when Undo could not (e.g. a task failed half way), so every task starts clean. */
 function resetTree(): void {
   git("checkout -- .");
   git("clean -fdq -e .vscode");
@@ -160,7 +158,6 @@ export async function run(): Promise<void> {
   await api.ready;
   assert.equal(api.store.state.harness.state, "ready", `harness: ${JSON.stringify(api.store.state.harness)}`);
 
-  // Each task is scored on its own: a weak model failing Task A must not hide its Task B behaviour.
   const checks: Record<string, { ok: boolean; error?: string }> = {};
   const check = async (label: string, action: () => Promise<void>) => {
     try {

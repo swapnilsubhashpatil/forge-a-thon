@@ -1,14 +1,6 @@
-/**
- * G3: "it confidently edits a symbol that does not exist". Before the user accepts a hunk, check that every bare
- * function call and every `from module import name` in the new lines refers to something that exists: defined in
- * the proposed file, anywhere in the workspace, imported, or a Python builtin. Only confident misses are reported;
- * attribute calls (obj.method()) are never checked because their receiver type is unknown.
- */
 
 export interface GroundingContext {
-  /** True when the identifier appears anywhere in the workspace or in an earlier proposal this session. */
   knownIdentifier: (name: string) => boolean;
-  /** Source text of a workspace module (`flask.helpers`), or undefined for external modules. */
   moduleText?: (module: string) => string | undefined;
 }
 
@@ -37,7 +29,6 @@ const PY_KEYWORDS = new Set(
 
 const IDENT = /[A-Za-z_][A-Za-z0-9_]*/g;
 
-/** Identifiers the proposed file text defines, binds or imports (approximate, errs towards "known"). */
 export function definedNames(text: string): Set<string> {
   const names = new Set<string>();
   const add = (fragment: string) => {
@@ -62,7 +53,6 @@ export function definedNames(text: string): Set<string> {
   return names;
 }
 
-/** Names used by `addedText` that cannot be found anywhere. Python only. */
 export function ungroundedNames(addedText: string, proposal: string, context: GroundingContext): string[] {
   const defined = definedNames(proposal);
   const missing = new Set<string>();
@@ -86,7 +76,6 @@ export function ungroundedNames(addedText: string, proposal: string, context: Gr
     }
     if (/^\s*import\s/.test(code)) continue;
 
-    // No space before "(": code is written `name(`, while docstring prose ("values (case-insensitive)") is not.
     for (const call of code.matchAll(/(^|[^\w.])([A-Za-z_]\w*)\(/g)) {
       const name = call[2];
       if (PY_KEYWORDS.has(name) || known(name)) continue;
@@ -100,7 +89,6 @@ function stripStrings(line: string): string {
   return line.replace(/("""|''')[\s\S]*?\1|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, '""');
 }
 
-/** Sentence for the badge and the model. */
 export function describeUngrounded(names: string[]): string {
   const list = names.map((name) => `\`${name}\``).join(", ");
   return names.length === 1 ? `${list} is not defined anywhere` : `${list} are not defined anywhere`;

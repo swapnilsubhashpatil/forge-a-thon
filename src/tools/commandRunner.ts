@@ -1,17 +1,10 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
-/**
- * M4: run_command that reports like Codex/Gemini CLI: a summary line first (exit code, test result, first failure,
- * wall time), a tail-weighted clip that says how much was cut, ANSI stripped, an inactivity timeout plus a hard cap,
- * and the whole process tree killed on timeout or cancel (child processes otherwise survive `exec`'s kill).
- */
 
 export interface CommandOptions {
   cwd: string;
   env?: Record<string, string>;
-  /** Hard cap on total run time. */
   timeoutMs: number;
-  /** Kill when the command prints nothing for this long. */
   idleTimeoutMs?: number;
 }
 
@@ -26,10 +19,6 @@ const HEAD_CHARS = 2_000;
 const TAIL_CHARS = 10_000;
 const running = new Set<ChildProcess>();
 
-/**
- * VS Code reports Windows paths with a lowercase drive letter ("c:\…"). Tools that compare paths case-sensitively
- * (Flask's own CLI tests among them) then fail for reasons unrelated to the change, so commands get "C:\…".
- */
 export function normalizeCwd(cwd: string, platform: NodeJS.Platform = process.platform): string {
   return platform === "win32" ? cwd.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase()) : cwd;
 }
@@ -80,7 +69,6 @@ export function runShell(command: string, options: CommandOptions): Promise<Comm
   });
 }
 
-/** Kills every command still running, e.g. when the user cancels the turn. */
 export function killAllCommands(): void {
   for (const child of running) killTree(child);
 }
@@ -100,7 +88,6 @@ export function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*(\x07|\x1b\\)/g, "").replace(/\r(?!\n)/g, "\n");
 }
 
-/** Keeps the head and (mostly) the tail, where test summaries and tracebacks end up. */
 export function clipOutput(text: string, head = HEAD_CHARS, tail = TAIL_CHARS): string {
   if (text.length <= head + tail) return text;
   const lines = text.split("\n").length;
@@ -109,7 +96,6 @@ export function clipOutput(text: string, head = HEAD_CHARS, tail = TAIL_CHARS): 
   return `${text.slice(0, head)}\n… ${text.length - head - tail} characters omitted (output had ${lines} lines, ~${keptLines} shown) …\n${text.slice(-tail)}`;
 }
 
-/** One-line digest of test-runner output: counts and the first failure location. */
 export function summarizeTests(output: string): string | undefined {
   const pytest = [...output.matchAll(/^=*\s*((?:\d+ (?:failed|passed|errors?|skipped|xfailed|xpassed|deselected|warnings?)(?:, )?)+) in [\d.]+s/gm)].at(-1);
   if (pytest) {
