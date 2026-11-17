@@ -1,4 +1,4 @@
-import "@vscode/codicons/dist/codicon.css";
+import "./fonts.ts";
 import "./styles.css";
 import { createRoot } from "react-dom/client";
 import type { ChatState, HostMessage, MentionItem, WebviewMessage } from "../../src/shared/protocol.ts";
@@ -53,6 +53,23 @@ const primary = "openai-main/gpt-5";
 const fallback = "google-gemini/gemini-2.5-pro";
 
 let state: ChatState = {
+  conversationId: "conv-2",
+  mode: "agent",
+  workspace: { name: "flask", files: 214 },
+  mcpServers: ["anvil-editor", "filesystem"],
+  settings: {
+    chain: [primary, fallback, "anthropic-main/claude-sonnet-4-5"],
+    reasoningEffort: "default",
+    reviewMode: "review",
+    autoApprove: ["pytest", "npm test"],
+    budgetTokens: 6000,
+  },
+  history: [
+    { id: "conv-2", title: "Add flask config command", updatedAt: now - 20_000, turns: 2, model: fallback, edits: 3 },
+    { id: "conv-1", title: "Why does the dev server reload twice?", updatedAt: now - 26 * 3_600_000, turns: 4, model: primary, edits: 0 },
+  ],
+  pendingReviews: [{ path: "src/flask/cli.py", hunks: 2, added: 12, removed: 1 }],
+  availableModels: [primary, fallback, "anthropic-main/claude-sonnet-4-5", "ollama/qwen3-8b"],
   sessionId: "ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   sessionUrl: "http://localhost:8790/sessions/ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   harness: { state: "ready", url: "http://localhost:8790" },
@@ -146,7 +163,8 @@ let state: ChatState = {
           kind: "notice",
           id: "n1",
           tone: "warning",
-          text: "Primary model failed (401 Unauthorized). Switched to google-gemini/gemini-2.5-pro — workspace unchanged.",
+          text: "Primary model failed (401 Unauthorized). Switched to google-gemini/gemini-2.5-pro; workspace unchanged.",
+          failover: { from: primary, to: fallback, reason: "401 Unauthorized" },
         },
         { kind: "reasoning", id: "r1", text: "routes_command is the closest sibling: a click command registered on FlaskGroup with with_appcontext. I'll mirror it, add a masked JSON dump, then a test in test_cli.py and an entry in docs/cli.rst." },
         { kind: "tool", id: "a1", name: "repo_map", title: "Mapped repository", detail: "src/flask · 24 files", status: "done", output: "src/flask/cli.py\n  class FlaskGroup\n  def routes_command\n  def run_command\nsrc/flask/config.py\n  class Config" },
@@ -217,6 +235,14 @@ function handle(message: WebviewMessage) {
           }),
         })),
       };
+      emit({ type: "state", state });
+      break;
+    case "setMode":
+      state = { ...state, mode: message.mode };
+      emit({ type: "state", state });
+      break;
+    case "updateSettings":
+      state = { ...state, settings: { ...state.settings, ...message.patch } };
       emit({ type: "state", state });
       break;
     case "undo":

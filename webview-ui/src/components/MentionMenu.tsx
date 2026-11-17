@@ -38,7 +38,7 @@ export function MentionMenu({ items, activeIndex, onSelect, onHover }: MentionMe
               index === activeIndex && "bg-selection text-selection-fg",
             )}
           >
-            <Icon name={item.kind === "file" ? "file" : "symbol-method"} className={item.kind === "file" ? "text-muted" : "text-purple"} />
+            <Icon name={item.kind === "file" ? "file" : "symbol"} className={item.kind === "file" ? "text-muted" : "text-purple"} />
             {item.kind === "file" ? (
               <PathText path={item.path} className="font-mono text-xs" />
             ) : (
