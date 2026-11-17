@@ -96,18 +96,20 @@ export interface NoticeStep {
   id: string;
   tone: NoticeTone;
   text: string;
+  failover?: { from: string; to: string; reason: string };
 }
 
 export type Step = TextStep | ReasoningStep | ToolStep | ApprovalStep | SubagentStep | NoticeStep;
 
 export type TurnStatus = "running" | "paused" | "done" | "cancelled" | "superseded" | "error";
 
-/** Code or terminal text the user explicitly sent to the chat. */
 export interface Attachment {
   id: string;
-  kind: "selection" | "terminal";
+  kind: "selection" | "terminal" | "image";
   label: string;
   text: string;
+  dataUrl?: string;
+  mime?: string;
   path?: string;
   startLine?: number;
   endLine?: number;
@@ -206,9 +208,47 @@ export interface ChangeSetSummary {
   files: ChangedFile[];
   createdAt: number;
   undone: boolean;
+  kept?: boolean;
+}
+
+export type AgentMode = "agent" | "ask";
+
+export type RevertScope = "conversation" | "code" | "both";
+
+export type ReviewMode = "review" | "applyThenReview";
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: number;
+  turns: number;
+  model?: string;
+  edits: number;
+}
+
+export interface PendingReview {
+  path: string;
+  hunks: number;
+  added: number;
+  removed: number;
+}
+
+export interface AnvilSettings {
+  chain: string[];
+  reasoningEffort: "default" | "none" | "low" | "medium" | "high";
+  reviewMode: ReviewMode;
+  autoApprove: string[];
+  budgetTokens: number;
 }
 
 export interface ChatState {
+  conversationId?: string;
+  mode: AgentMode;
+  history: ConversationSummary[];
+  pendingReviews: PendingReview[];
+  settings: AnvilSettings;
+  mcpServers: string[];
+  workspace?: { name: string; files: number };
   sessionId?: string;
   sessionUrl?: string;
   turns: Turn[];
@@ -238,19 +278,29 @@ export type HostMessage =
   | { type: "mentionResults"; requestId: number; items: MentionItem[] }
   | { type: "focusInput" }
   | { type: "attach"; attachment: Attachment }
-  | { type: "setDraft"; text: string; mentions: string[] };
+  | { type: "setDraft"; text: string; mentions: string[] }
+  | { type: "showView"; view: "chat" | "history" | "settings" };
 
 export type WebviewMessage =
   | { type: "ready" }
-  | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[] }
+  | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[]; mode: AgentMode }
   | { type: "cancel" }
   | { type: "removeNote"; id: string }
   | { type: "setPrimaryModel"; model: string }
-  | { type: "restore"; turnId: string; withCode: boolean }
+  | { type: "restore"; turnId: string; scope: RevertScope }
+  | { type: "continue" }
+  | { type: "retry"; turnId: string }
+  | { type: "setMode"; mode: AgentMode }
+  | { type: "keepAll" }
+  | { type: "discardAll" }
+  | { type: "openDiff"; path: string }
+  | { type: "openHistory"; id: string }
+  | { type: "deleteHistory"; id: string }
+  | { type: "updateSettings"; patch: Partial<AnvilSettings> }
   | { type: "undoTurn"; turnId: string }
   | { type: "stopAndSend"; id: string }
   | { type: "newSession" }
-  | { type: "approve"; toolCallId: string; allow: boolean }
+  | { type: "approve"; toolCallId: string; allow: boolean; forSession?: boolean }
   | { type: "openFile"; path: string; line?: number }
   | { type: "undo"; changeSetId: string }
   | { type: "searchMentions"; requestId: number; query: string }
