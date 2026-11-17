@@ -38,10 +38,22 @@ inline edit:
 - Ollama's default 4,096-token context window also truncated prompts. Start Ollama with
   `OLLAMA_CONTEXT_LENGTH=16384`.
 
-The run was also stopped when the machine ran out of memory. **Before recording, run `npm run e2e` with a
-hosted model** (`ANVIL_E2E_MODEL=openai/<model>` or similar) and do Tasks A, B and C by hand per the README
-demo script. The failover and cancel stages have not yet run end to end. Their logic is covered by code
-review, and the harness behaviour they depend on was confirmed in the spike.
+## Live end-to-end run (hosted model)
+
+Run on 2026-11-17 with `npm run e2e` against pallets/flask 3.1.3, with `ANVIL_E2E_MODEL=anthropic/claude-sonnet-5-5`,
+`ANVIL_E2E_REASONING=low`, `ANVIL_E2E_TASK_B=1` and `BROKEN_PROVIDER_FOR_DEMO=1`. All stages passed (exit code 0).
+
+| Stage | Result | Wall time | Tokens (in / out / cached) |
+|---|---|---|---|
+| Task A: inline edit of `get_debug_flag` | Done. One hunk (+5 / -1), checked in Python. | 6.9 s | 7,878 / 430 / 3,746 |
+| Task C: failover | `broken/unreachable` failed ("bad port"). Switched to Sonnet, same edit. | 4.6 s | 7,878 / 433 / 7,872 |
+| Cancel mid-turn | Turn cancelled, pending edits discarded. | 15 ms | — |
+| Task B: `flask config` command | cli.py, docs/cli.rst and tests/test_cli.py (+51 lines). Agent ran pytest; the new tests pass. | 36.0 s | 130,437 / 2,951 / 109,447 |
+
+Context selection labelled cli.py, cli.rst and test_cli.py as targets and config.py as a reference. On its
+first pytest run the agent hit an import error because `PYTHONPATH` was missing. It read the error, set
+`PYTHONPATH=src` and reran; the new tests passed (`2 passed`). The e2e harness needs a Python interpreter
+with Flask's dependencies, either on `PATH` or set through `ANVIL_E2E_PYTHON`.
 
 ## Independent review
 
