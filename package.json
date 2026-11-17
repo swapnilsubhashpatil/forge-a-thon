@@ -54,6 +54,18 @@
         "icon": "$(add)"
       },
       {
+        "command": "anvil.showHistory",
+        "title": "Show Chat History",
+        "category": "Anvil",
+        "icon": "$(history)"
+      },
+      {
+        "command": "anvil.showSettings",
+        "title": "Show Anvil Settings",
+        "category": "Anvil",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "anvil.cancel",
         "title": "Cancel Running Turn",
         "category": "Anvil",
@@ -80,6 +92,30 @@
         "title": "Reject All Changes in File",
         "category": "Anvil",
         "icon": "$(close-all)"
+      },
+      {
+        "command": "anvil.nextChange",
+        "title": "Go to Next Agent Change",
+        "category": "Anvil",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "anvil.prevChange",
+        "title": "Go to Previous Agent Change",
+        "category": "Anvil",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "anvil.keepAll",
+        "title": "Keep All Agent Changes",
+        "category": "Anvil",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "anvil.discardAll",
+        "title": "Discard All Agent Changes",
+        "category": "Anvil",
+        "icon": "$(discard)"
       },
       {
         "command": "anvil.undoLastChange",
@@ -131,19 +167,31 @@
         "command": "anvil.inlineEdit",
         "key": "ctrl+alt+k",
         "mac": "cmd+alt+k",
-        "when": "editorTextFocus"
+        "when": "workspaceFolderCount > 0 && editorTextFocus"
       },
       {
         "command": "anvil.acceptHunk",
         "key": "ctrl+alt+y",
         "mac": "cmd+alt+y",
-        "when": "anvil.reviewActive && editorTextFocus"
+        "when": "anvil.editorUnderReview && editorTextFocus"
       },
       {
         "command": "anvil.rejectHunk",
-        "key": "ctrl+alt+n",
-        "mac": "cmd+alt+n",
-        "when": "anvil.reviewActive && editorTextFocus"
+        "key": "ctrl+alt+x",
+        "mac": "cmd+alt+x",
+        "when": "anvil.editorUnderReview && editorTextFocus"
+      },
+      {
+        "command": "anvil.nextChange",
+        "key": "alt+f5",
+        "mac": "alt+f5",
+        "when": "anvil.editorUnderReview && editorTextFocus"
+      },
+      {
+        "command": "anvil.prevChange",
+        "key": "shift+alt+f5",
+        "mac": "shift+alt+f5",
+        "when": "anvil.editorUnderReview && editorTextFocus"
       },
       {
         "command": "anvil.cancel",
@@ -155,25 +203,25 @@
         "command": "anvil.addSelectionToChat",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
-        "when": "editorTextFocus"
+        "when": "workspaceFolderCount > 0 && editorTextFocus"
       },
       {
         "command": "anvil.addTerminalSelectionToChat",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
-        "when": "terminalFocus && terminalTextSelected"
+        "when": "workspaceFolderCount > 0 && terminalFocus && terminalTextSelected"
       },
       {
         "command": "anvil.addTerminalOutputToChat",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
-        "when": "terminalFocus && !terminalTextSelected"
+        "when": "workspaceFolderCount > 0 && terminalFocus && !terminalTextSelected"
       },
       {
         "command": "anvil.askAboutSelection",
         "key": "ctrl+alt+q",
         "mac": "cmd+alt+q",
-        "when": "editorTextFocus"
+        "when": "workspaceFolderCount > 0 && editorTextFocus"
       }
     ],
     "menus": {
@@ -184,49 +232,86 @@
           "group": "navigation@1"
         },
         {
-          "command": "anvil.openSessionInHarness",
+          "command": "anvil.showHistory",
           "when": "view == anvil.chat",
           "group": "navigation@2"
+        },
+        {
+          "command": "anvil.showSettings",
+          "when": "view == anvil.chat",
+          "group": "navigation@3"
+        },
+        {
+          "command": "anvil.openSessionInHarness",
+          "when": "view == anvil.chat",
+          "group": "navigation@4"
         }
       ],
       "editor/title": [
         {
           "command": "anvil.acceptAll",
-          "when": "anvil.reviewActive",
+          "when": "anvil.editorUnderReview",
           "group": "navigation@1"
         },
         {
           "command": "anvil.rejectAll",
-          "when": "anvil.reviewActive",
+          "when": "anvil.editorUnderReview",
           "group": "navigation@2"
         }
       ],
       "editor/context": [
         {
           "command": "anvil.askAboutSelection",
-          "when": "editorHasSelection",
+          "when": "workspaceFolderCount > 0 && editorHasSelection",
           "group": "1_modification@0"
         },
         {
           "command": "anvil.inlineEdit",
-          "when": "editorHasSelection",
+          "when": "workspaceFolderCount > 0 && editorHasSelection",
           "group": "1_modification@0"
         },
         {
           "command": "anvil.addSelectionToChat",
-          "when": "editorHasSelection",
+          "when": "workspaceFolderCount > 0 && editorHasSelection",
           "group": "1_modification@1"
         }
       ],
       "terminal/context": [
         {
           "command": "anvil.addTerminalSelectionToChat",
-          "when": "terminalTextSelected",
+          "when": "workspaceFolderCount > 0 && terminalTextSelected",
           "group": "anvil@1"
         },
         {
           "command": "anvil.addTerminalOutputToChat",
-          "group": "anvil@2"
+          "group": "anvil@2",
+          "when": "workspaceFolderCount > 0"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "anvil.acceptHunk",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.rejectHunk",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.acceptAll",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.rejectAll",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.nextChange",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.prevChange",
+          "when": "anvil.reviewActive"
         }
       ]
     },
@@ -258,6 +343,19 @@
           "default": 6000,
           "minimum": 1000,
           "description": "Token budget for the context pack attached to each turn."
+        },
+        "anvil.review.mode": {
+          "type": "string",
+          "enum": [
+            "review",
+            "applyThenReview"
+          ],
+          "default": "review",
+          "enumDescriptions": [
+            "Review each change in the editor before it is written",
+            "Apply changes at once; keep or undo them afterwards from the Changes tray"
+          ],
+          "description": "How agent edits reach your files."
         },
         "anvil.resilience.firstEventTimeoutSeconds": {
           "type": "number",
@@ -291,6 +389,14 @@
           "type": "number",
           "default": 120,
           "description": "Timeout for commands the agent runs."
+        },
+        "anvil.commands.autoApprove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Command prefixes the agent may run without asking, for example `npm test` or `pytest`. Commands that chain or redirect (`;`, `&&`, `|`, `>`) always ask."
         },
         "anvil.models.reasoningEffort": {
           "type": "string",
@@ -339,7 +445,6 @@
     "@types/react-dom": "^19.2.0",
     "@types/vscode": "~1.95.0",
     "@vitejs/plugin-react": "^6.3.0",
-    "@vscode/codicons": "^0.0.46-24",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",

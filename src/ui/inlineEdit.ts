@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { estimateTokens } from "../context/tokens.ts";
 import type { TurnRequest, TurnRunner } from "../agent/turnRunner.ts";
+import { inWorkspace } from "./attachCommands.ts";
 
 const SURROUNDING_LINES = 30;
 
@@ -16,7 +17,7 @@ export async function runInlineEdit(runner: TurnRunner, root: vscode.Uri): Promi
   }
   const document = editor.document;
   const path = vscode.workspace.asRelativePath(document.uri, false).replaceAll("\\", "/");
-  if (!document.uri.fsPath.startsWith(root.fsPath)) {
+  if (!inWorkspace(document.uri, root)) {
     void vscode.window.showWarningMessage("Inline edits work on files inside the open workspace.");
     return;
   }

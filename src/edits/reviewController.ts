@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { DiffStat } from "../shared/protocol.ts";
+import type { DiffStat, PendingReview } from "../shared/protocol.ts";
 import { ChangeLedger, fullRange } from "./changeLedger.ts";
 import { computeHunks, diffStat, formatPatch, renderReview, resolveText, sameText } from "./hunks.ts";
 import type { Hunk, HunkDecision, ReviewRender } from "./hunks.ts";
@@ -14,9 +14,7 @@ export interface ReviewRequest {
   title: string;
   changeSetId: string;
   isNewFile?: boolean;
-  /** G2: expected area; hunks outside it get a warning badge. */
   fence?: ScopeFence;
-  /** G3: names used by added text that exist nowhere (given the full proposal for local definitions). */
   grounding?: (addedText: string, proposal: string) => string[];
 }
 
@@ -28,9 +26,7 @@ export interface ReviewOutcome {
   finalText: string;
   rejectedPatch: string;
   stat: DiffStat;
-  /** Sentence about hunks flagged outside the fence, for the model. */
   scopeNote?: string;
-  /** M3: numbered current text around rejected changes. */
   currentRegion?: string;
 }
 
@@ -67,7 +63,6 @@ export class ReviewController implements vscode.Disposable {
     overviewRulerLane: vscode.OverviewRulerLane.Left,
   });
   private readonly disposables: vscode.Disposable[];
-  private inflight = 0;
   private epoch = 0;
   private proposalSeq = 0;
 
@@ -84,6 +79,8 @@ export class ReviewController implements vscode.Disposable {
       vscode.commands.registerCommand("anvil.rejectHunk", (target?: unknown, index?: number) => this.decideHunk(target, index, "rejected")),
       vscode.commands.registerCommand("anvil.acceptAll", (target?: unknown) => this.decideAll(target, "accepted")),
       vscode.commands.registerCommand("anvil.rejectAll", (target?: unknown) => this.decideAll(target, "rejected")),
+      vscode.commands.registerCommand("anvil.nextChange", () => this.revealChange(1)),
+      vscode.commands.registerCommand("anvil.prevChange", () => this.revealChange(-1)),
       vscode.languages.registerCodeLensProvider({ scheme: "file" }, {
         onDidChangeCodeLenses: this.lensEmitter.event,
         provideCodeLenses: (document) => this.lenses(document),
@@ -96,13 +93,13 @@ export class ReviewController implements vscode.Disposable {
       vscode.workspace.onDidSaveTextDocument((document) => this.onSaved(document)),
       vscode.window.tabGroups.onDidChangeTabs((event) => this.onTabsChanged(event)),
       vscode.window.onDidChangeVisibleTextEditors(() => this.paint()),
+      vscode.window.onDidChangeActiveTextEditor(() => this.publishEditorContext()),
     ];
   }
 
   async review(request: ReviewRequest): Promise<ReviewOutcome> {
     const key = request.uri.toString();
     const epoch = this.epoch;
-    this.inflight++;
     const run = (this.queue.get(key) ?? Promise.resolve()).then(() =>
       epoch === this.epoch ? this.start(request) : outcomeOf(request, [], [], request.baseline, true),
     );
@@ -112,7 +109,6 @@ export class ReviewController implements vscode.Disposable {
     try {
       return await run;
     } finally {
-      this.inflight--;
       if (this.queue.get(key) === tail) this.queue.delete(key);
       this.publish();
     }
@@ -123,12 +119,66 @@ export class ReviewController implements vscode.Disposable {
     await Promise.all([...this.sessions.values()].map((session) => this.settle(session, true)));
   }
 
-  hasPendingReviews(): boolean {
-    return this.inflight > 0;
+  async applyNow(request: ReviewRequest): Promise<ReviewOutcome> {
+    const hunks = computeHunks(request.baseline, request.proposal);
+    if (hunks.length === 0) return outcomeOf(request, hunks, [], request.baseline, false);
+    try {
+      if (request.isNewFile) await vscode.workspace.fs.writeFile(request.uri, new TextEncoder().encode(request.proposal));
+      else await saveText(await vscode.workspace.openTextDocument(request.uri), request.proposal);
+      const document = await vscode.workspace.openTextDocument(request.uri);
+      this.ledger.record(request.changeSetId, request.uri, request.isNewFile ? undefined : request.baseline, document.getText());
+    } catch (error) {
+      void vscode.window.showErrorMessage(`Anvil could not apply the change to ${request.title}: ${String(error)}`);
+      return outcomeOf(request, hunks, [], request.baseline, true);
+    }
+    return outcomeOf(request, hunks, hunks.map((): HunkDecision => "accepted"), request.proposal, false);
+  }
+
+  acceptEverywhere(): void {
+    for (const session of [...this.sessions.values()]) this.decide(session, session.hunks.map((hunk) => hunk.index), "accepted");
   }
 
   isReviewing(uri: vscode.Uri): boolean {
     return this.sessions.has(uri.toString());
+  }
+
+  pending(): PendingReview[] {
+    return [...this.sessions.values()].map((session) => {
+      const open = session.hunks.filter((hunk) => session.decisions[hunk.index] === "pending");
+      return {
+        path: vscode.workspace.asRelativePath(session.request.uri, false).replaceAll("\\", "/"),
+        hunks: open.length,
+        added: open.reduce((sum, hunk) => sum + hunk.added, 0),
+        removed: open.reduce((sum, hunk) => sum + hunk.removed, 0),
+      };
+    });
+  }
+
+  async show(uri: vscode.Uri): Promise<boolean> {
+    const session = this.sessions.get(uri.toString());
+    if (!session) return false;
+    if (session.request.isNewFile) await this.showDiff(session);
+    else await vscode.window.showTextDocument(session.request.uri, { preview: false });
+    return true;
+  }
+
+  async revealChange(step: 1 | -1): Promise<void> {
+    const stops = [...this.sessions.values()]
+      .filter((session) => !session.request.isNewFile && !session.settling)
+      .flatMap((session) => session.render.hunkAnchors
+        .filter((anchor) => session.decisions[anchor.index] === "pending")
+        .map((anchor) => ({ uri: session.request.uri, key: session.key, line: anchor.line })));
+    if (!stops.length) return;
+    const files = [...new Set(stops.map((stop) => stop.key))];
+    const rank = (key: string, line: number) => files.indexOf(key) * 10_000_000 + line;
+    const editor = vscode.window.activeTextEditor;
+    const cursor = editor ? rank(editor.document.uri.toString(), editor.selection.active.line) : -1;
+    const stop = step === 1
+      ? stops.find((entry) => rank(entry.key, entry.line) > cursor) ?? stops[0]
+      : stops.findLast((entry) => rank(entry.key, entry.line) < cursor) ?? stops[stops.length - 1];
+    const target = await vscode.window.showTextDocument(stop.uri, { preview: false });
+    target.selection = new vscode.Selection(stop.line, 0, stop.line, 0);
+    target.revealRange(new vscode.Range(stop.line, 0, stop.line, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
   }
 
   dispose(): void {
@@ -175,10 +225,15 @@ export class ReviewController implements vscode.Disposable {
     editor.revealRange(new vscode.Range(first, 0, first, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
   }
 
-  private async showProposal(session: Session): Promise<void> {
+  private async showDiff(session: Session): Promise<void> {
     const empty = session.proposalUri.with({ query: "empty" });
     const path = vscode.workspace.asRelativePath(session.request.uri, false);
     await vscode.commands.executeCommand("vscode.diff", empty, session.proposalUri, `${path} (new file)`, { preview: false });
+  }
+
+  private async showProposal(session: Session): Promise<void> {
+    await this.showDiff(session);
+    const path = vscode.workspace.asRelativePath(session.request.uri, false);
     void vscode.window
       .showInformationMessage(`Anvil wants to create ${path}.`, "Create file", "Discard")
       .then((choice) => this.decide(session, session.hunks.map((hunk) => hunk.index), choice === "Create file" ? "accepted" : "rejected"));
@@ -239,10 +294,11 @@ export class ReviewController implements vscode.Disposable {
     const { request } = session;
     const document = await vscode.workspace.openTextDocument(request.uri);
     if (!apply) return restoreBaseline(document, request.baseline, session.wasDirty);
-    await setText(document, finalText);
-    if (!(await document.save())) {
+    try {
+      await saveText(document, finalText);
+    } catch (error) {
       await setText(document, request.baseline);
-      throw new Error("the file could not be saved");
+      throw error;
     }
     this.ledger.record(request.changeSetId, request.uri, request.baseline, document.getText());
   }
@@ -347,7 +403,13 @@ export class ReviewController implements vscode.Disposable {
 
   private publish(): void {
     void vscode.commands.executeCommand("setContext", "anvil.reviewActive", this.sessions.size > 0);
+    this.publishEditorContext();
     this.stateEmitter.fire();
+  }
+
+  private publishEditorContext(): void {
+    const active = vscode.window.activeTextEditor?.document.uri.toString();
+    void vscode.commands.executeCommand("setContext", "anvil.editorUnderReview", active !== undefined && this.findSession(active) !== undefined);
   }
 }
 
@@ -398,6 +460,11 @@ async function setText(document: vscode.TextDocument, text: string): Promise<voi
   const edit = new vscode.WorkspaceEdit();
   edit.replace(document.uri, fullRange(document), text);
   if (!(await vscode.workspace.applyEdit(edit))) throw new Error(`could not update ${document.uri.fsPath}`);
+}
+
+async function saveText(document: vscode.TextDocument, text: string): Promise<void> {
+  await setText(document, text);
+  if (!(await document.save())) throw new Error("the file could not be saved");
 }
 
 async function restoreBaseline(document: vscode.TextDocument, baseline: string, wasDirty: boolean): Promise<void> {
