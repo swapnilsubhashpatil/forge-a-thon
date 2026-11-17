@@ -57,7 +57,7 @@ export default function Limits() {
                 <h4 className="text-base font-bold font-heading tracking-tight">Not built this round</h4>
               </div>
               <ul className="mt-2 space-y-1 text-sm text-gray-600">
-                {notBuilt.map((n) => <li key={n} className="flex gap-2"><span className="text-gray-300 select-none">—</span><span>{n}</span></li>)}
+                {notBuilt.map((n) => <li key={n} className="flex gap-2"><span className="text-gray-300 select-none">–</span><span>{n}</span></li>)}
               </ul>
             </div>
           </div>

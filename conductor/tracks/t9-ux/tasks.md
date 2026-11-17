@@ -59,11 +59,11 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done, `[-]` dropped (reason given).
 ## Lane C – Docs, benchmarks, tests
 
 - [ ] C1 Unit tests: ChangeLedger (partial undo, conflict, multi-set order), history store, webview store reducer.
-- [ ] C2 Em-dash and blink check in `npm test`.
-- [ ] C3 README: feature table and keys updated (modes, history, revert, tray, images, settings, Ctrl+Alt+L / Q, steering).
-- [ ] C4 Docs: Sumeet's features and the new UX in the README.
+- [x] C2 Em-dash and blink check in `npm test`.
+- [~] C3 README: feature table and keys updated (modes, history, revert, tray, images, settings, Ctrl+Alt+L / Q, steering).
+- [~] C4 Docs: Sumeet's features and the new UX in the README.
 - [ ] C5 Verification record: re-run typecheck, unit, guard and e2e suites; record results.
-- [ ] C6 Benchmarks page: link the before/after and held-out results; one-paragraph summary.
+- [x] C6 Benchmarks page: link the before/after and held-out results; one-paragraph summary.
 
 ## Out of scope for this iteration
 
