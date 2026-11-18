@@ -14,7 +14,7 @@ import { killAllCommands } from "../tools/commandRunner.ts";
 import { subagentDenial } from "./subagentPolicy.ts";
 import { LoopGuard } from "./loopGuard.ts";
 import { planReminder, validatePlan } from "./plan.ts";
-import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
+import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type FollowUpKind, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
   mode: AgentMode;
@@ -106,6 +106,8 @@ export class TurnRunner {
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
   private turnEdits = 0;
+  /** Main-thread edit attempts that could not be applied (no match, missing file), for the M8 follow-up. */
+  private failedEdits = 0;
   /** G2: lines of each file the agent has seen this session (read_file ranges). */
   private readonly seen = new Map<string, LineRange[]>();
   /** Files edited this session; their line numbers have shifted, so earlier reads no longer map and they are not fenced. */
@@ -281,10 +283,10 @@ export class TurnRunner {
   }
 
   /** True when the last turn ended with accepted edits but no accepted finish_task, and was not itself a follow-up. */
-  needsFinishFollowUp(): boolean {
+  needsFinishFollowUp(): FollowUpKind | undefined {
     const turn = this.deps.store.state.turns.at(-1);
-    if (!turn || turn.followUp) return false;
-    return needsFinishFollowUp({ status: turn.status, finish: turn.finish, editedFiles: this.turnEdits });
+    if (!turn || turn.followUp) return undefined;
+    return needsFinishFollowUp({ status: turn.status, finish: turn.finish, editedFiles: this.turnEdits, failedEdits: this.failedEdits });
   }
 
   /**
@@ -340,7 +342,10 @@ export class TurnRunner {
     this.hitStepLimit = false;
     this.mainModelCalls.clear();
     this.announcedCalls.clear();
-    if (!request.followUp) this.turnEdits = 0;
+    if (!request.followUp) {
+      this.turnEdits = 0;
+      this.failedEdits = 0;
+    }
     this.deps.onBusyChange(true);
 
     const turn: Turn = {
@@ -658,6 +663,7 @@ export class TurnRunner {
         const result = await this.deps.edits.resolve(name, args);
         const reason = active.cancelled ? "The user cancelled the turn." : this.deps.edits.denialReason(result);
         if (reason) this.deps.edits.drop(name, args);
+        if (!result.ok && !active.cancelled && threadId === MAIN_THREAD) this.failedEdits += 1;
         this.upsertTool(turn, {
           id: ref.id,
           status: reason ? "denied" : "running",

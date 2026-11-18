@@ -65,10 +65,24 @@ export function evaluateFinish(args: FinishArgs, log: WorkLog, plan?: PlanItem[]
   return { ok: true, report, reply: args.verified ? "Recorded: finished and verified." : "Recorded: finished, not verified." };
 }
 
-/** One follow-up when a turn ends with accepted edits but no accepted finish_task. */
-export function needsFinishFollowUp(turn: { status: string; finish?: FinishReport; editedFiles: number }): boolean {
-  return turn.status === "done" && turn.editedFiles > 0 && turn.finish === undefined;
+export type FollowUpKind = "verify" | "retry-edits";
+
+/**
+ * One follow-up when a turn ends without an accepted finish_task: after accepted edits ("verify and finish"), or
+ * after edit attempts that never applied, e.g. old_string did not match ("re-read and retry, or explain").
+ * Edits the user rejected do not count: that was a decision, not a failure.
+ */
+export function needsFinishFollowUp(turn: { status: string; finish?: FinishReport; editedFiles: number; failedEdits?: number }): FollowUpKind | undefined {
+  if (turn.status !== "done" || turn.finish !== undefined) return undefined;
+  if (turn.editedFiles > 0) return "verify";
+  if ((turn.failedEdits ?? 0) > 0) return "retry-edits";
+  return undefined;
 }
+
+export const RETRY_EDITS_FOLLOW_UP =
+  "Your edits were not applied: the tool results say why (usually old_string did not match the file). Read the current " +
+  "text with read_file, then propose the edit again with old_string copied exactly. If you cannot make the change, call " +
+  "finish_task with verified=false and explain what blocked you.";
 
 export const WRAP_UP =
   "You reached the step limit. Do not call any tool except finish_task. Call finish_task now: summarise what is done, " +
