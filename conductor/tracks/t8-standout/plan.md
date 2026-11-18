@@ -8,8 +8,13 @@ Every change must pass all four checks, or it is out of scope:
 2. It stays inside the eligibility rules: TrueForge runs the agent loop, editor actions are MCP tools,
    no direct model-provider calls (no embeddings), local mode only, no keys in the repo.
 3. It is listed below. Anything new is written under "Parked" first, never built straight away.
-4. It does not touch the brief's out-of-scope list: tab completion, training or hosting models,
-   hosted backends or databases, authentication, Marketplace publishing.
+4. It does not touch the brief's out-of-scope list (verbatim):
+   > Out of scope (not scored; time spent here is time lost): tab completion or fill-in-the-middle;
+   > training, fine-tuning or hosting your own model; a hosted backend, database or deployed service
+   > beyond TrueForge in local mode; user accounts or authentication; publishing to the VS Code Marketplace.
+
+Audit of every T8 item against check 4: S1–S5 are all local, inside the extension, and use only
+TrueForge in local mode. No item adds completion, a model, a service, an account or a Marketplace step.
 
 ## In scope (in order; stop and record the video if 19 Nov runs late)
 - [x] S1 Inline mode exposes only `propose_edit` and `read_file`; reasoning effort `none` for local models (B3)
