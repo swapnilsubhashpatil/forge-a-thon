@@ -12,6 +12,7 @@ import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./note
 import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFence.ts";
 import { killAllCommands } from "../tools/commandRunner.ts";
 import { subagentDenial } from "./subagentPolicy.ts";
+import { LoopGuard } from "./loopGuard.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
@@ -91,6 +92,7 @@ export class TurnRunner {
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
   private noteCounter = 0;
+  private readonly loopGuard = new LoopGuard();
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
   private turnEdits = 0;
@@ -139,6 +141,7 @@ export class TurnRunner {
 
   noteFileEdited(path: string): void {
     this.work.lastEditAt = Date.now();
+    this.loopGuard.reset();
     this.shifted.add(path);
     if (this.active) this.turnEdits += 1;
     const context = this.activeContext();
@@ -196,7 +199,9 @@ export class TurnRunner {
       else this.expectedMain.set(signature, announced - 1);
     }
     const isMain = announced > 0 || this.runningSubagents.size === 0;
-    if (!isMain || !this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
+    if (!isMain) return result;
+    result = this.guardLoop(active, name, args, result);
+    if (!this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
     const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
     const step = (turn?.steps.filter((entry) => entry.kind === "tool" && entry.threadTitle === undefined).length ?? 0) || 1;
     let delivered: ReturnType<typeof deliverQueued> = [];
@@ -207,6 +212,20 @@ export class TurnRunner {
     const label = delivered.length === 1 ? "your message" : `${delivered.length} messages`;
     this.deps.store.notice(active.turnId, "info", `Delivered ${label} to the agent with the result of step ${step}.`);
     return result + formatNotes(delivered);
+  }
+
+  /** M7: appends a loop warning, or stops the turn, when the main agent keeps repeating an identical call. */
+  private guardLoop(active: ActiveTurn, name: string, args: Record<string, unknown>, result: string): string {
+    if (name === "finish_task") return result;
+    const verdict = this.loopGuard.record(name, args, result);
+    if (verdict.action === "ok") return result;
+    if (verdict.action === "nudge") {
+      this.deps.store.notice(active.turnId, "warning", `Loop detected: ${name} repeated with the same result. The agent was asked to change approach.`);
+      return `${result}\n\n${verdict.message}`;
+    }
+    this.deps.store.notice(active.turnId, "error", `${verdict.message} The run was stopped; accepted changes were kept.`);
+    setTimeout(() => void this.cancel(), 0);
+    return `${result}\n\n${verdict.message}`;
   }
 
   noteCommand(command: string, exitCode: string): void {
@@ -283,6 +302,7 @@ export class TurnRunner {
     this.starting = false;
     this.runningSubagents.clear();
     this.expectedMain.clear();
+    this.loopGuard.reset();
     if (!request.followUp) this.turnEdits = 0;
     this.deps.onBusyChange(true);
 
