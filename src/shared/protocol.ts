@@ -22,6 +22,8 @@ export interface ContextReport {
   live?: ContextLive;
   /** Detected test command offered to the agent, if any. */
   verify?: string;
+  /** What the user attached (selections, terminal output), shown as "attached by you". */
+  attachments?: Array<{ label: string; kind: Attachment["kind"]; tokens: number }>;
   /** Line ranges (1-based, inclusive) the pack showed the agent; whole-file mentions use end = Infinity. */
   slices?: Array<{ path: string; start: number; end: number }>;
 }
@@ -97,6 +99,19 @@ export interface NoticeStep {
 export type Step = TextStep | ReasoningStep | ToolStep | ApprovalStep | SubagentStep | NoticeStep;
 
 export type TurnStatus = "running" | "paused" | "done" | "cancelled" | "superseded" | "error";
+
+/** Code or terminal text the user explicitly sent to the chat. */
+export interface Attachment {
+  id: string;
+  kind: "selection" | "terminal";
+  label: string;
+  text: string;
+  path?: string;
+  startLine?: number;
+  endLine?: number;
+  command?: string;
+  exitCode?: number;
+}
 
 export interface QueuedNote {
   id: string;
@@ -206,11 +221,12 @@ export interface MentionItem {
 export type HostMessage =
   | { type: "state"; state: ChatState }
   | { type: "mentionResults"; requestId: number; items: MentionItem[] }
-  | { type: "focusInput" };
+  | { type: "focusInput" }
+  | { type: "attach"; attachment: Attachment };
 
 export type WebviewMessage =
   | { type: "ready" }
-  | { type: "send"; text: string; mentions: string[] }
+  | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[] }
   | { type: "cancel" }
   | { type: "removeNote"; id: string }
   | { type: "stopAndSend"; id: string }

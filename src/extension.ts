@@ -8,6 +8,8 @@ import { CircuitBreaker } from "./agent/resilience.ts";
 import { TurnRunner, type RunnerSettings } from "./agent/turnRunner.ts";
 import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
+import { formatAttachments } from "./context/attachments.ts";
+import { registerAttachCommands } from "./ui/attachCommands.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
 import { FINISH_FOLLOW_UP, RETRY_EDITS_FOLLOW_UP, WRAP_UP } from "./agent/finishGate.ts";
 import { definedNames, ungroundedNames } from "./edits/grounding.ts";
@@ -17,7 +19,7 @@ import { ChangeLedger } from "./edits/changeLedger.ts";
 import { ReviewController } from "./edits/reviewController.ts";
 import { HarnessClient } from "./harness/harnessClient.ts";
 import { HarnessProcess } from "./harness/harnessProcess.ts";
-import type { HostMessage, WebviewMessage } from "./shared/protocol.ts";
+import type { Attachment, HostMessage, WebviewMessage } from "./shared/protocol.ts";
 import { createEditorTools, ReadCache } from "./tools/editorTools.ts";
 import { startToolServer, type RunningToolServer } from "./tools/toolServer.ts";
 import { ChatViewProvider } from "./ui/chatViewProvider.ts";
@@ -158,15 +160,15 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   };
 
-  const sendPrompt = async (text: string, mentions: string[]): Promise<void> => {
+  const sendPrompt = async (text: string, mentions: string[], attachments: Attachment[] = []): Promise<void> => {
     // While a turn runs, a new message is queued and delivered at the next tool step (M11), never cancelling work.
     if (runner.busy) {
-      runner.queueNote(text, mentions);
+      runner.queueNote(`${formatAttachments(attachments).text}${text}`, mentions);
       return;
     }
     runner.markStarting(true);
     try {
-      await runTurn(text, mentions);
+      await runTurn(text, mentions, attachments);
     } finally {
       runner.markStarting(false);
     }
@@ -208,7 +210,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await sendPrompt(note.text, note.mentions);
   };
 
-  const runTurn = async (text: string, mentions: string[]) => {
+  const runTurn = async (text: string, mentions: string[], attachments: Attachment[] = []) => {
     await indexReady;
     const mentionPaths = [...new Set(mentions.map((mention) => mention.split("#")[0]).filter((path) => index.get(path)))];
     const activeFiles = vscode.window.visibleTextEditors
@@ -218,12 +220,17 @@ export async function activate(context: vscode.ExtensionContext) {
     const targets = ranked.filter((file) => file.role !== "reference").map((file) => file.path);
     const verify = detectTestCommand(folder.uri.fsPath, index.files().map((file) => file.path), targets);
     const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify);
+    // What the user explicitly sent goes first, with its own budget (see attachments.ts).
+    const attached = formatAttachments(attachments);
+    if (attachments.length) {
+      pack.report.attachments = attachments.map((attachment) => ({ label: attachment.label, kind: attachment.kind, tokens: Math.round(attached.tokens / attachments.length) }));
+    }
     await runner.run({
       mode: "agent",
       title: text.slice(0, 80),
       prompt: text,
       mentions,
-      message: `${pack.text}\n\n${text}`,
+      message: `${attached.text}${pack.text}\n\n${text}`,
       context: pack.report,
     });
   };
@@ -255,7 +262,7 @@ export async function activate(context: vscode.ExtensionContext) {
         runner.refreshModelHealth();
         break;
       case "send":
-        await sendPrompt(message.text, message.mentions).catch((error: unknown) => log(`Turn failed: ${String(error)}`));
+        await sendPrompt(message.text, message.mentions, message.attachments ?? []).catch((error: unknown) => log(`Turn failed: ${String(error)}`));
         break;
       case "cancel":
         await runner.cancel();
@@ -316,6 +323,7 @@ export async function activate(context: vscode.ExtensionContext) {
     watcher.onDidChange((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidCreate((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidDelete((uri) => !ignored(uri) && index.remove(relative(uri))),
+    ...registerAttachCommands(folder.uri, (attachment) => chatView.attach(attachment)),
     vscode.commands.registerCommand("anvil.inlineEdit", async () => {
       await runInlineEdit(runner, folder.uri);
       await flushQueue();

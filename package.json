@@ -102,6 +102,22 @@
         "command": "anvil.restartHarness",
         "title": "Reconnect to TrueForge",
         "category": "Anvil"
+      },
+      {
+        "command": "anvil.addSelectionToChat",
+        "title": "Add Selection to Anvil Chat",
+        "category": "Anvil",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "anvil.addTerminalSelectionToChat",
+        "title": "Add Terminal Selection to Anvil Chat",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.addTerminalOutputToChat",
+        "title": "Add Last Terminal Command to Anvil Chat",
+        "category": "Anvil"
       }
     ],
     "keybindings": [
@@ -128,6 +144,24 @@
         "key": "ctrl+alt+backspace",
         "mac": "cmd+alt+backspace",
         "when": "anvil.turnRunning"
+      },
+      {
+        "command": "anvil.addSelectionToChat",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "anvil.addTerminalSelectionToChat",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "terminalFocus && terminalTextSelected"
+      },
+      {
+        "command": "anvil.addTerminalOutputToChat",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "terminalFocus && !terminalTextSelected"
       }
     ],
     "menus": {
@@ -160,6 +194,22 @@
           "command": "anvil.inlineEdit",
           "when": "editorHasSelection",
           "group": "1_modification@0"
+        },
+        {
+          "command": "anvil.addSelectionToChat",
+          "when": "editorHasSelection",
+          "group": "1_modification@1"
+        }
+      ],
+      "terminal/context": [
+        {
+          "command": "anvil.addTerminalSelectionToChat",
+          "when": "terminalTextSelected",
+          "group": "anvil@1"
+        },
+        {
+          "command": "anvil.addTerminalOutputToChat",
+          "group": "anvil@2"
         }
       ]
     },
@@ -207,7 +257,11 @@
         },
         "anvil.agent.promptProfile": {
           "type": "string",
-          "enum": ["auto", "full", "compact"],
+          "enum": [
+            "auto",
+            "full",
+            "compact"
+          ],
           "default": "auto",
           "enumDescriptions": [
             "Compact prompt for local ollama/ models, full prompt otherwise",

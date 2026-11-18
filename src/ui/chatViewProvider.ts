@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
-import type { ChatState, HostMessage, WebviewMessage } from "../shared/protocol.ts";
+import type { Attachment, ChatState, HostMessage, WebviewMessage } from "../shared/protocol.ts";
 
 export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly viewId = "anvil.chat";
@@ -38,6 +38,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   focusInput(): void {
     this.post({ type: "focusInput" });
+  }
+
+  /** Reveals the chat and adds an attachment (selection or terminal text) to the draft. */
+  async attach(attachment: Attachment): Promise<void> {
+    await vscode.commands.executeCommand(`${ChatViewProvider.viewId}.focus`);
+    // A freshly revealed webview needs a moment to load before it can receive messages.
+    for (let tries = 0; !this.view && tries < 20; tries++) await new Promise((resolve) => setTimeout(resolve, 100));
+    this.post({ type: "attach", attachment });
   }
 
   private post(message: HostMessage): void {

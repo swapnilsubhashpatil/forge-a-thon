@@ -5,7 +5,7 @@ import { EmptyState } from "./components/EmptyState.tsx";
 import { Header } from "./components/Header.tsx";
 import { ModelChain } from "./components/ModelChain.tsx";
 import { TurnView } from "./components/TurnView.tsx";
-import { useStore } from "./state/store.ts";
+import { takeIncoming, useStore } from "./state/store.ts";
 import { loadDraft, post, saveDraft, type Draft } from "./state/vscode.ts";
 
 function useStickToBottom(content: unknown) {
@@ -32,6 +32,17 @@ export function App() {
   const scroller = useStickToBottom(chat.turns);
 
   useEffect(() => post({ type: "ready" }), []);
+
+  const incoming = useStore((snapshot) => snapshot.incoming);
+  useEffect(() => {
+    const attachments = takeIncoming();
+    if (!attachments.length) return;
+    setDraft((current) => {
+      const next = { ...current, attachments: [...(current.attachments ?? []), ...attachments] };
+      saveDraft(next);
+      return next;
+    });
+  }, [incoming]);
 
   function changeDraft(next: Draft) {
     setDraft(next);

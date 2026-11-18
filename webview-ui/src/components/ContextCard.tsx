@@ -153,6 +153,23 @@ export function ContextCard({ report, defaultOpen }: { report: ContextReport; de
       </button>
       {open && (
         <div className="px-1 pb-2">
+          {(report.attachments?.length ?? 0) > 0 && (
+            <div className="mb-1 border-b border-border px-2 pb-1.5">
+              <div className="mb-1 flex items-center gap-1 text-xs text-muted">
+                <Icon name="pinned" />
+                <span>attached by you (sent first)</span>
+              </div>
+              <ul className="flex flex-wrap gap-1">
+                {report.attachments!.map((attachment) => (
+                  <li key={attachment.label} className="flex items-center gap-1 rounded-sm bg-purple/14 px-1.5 font-mono text-2xs text-purple">
+                    <Icon name={attachment.kind === "terminal" ? "terminal" : "code"} />
+                    {attachment.label}
+                    <span className="text-muted">~{formatTokens(attachment.tokens)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <ul>
             {report.files.map((file) => (
               <FileRow key={file.path} file={file} read={report.read.includes(file.path)} edited={report.edited.includes(file.path)} />
