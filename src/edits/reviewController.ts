@@ -4,6 +4,7 @@ import { ChangeLedger, fullRange } from "./changeLedger.ts";
 import { computeHunks, diffStat, formatPatch, renderReview, resolveText, sameText } from "./hunks.ts";
 import type { Hunk, HunkDecision, ReviewRender } from "./hunks.ts";
 import { describeFlags, flagHunks, type ScopeFence } from "./scopeFence.ts";
+import { describeUngrounded } from "./grounding.ts";
 
 export interface ReviewRequest {
   uri: vscode.Uri;
@@ -14,6 +15,8 @@ export interface ReviewRequest {
   isNewFile?: boolean;
   /** G2: expected area; hunks outside it get a warning badge. */
   fence?: ScopeFence;
+  /** G3: names used by added text that exist nowhere (given the full proposal for local definitions). */
+  grounding?: (addedText: string, proposal: string) => string[];
 }
 
 export interface ReviewOutcome {
@@ -322,6 +325,8 @@ export class ReviewController implements vscode.Disposable {
         new vscode.CodeLens(at, { title: "$(close) Reject", command: "anvil.rejectHunk", arguments: [session.key, hunk.index] }),
         new vscode.CodeLens(at, { title: `+${hunk.added} −${hunk.removed}`, command: "" }),
       );
+      const ghost = groundingFlags(session.request, session.hunks)[hunk.index];
+      if (ghost) lenses.push(new vscode.CodeLens(at, { title: `$(error) ${ghost}`, tooltip: "Anvil: this change uses a name that is not defined in the workspace.", command: "" }));
       const flag = flags[hunk.index];
       if (flag) lenses.push(new vscode.CodeLens(at, { title: `$(warning) ${flag}`, tooltip: "Anvil: this change is outside the area you asked about. Review it carefully.", command: "" }));
     }
@@ -356,8 +361,28 @@ function outcomeOf(request: ReviewRequest, hunks: Hunk[], decisions: HunkDecisio
     finalText,
     rejectedPatch: finalText === request.proposal ? "" : formatPatch(path, finalText, request.proposal),
     stat: diffStat(request.baseline, finalText),
-    scopeNote: discarded ? undefined : describeFlags(hunks, flagHunks(hunks, request.fence)),
+    scopeNote: discarded ? undefined : reviewNotes(request, hunks),
   };
+}
+
+function groundingFlags(request: ReviewRequest, hunks: Hunk[]): Array<string | undefined> {
+  const check = request.grounding;
+  if (!check) return hunks.map(() => undefined);
+  return hunks.map((hunk) => {
+    const names = check(hunk.proposalLines.join(""), request.proposal);
+    return names.length ? describeUngrounded(names) : undefined;
+  });
+}
+
+function reviewNotes(request: ReviewRequest, hunks: Hunk[]): string | undefined {
+  const notes: string[] = [];
+  const ghosts = groundingFlags(request, hunks)
+    .map((flag, index) => (flag ? `change ${index + 1}: ${flag}` : undefined))
+    .filter(Boolean);
+  if (ghosts.length) notes.push(`Grounding check: ${ghosts.join("; ")} in the workspace. Define or import it, or use the existing name.`);
+  const scope = describeFlags(hunks, flagHunks(hunks, request.fence));
+  if (scope) notes.push(scope);
+  return notes.length ? notes.join("\n") : undefined;
 }
 
 function lineRange(line: number): vscode.Range {

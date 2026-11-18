@@ -10,6 +10,7 @@ import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
 import { FINISH_FOLLOW_UP } from "./agent/finishGate.ts";
+import { definedNames, ungroundedNames } from "./edits/grounding.ts";
 import { rankFiles } from "./context/ranker.ts";
 import { WorkspaceIndex } from "./context/workspaceIndex.ts";
 import { ChangeLedger } from "./edits/changeLedger.ts";
@@ -94,6 +95,19 @@ export async function activate(context: vscode.ExtensionContext) {
     onBusyChange: (busy) => void vscode.commands.executeCommand("setContext", "anvil.turnRunning", busy),
   });
   edits.fenceFor = (path) => runner.fenceFor(path);
+  // G3: names proposed earlier this session count as known (a test may import a function another hunk just added).
+  const proposedNames = new Set<string>();
+  edits.groundingFor = (path) => {
+    if (!path.endsWith(".py")) return undefined;
+    return (added, proposal) => {
+      const missing = ungroundedNames(added, proposal, {
+        knownIdentifier: (name) => proposedNames.has(name) || index.identifiers().has(name),
+        moduleText: (module) => index.moduleText(module),
+      });
+      for (const name of definedNames(proposal)) proposedNames.add(name);
+      return missing;
+    };
+  };
 
   let toolServer: RunningToolServer | undefined;
   const indexReady = index.build().then(

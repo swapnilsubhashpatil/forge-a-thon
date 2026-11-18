@@ -42,6 +42,7 @@ export class WorkspaceIndex {
   private contents = new Map<string, { mtimeMs: number; text: string }>();
   private modules = new Map<string, string>();
   private realRoot?: Promise<string>;
+  private identifierCache?: { version: number; names: Set<string> };
 
   constructor(root: string) {
     this.root = root;
@@ -65,6 +66,22 @@ export class WorkspaceIndex {
 
   get(path: string): FileEntry | undefined {
     return this.entries.get(normalize(path));
+  }
+
+  /** Every identifier that appears in any indexed file (G3 grounding check), cached per index version. */
+  identifiers(): Set<string> {
+    if (this.identifierCache?.version !== this.version) {
+      const names = new Set<string>();
+      for (const { text } of this.contents.values()) for (const match of text.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) names.add(match[0]);
+      this.identifierCache = { version: this.version, names };
+    }
+    return this.identifierCache.names;
+  }
+
+  /** Source of a workspace module by dotted name (`flask.helpers`), if the workspace defines it. */
+  moduleText(module: string): string | undefined {
+    const path = this.modules.get(module);
+    return path ? this.text(path) : undefined;
   }
 
   text(path: string): string | undefined {
