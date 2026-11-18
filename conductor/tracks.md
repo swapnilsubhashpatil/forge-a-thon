@@ -9,3 +9,4 @@
 | T5 Webview UI | done | [plan](tracks/t5-webview/plan.md) |
 | T6 Verification: unit, E2E, review/fix pass | review fixed; hosted-model E2E open | [plan](tracks/t6-verification/plan.md) |
 | T7 Ship: README, write-up, report PDF, VSIX, merge to main | in progress | [plan](tracks/t7-ship/plan.md) |
+| T8 Standout: scope-locked improvements (scorecard, weak-model rescue, held-out bench) | in progress | [plan](tracks/t8-standout/plan.md) |
