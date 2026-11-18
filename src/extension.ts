@@ -93,6 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
     log,
     onBusyChange: (busy) => void vscode.commands.executeCommand("setContext", "anvil.turnRunning", busy),
   });
+  edits.fenceFor = (path) => runner.fenceFor(path);
 
   let toolServer: RunningToolServer | undefined;
   const indexReady = index.build().then(
@@ -117,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
         commandTimeoutMs: () => config().get<number>("commands.timeoutSeconds", 120) * 1000,
         commandEnv: (): Record<string, string> => (!process.env.PYTHONPATH && pythonSrcLayout(folder.uri.fsPath) ? { PYTHONPATH: "src" } : {}),
         currentContext: () => runner.currentContext(),
-        onFileRead: (path) => runner.noteFileRead(path),
+        onFileRead: (path, start, end) => runner.noteFileRead(path, start, end),
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
         onCommandResult: (command, exitCode) => runner.noteCommand(command, exitCode),
         finishTask: (args) => runner.finishTask(args),

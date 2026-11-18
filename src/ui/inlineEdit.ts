@@ -75,6 +75,7 @@ export function inlineRequest(document: vscode.TextDocument, path: string, first
     prompt: instruction,
     mentions: [path],
     message,
+    selection: { path, start: firstLine + 1, end: lastLine + 1 },
     context: {
       strategy: "Inline edit: the selection plus 30 surrounding lines, no repository search.",
       budgetTokens: estimateTokens(message),

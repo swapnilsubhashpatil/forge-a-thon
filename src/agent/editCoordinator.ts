@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import { applyReplacement } from "../edits/editMatcher.ts";
 import type { ReviewController, ReviewOutcome } from "../edits/reviewController.ts";
 import type { DiffStat } from "../shared/protocol.ts";
+import type { ScopeFence } from "../edits/scopeFence.ts";
 
 export const EDIT_TOOLS = new Set(["propose_edit", "create_file"]);
 
@@ -20,6 +21,8 @@ export class EditCoordinator {
   private currentSet = "";
   private generation = 0;
   private cancelled = false;
+  /** G2: returns the expected area for an edit to an existing file, if any. */
+  fenceFor: (path: string) => ScopeFence | undefined = () => undefined;
 
   constructor(root: vscode.Uri, review: ReviewController, onApplied: (path: string, stat: DiffStat) => void) {
     this.root = root;
@@ -120,6 +123,7 @@ export class EditCoordinator {
       title: path,
       changeSetId,
       isNewFile: baseline === undefined,
+      fence: baseline === undefined ? undefined : this.fenceFor(path),
     });
     if (outcome.accepted > 0) this.onApplied(path, outcome.stat);
     return { ok: true, path, outcome };
@@ -147,6 +151,12 @@ function isNoChange(outcome: ReviewOutcome): boolean {
 
 function describeForModel(result: EditResult): string {
   if (!result.ok) return `Edit not applied: ${result.reason}`;
+  const text = describeOutcome(result);
+  return result.outcome.scopeNote ? `${text}
+${result.outcome.scopeNote}` : text;
+}
+
+function describeOutcome(result: EditResult & { ok: true }): string {
   const { outcome, path } = result;
   const stat = `+${outcome.stat.added} −${outcome.stat.removed}`;
   if (isNoChange(outcome)) return `No changes: the proposed text for ${path} is identical to the current file.`;

@@ -9,6 +9,7 @@ import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
 import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
 import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts";
 import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
+import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFence.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
@@ -20,6 +21,8 @@ export interface TurnRequest {
   context?: ContextReport;
   /** Anvil's own follow-up (M8); never triggers another follow-up. */
   followUp?: boolean;
+  /** Inline edits: the selected lines (1-based, inclusive), the G2 fence. */
+  selection?: { path: string; start: number; end: number };
 }
 
 export interface RunnerSettings {
@@ -53,6 +56,7 @@ type AttemptResult =
 interface ActiveTurn {
   turnId: string;
   mode: AgentMode;
+  selection?: TurnRequest["selection"];
   abort: AbortController;
   cancelled: boolean;
   /** Cancelled by "Stop and send" rather than Stop. */
@@ -88,6 +92,10 @@ export class TurnRunner {
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
   private turnEdits = 0;
+  /** G2: lines of each file the agent has seen this session (read_file ranges). */
+  private readonly seen = new Map<string, LineRange[]>();
+  /** Files edited this session; their line numbers have shifted, so earlier reads no longer map and they are not fenced. */
+  private readonly shifted = new Set<string>();
   /** Subagent threads currently running; while any run, a tool call is only treated as main-thread when announced. */
   private readonly runningSubagents = new Set<string>();
   /** Signatures of main-thread tool calls seen in the event stream and not yet executed. */
@@ -113,7 +121,8 @@ export class TurnRunner {
     return turns[turns.length - 1]?.context;
   }
 
-  noteFileRead(path: string): void {
+  noteFileRead(path: string, startLine?: number, endLine?: number): void {
+    if (startLine !== undefined && endLine !== undefined) this.seen.set(path, mergeRanges([...(this.seen.get(path) ?? []), { start: startLine, end: endLine }]));
     const context = this.activeContext();
     if (!context) return;
     const inPack = context.files.some((file) => file.path === path);
@@ -128,6 +137,7 @@ export class TurnRunner {
 
   noteFileEdited(path: string): void {
     this.work.lastEditAt = Date.now();
+    this.shifted.add(path);
     if (this.active) this.turnEdits += 1;
     const context = this.activeContext();
     if (!context || context.edited.includes(path)) return;
@@ -222,8 +232,27 @@ export class TurnRunner {
     return needsFinishFollowUp({ status: turn.status, finish: turn.finish, editedFiles: this.turnEdits });
   }
 
+  /**
+   * G2 fence for an edit to an existing file: the selection for inline edits, otherwise the lines the agent read or
+   * was shown in the pack. Files already edited this session are not fenced (their line numbers moved).
+   */
+  fenceFor(path: string): ScopeFence | undefined {
+    const active = this.active;
+    if (!active) return undefined;
+    if (active.selection) {
+      if (active.selection.path !== path) return { ranges: [], label: "outside selection" };
+      return { ranges: [{ start: active.selection.start, end: active.selection.end }], label: "outside selection", slack: 2 };
+    }
+    if (this.shifted.has(path)) return undefined;
+    const context = this.activeContext();
+    const fromPack = (context?.slices ?? []).filter((slice) => slice.path === path).map(({ start, end }) => ({ start, end }));
+    return { ranges: mergeRanges([...(this.seen.get(path) ?? []), ...fromPack]), label: "edited without reading", slack: 1 };
+  }
+
   resetSession(): void {
     this.work = {};
+    this.seen.clear();
+    this.shifted.clear();
     this.agentSession = undefined;
     this.deps.store.reset();
   }
@@ -247,7 +276,7 @@ export class TurnRunner {
     const { store, ledger, edits, breaker } = this.deps;
     this.turnCounter += 1;
     const turnId = `turn-${Date.now().toString(36)}-${this.turnCounter}`;
-    const active: ActiveTurn = { turnId, mode: request.mode, abort: new AbortController(), cancelled: false, approvals: new Map() };
+    const active: ActiveTurn = { turnId, mode: request.mode, selection: request.selection, abort: new AbortController(), cancelled: false, approvals: new Map() };
     this.active = active;
     this.starting = false;
     this.runningSubagents.clear();

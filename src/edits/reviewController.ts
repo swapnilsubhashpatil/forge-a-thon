@@ -3,6 +3,7 @@ import type { DiffStat } from "../shared/protocol.ts";
 import { ChangeLedger, fullRange } from "./changeLedger.ts";
 import { computeHunks, diffStat, formatPatch, renderReview, resolveText, sameText } from "./hunks.ts";
 import type { Hunk, HunkDecision, ReviewRender } from "./hunks.ts";
+import { describeFlags, flagHunks, type ScopeFence } from "./scopeFence.ts";
 
 export interface ReviewRequest {
   uri: vscode.Uri;
@@ -11,6 +12,8 @@ export interface ReviewRequest {
   title: string;
   changeSetId: string;
   isNewFile?: boolean;
+  /** G2: expected area; hunks outside it get a warning badge. */
+  fence?: ScopeFence;
 }
 
 export interface ReviewOutcome {
@@ -21,6 +24,8 @@ export interface ReviewOutcome {
   finalText: string;
   rejectedPatch: string;
   stat: DiffStat;
+  /** Sentence about hunks flagged outside the fence, for the model. */
+  scopeNote?: string;
 }
 
 interface Session {
@@ -307,6 +312,7 @@ export class ReviewController implements vscode.Disposable {
       new vscode.CodeLens(top, { title: "$(close-all) Reject all", command: "anvil.rejectAll", arguments: args }),
       new vscode.CodeLens(top, { title: `${pending} of ${session.hunks.length} changes pending`, command: "" }),
     ];
+    const flags = flagHunks(session.hunks, session.request.fence);
     for (const anchor of session.render.hunkAnchors) {
       if (session.decisions[anchor.index] !== "pending") continue;
       const hunk = session.hunks[anchor.index];
@@ -316,6 +322,8 @@ export class ReviewController implements vscode.Disposable {
         new vscode.CodeLens(at, { title: "$(close) Reject", command: "anvil.rejectHunk", arguments: [session.key, hunk.index] }),
         new vscode.CodeLens(at, { title: `+${hunk.added} −${hunk.removed}`, command: "" }),
       );
+      const flag = flags[hunk.index];
+      if (flag) lenses.push(new vscode.CodeLens(at, { title: `$(warning) ${flag}`, tooltip: "Anvil: this change is outside the area you asked about. Review it carefully.", command: "" }));
     }
     return lenses;
   }
@@ -348,6 +356,7 @@ function outcomeOf(request: ReviewRequest, hunks: Hunk[], decisions: HunkDecisio
     finalText,
     rejectedPatch: finalText === request.proposal ? "" : formatPatch(path, finalText, request.proposal),
     stat: diffStat(request.baseline, finalText),
+    scopeNote: discarded ? undefined : describeFlags(hunks, flagHunks(hunks, request.fence)),
   };
 }
 

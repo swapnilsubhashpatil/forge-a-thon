@@ -17,7 +17,7 @@ export interface ToolServices {
   /** Extra environment for run_command (e.g. PYTHONPATH=src for src layouts), set without shell-specific syntax. */
   commandEnv?: () => Record<string, string>;
   currentContext: () => ContextReport | undefined;
-  onFileRead: (path: string) => void;
+  onFileRead: (path: string, startLine: number, endLine: number) => void;
   onCommandOutput: (command: string, output: string) => void;
   onCommandResult?: (command: string, exitCode: string) => void;
   finishTask?: (args: { summary: string; files_changed?: string[]; verification?: string; verified: boolean }) => string;
@@ -116,7 +116,7 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
         const start = Math.max(1, (args.start_line as number | undefined) ?? 1);
         const end = Math.min(lines.length, (args.end_line as number | undefined) ?? start + MAX_READ_LINES - 1, start + MAX_READ_LINES - 1);
         const body = lines.slice(start - 1, end).map((line, offset) => `${String(start + offset).padStart(5)}  ${line}`).join("\n");
-        services.onFileRead(path);
+        services.onFileRead(path, start, end);
         if (args.fresh !== true && readCache.check(`${path}:${start}-${end}`, body)) {
           return `${path} lines ${start}-${end} are unchanged since you last read them in this session. Pass fresh=true to receive them again.`;
         }
