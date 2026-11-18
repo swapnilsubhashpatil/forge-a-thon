@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { AgentMode, Attachment, ChatState, MentionItem, QueuedNote } from "../../../src/shared/protocol.ts";
-import { cx } from "../format.ts";
+import { cx, shortModel } from "../format.ts";
 import { useStore } from "../state/store.ts";
 import { post, type Draft } from "../state/vscode.ts";
 import { LiveStrip } from "./LiveStrip.tsx";
-import { AttachmentChip, IMAGE_TYPES, LiveSelectionChip, MAX_IMAGES, readImages } from "./AttachmentChip.tsx";
+import { AddContextMenu } from "./AddContextMenu.tsx";
+import { AttachmentChip, IMAGE_TYPES, LiveSelectionChip, MAX_IMAGES, MentionChip, SkillChip, readImages } from "./AttachmentChip.tsx";
 import type { GlyphName } from "./Glyph.tsx";
-import { MentionMenu, mentionId } from "./MentionMenu.tsx";
+import { MentionMenu, mentionId, mentionValue, useMentionSearch } from "./MentionMenu.tsx";
 import { useSkillMenu } from "./SkillMenu.tsx";
-import { ModelPicker, useListbox } from "./ModelPicker.tsx";
+import { HealthGlyph, ModelPicker, modelOptions, useListbox } from "./ModelPicker.tsx";
 import { Icon } from "./primitives.tsx";
 
 interface MentionQuery {
@@ -20,18 +21,6 @@ function findMentionQuery(text: string, caret: number): MentionQuery | undefined
   const match = /(^|\s)@([^\s@]*)$/.exec(text.slice(0, caret));
   if (!match) return undefined;
   return { start: caret - match[2].length - 1, query: match[2] };
-}
-
-function mentionValue(item: MentionItem): string {
-  return item.kind === "file" ? item.path : `${item.path}#${item.label}`;
-}
-
-function mentionToken(value: string): string {
-  return value.slice(value.indexOf("#") + 1);
-}
-
-function usedMentions(draft: Draft): string[] {
-  return [...new Set(draft.mentions)].filter((value) => draft.text.includes(`@${mentionToken(value)}`));
 }
 
 function OfflineHint({ chat }: { chat: ChatState }) {
@@ -62,10 +51,10 @@ function OfflineHint({ chat }: { chat: ChatState }) {
 function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
   const delivered = note.status === "delivered";
   return (
-    <li className="flex min-h-8 flex-wrap items-center gap-x-1.5 rounded-lg border border-border bg-raised py-1 pr-1 pl-2.5 text-xs">
+    <li className="@container flex min-h-8 flex-wrap items-center gap-x-1.5 rounded-lg border border-border bg-raised py-1 pr-1 pl-2.5 text-xs">
       <Icon name={delivered ? "check-circle" : "clock"} className={delivered ? "text-green" : "text-muted"} />
       <span className="min-w-0 flex-1 break-words text-fg">{note.text}</span>
-      <span className="shrink-0 text-muted max-[400px]:hidden">
+      <span className="shrink-0 text-muted @max-[360px]:hidden">
         {delivered ? `delivered at step ${note.deliveredAtStep}` : busy ? "queued for next step" : "queued"}
       </span>
       {!delivered && (
@@ -154,6 +143,67 @@ function ModeMenu({ mode }: { mode: AgentMode }) {
   );
 }
 
+function overflowId(index: number): string {
+  return `overflow-option-${index}`;
+}
+
+function OverflowMenu({ chat }: { chat: ChatState }) {
+  const { chain, primary, models } = modelOptions(chat);
+  const current = modes.find((entry) => entry.value === chat.mode) ?? modes[0];
+  const list = useListbox(modes.length + models.length, modes.indexOf(current), (index) => {
+    const model = models[index - modes.length];
+    if (index < modes.length && modes[index].value !== chat.mode) post({ type: "setMode", mode: modes[index].value });
+    if (model && model !== primary) post({ type: "setPrimaryModel", model });
+  });
+  const option = (index: number) => ({
+    id: overflowId(index),
+    role: "option",
+    onMouseDown: (event: { preventDefault: () => void }) => event.preventDefault(),
+    onMouseEnter: () => list.setActive(index),
+    onClick: () => list.choose(index),
+    className: cx("flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-xs", index === list.active && "bg-hover"),
+  });
+
+  return (
+    <div className="shrink-0 @min-[340px]:hidden" onBlur={list.onBlur}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={list.open}
+        aria-controls={list.open ? "overflow-menu" : undefined}
+        aria-activedescendant={list.open ? overflowId(list.active) : undefined}
+        aria-label={`Mode and model: ${current.label}${primary ? `, ${shortModel(primary)}` : ""}`}
+        title={`${current.label}${primary ? ` · ${shortModel(primary)}` : ""}`}
+        onClick={list.toggle}
+        onKeyDown={list.onKeyDown}
+        className="btn btn-icon"
+      >
+        <Icon name="more" />
+      </button>
+      {list.open && (
+        <ul id="overflow-menu" role="listbox" aria-label="Mode and model" className="popover absolute bottom-full left-0 z-20 mb-1.5 max-h-80 w-64 max-w-full overflow-y-auto">
+          <li role="presentation" className="px-2 pt-1 pb-0.5 text-xs text-muted">Mode</li>
+          {modes.map(({ value, label, icon, tone }, index) => (
+            <li key={value} aria-selected={value === chat.mode} {...option(index)}>
+              <Icon name={icon} className={tone} />
+              <span className="min-w-0 flex-1 text-sm text-fg">{label}</span>
+              {value === chat.mode && <Icon name="check" className="text-fg" />}
+            </li>
+          ))}
+          <li role="presentation" className="mt-1 border-t border-border px-2 pt-1.5 pb-0.5 text-xs text-muted">Model</li>
+          {models.map((model, index) => (
+            <li key={model} aria-selected={model === primary} title={model} {...option(modes.length + index)}>
+              <HealthGlyph health={chat.models[chain.indexOf(model)]} />
+              <span className="min-w-0 flex-1 truncate font-medium text-fg">{shortModel(model)}</span>
+              {model === primary && <Icon name="check" className="text-fg" />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 interface ComposerProps {
   chat: ChatState;
   draft: Draft;
@@ -165,55 +215,45 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [imageError, setImageError] = useState<string>();
-  const requestCounter = useRef(0);
   const [mention, setMention] = useState<MentionQuery>();
-  const [requestId, setRequestId] = useState(-1);
   const [activeIndex, setActiveIndex] = useState(0);
-  const results = useStore((snapshot) => snapshot.mentions);
+  const found = useMentionSearch(mention?.query);
   const focusRequests = useStore((snapshot) => snapshot.focusRequests);
-  const skillMenu = useSkillMenu(chat.skills, draft.text, (name) => onDraftChange({ ...draft, text: `/${name} ` }));
+  const skillMenu = useSkillMenu(chat.skills, draft.text, (name) => onDraftChange({ ...draft, text: "", skill: name }));
 
   const ready = chat.harness.state === "ready";
-  const items = mention && results.requestId === requestId ? results.items : [];
-  const menuOpen = mention !== undefined && results.requestId === requestId;
+  const items = found ?? [];
+  const menuOpen = found !== undefined;
+  const mentions = [...new Set(draft.mentions)];
+  const message = [draft.skill && `/${draft.skill}`, draft.text.trim()].filter(Boolean).join(" ");
 
   useEffect(() => {
     inputRef.current?.focus();
   }, [focusRequests]);
 
-  useEffect(() => {
-    if (mention === undefined) return;
-    const timer = setTimeout(() => {
-      const id = ++requestCounter.current;
-      setRequestId(id);
-      setActiveIndex(0);
-      post({ type: "searchMentions", requestId: id, query: mention.query });
-    }, 80);
-    return () => clearTimeout(timer);
-  }, [mention?.query, mention === undefined]);
+  useEffect(() => setActiveIndex(0), [mention?.query]);
 
   function updateText(text: string, caret: number) {
     onDraftChange({ ...draft, text });
     setMention(findMentionQuery(text, caret));
   }
 
+  function addMention(value: string, text = draft.text) {
+    onDraftChange({ ...draft, text, mentions: draft.mentions.includes(value) ? draft.mentions : [...draft.mentions, value] });
+    inputRef.current?.focus();
+  }
+
   function select(item: MentionItem) {
     const input = inputRef.current;
     if (!input || !mention) return;
-    const value = mentionValue(item);
-    const inserted = `@${mentionToken(value)} `;
-    const caret = input.selectionStart;
-    const text = draft.text.slice(0, mention.start) + inserted + draft.text.slice(caret);
-    onDraftChange({ text, mentions: [...draft.mentions, value] });
+    addMention(mentionValue(item), draft.text.slice(0, mention.start) + draft.text.slice(input.selectionStart));
     setMention(undefined);
-    const nextCaret = mention.start + inserted.length;
-    requestAnimationFrame(() => input.setSelectionRange(nextCaret, nextCaret));
+    requestAnimationFrame(() => input.setSelectionRange(mention.start, mention.start));
   }
 
   function send() {
-    const text = draft.text.trim();
-    if (!text || !ready) return;
-    post({ type: "send", text, mentions: usedMentions(draft), attachments: draft.attachments, mode: chat.mode, includeSelection: chat.editorSelection !== undefined });
+    if (!message || !ready) return;
+    post({ type: "send", text: message, mentions, attachments: draft.attachments, mode: chat.mode, includeSelection: chat.editorSelection !== undefined });
     onDraftChange({ text: "", mentions: [], attachments: [] });
     setMention(undefined);
   }
@@ -260,24 +300,13 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
     onDraftChange({ ...draft, attachments: draft.attachments?.filter((entry) => entry.id !== id) });
   }
 
-  function insertAt() {
-    const input = inputRef.current;
-    if (!input) return;
-    const caret = input.selectionStart;
-    const before = draft.text.slice(0, caret);
-    const prefix = before === "" || /\s$/.test(before) ? "@" : " @";
-    const text = before + prefix + draft.text.slice(caret);
-    updateText(text, caret + prefix.length);
-    input.focus();
-    requestAnimationFrame(() => input.setSelectionRange(caret + prefix.length, caret + prefix.length));
-  }
-
-  const canSend = ready && draft.text.trim() !== "";
+  const canSend = ready && message !== "";
+  const hasContext = (draft.attachments?.length ?? 0) > 0 || draft.mentions.length > 0 || draft.skill || chat.editorSelection;
   const runningTurn = [...chat.turns].reverse().find((turn) => turn.status === "running" || turn.status === "paused");
   const ask = chat.mode === "ask";
 
   return (
-    <div className="shrink-0 px-3 pt-2 pb-3">
+    <div className="@container shrink-0 px-3 pt-2 pb-3">
       {!ready && <OfflineHint chat={chat} />}
       {chat.busy && runningTurn && <LiveStrip turn={runningTurn} />}
       {chat.queue.length > 0 && (
@@ -298,9 +327,13 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
           ask ? "border-blue/30 focus-within:border-blue/70" : "border-orange/30 focus-within:border-orange/70",
         )}
       >
-        {((draft.attachments?.length ?? 0) > 0 || chat.editorSelection) && (
+        {hasContext && (
           <ul className="flex flex-wrap gap-1 px-2 pt-2" aria-label="Attached to this message">
+            {draft.skill && <SkillChip name={draft.skill} onRemove={() => onDraftChange({ ...draft, skill: undefined })} />}
             {chat.editorSelection && <LiveSelectionChip selection={chat.editorSelection} />}
+            {mentions.map((value) => (
+              <MentionChip key={value} value={value} onRemove={() => onDraftChange({ ...draft, mentions: draft.mentions.filter((entry) => entry !== value) })} />
+            ))}
             {(draft.attachments ?? []).map((attachment) => (
               <AttachmentChip key={attachment.id} attachment={attachment} onRemove={() => removeAttachment(attachment.id)} />
             ))}
@@ -352,28 +385,23 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             event.target.value = "";
           }}
         />
-        <div className="flex flex-wrap items-center gap-1.5 px-1.5 pb-1.5">
-          <ModeMenu mode={chat.mode} />
-          <ModelPicker chat={chat} />
+        <div className="flex items-center gap-1.5 px-1.5 pb-1.5">
+          <AddContextMenu
+            chat={chat}
+            mentions={draft.mentions}
+            onMention={(value) => addMention(value)}
+            onSkill={(name) => {
+              onDraftChange({ ...draft, skill: name });
+              inputRef.current?.focus();
+            }}
+            onImage={() => fileRef.current?.click()}
+          />
+          <div className="hidden min-w-0 items-center gap-1.5 @min-[340px]:flex">
+            <ModeMenu mode={chat.mode} />
+            <ModelPicker chat={chat} />
+          </div>
+          <OverflowMenu chat={chat} />
           <span className="flex-1" />
-          <button
-            type="button"
-            aria-label="Mention a file or symbol"
-            title="Mention a file or symbol"
-            onClick={insertAt}
-            className="btn btn-icon"
-          >
-            <Icon name="at" />
-          </button>
-          <button
-            type="button"
-            aria-label="Attach an image"
-            title="Attach an image (or paste or drop one)"
-            onClick={() => fileRef.current?.click()}
-            className="btn btn-icon"
-          >
-            <Icon name="image" />
-          </button>
           {chat.busy && (
             <button
               type="button"
@@ -384,7 +412,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
               className="btn btn-secondary"
             >
               <Icon name="steer" />
-              <span className="max-[400px]:hidden">Steer</span>
+              <span className="@max-[400px]:hidden">Steer</span>
             </button>
           )}
           {chat.busy ? (
@@ -396,7 +424,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
               className="btn btn-secondary"
             >
               <Icon name="stop" />
-              <span className="max-[400px]:hidden">Stop</span>
+              <span className="@max-[400px]:hidden">Stop</span>
             </button>
           ) : (
             <button

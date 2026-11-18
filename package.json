@@ -209,6 +209,24 @@
         "title": "Open Diff",
         "category": "Anvil",
         "icon": "$(diff)"
+      },
+      {
+        "command": "anvil.inline.accept",
+        "title": "Accept All",
+        "category": "Anvil",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "anvil.inline.reject",
+        "title": "Reject All",
+        "category": "Anvil",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "anvil.inline.ask",
+        "title": "Ask in Chat",
+        "category": "Anvil",
+        "icon": "$(comment-discussion)"
       }
     ],
     "keybindings": [
@@ -399,6 +417,18 @@
         {
           "command": "anvil.inline.diff",
           "when": "false"
+        },
+        {
+          "command": "anvil.inline.accept",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.reject",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.ask",
+          "when": "false"
         }
       ],
       "comments/commentThread/context": [
@@ -410,12 +440,17 @@
         {
           "command": "anvil.inline.refine",
           "group": "inline@1",
-          "when": "commentController == anvil.inline && commentThread =~ /^(review|done)$/"
+          "when": "commentController == anvil.inline && commentThread =~ /^(review|done|answered)$/"
+        },
+        {
+          "command": "anvil.inline.ask",
+          "group": "inline@2",
+          "when": "commentController == anvil.inline && commentThread == answered"
         },
         {
           "command": "anvil.inline.close",
-          "group": "inline@2",
-          "when": "commentController == anvil.inline && commentThread == done"
+          "group": "inline@3",
+          "when": "commentController == anvil.inline && commentThread =~ /^(done|answered)$/"
         }
       ],
       "comments/commentThread/title": [
@@ -425,13 +460,23 @@
           "when": "commentController == anvil.inline && commentThread == running"
         },
         {
-          "command": "anvil.inline.diff",
+          "command": "anvil.inline.accept",
           "group": "inline@2",
+          "when": "commentController == anvil.inline && commentThread == review"
+        },
+        {
+          "command": "anvil.inline.reject",
+          "group": "inline@3",
+          "when": "commentController == anvil.inline && commentThread == review"
+        },
+        {
+          "command": "anvil.inline.diff",
+          "group": "inline@4",
           "when": "commentController == anvil.inline && commentThread =~ /^(review|done)$/"
         },
         {
           "command": "anvil.inline.close",
-          "group": "inline@3",
+          "group": "inline@5",
           "when": "commentController == anvil.inline"
         }
       ]

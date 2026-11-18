@@ -7,7 +7,7 @@ import { Icon, StatusGlyph } from "./primitives.tsx";
 
 const COOLDOWN_MS = 60_000;
 
-function HealthGlyph({ health }: { health?: ModelHealth }) {
+export function HealthGlyph({ health }: { health?: ModelHealth }) {
   if (health?.state === "healthy") return <StatusGlyph kind="ready" />;
   if (health?.state !== "cooling") return <StatusGlyph kind="unknown" />;
   const remaining = health.coolingUntil ? (health.coolingUntil - Date.now()) / COOLDOWN_MS : 1;
@@ -55,10 +55,13 @@ function optionId(index: number): string {
   return `model-option-${index}`;
 }
 
-export function ModelPicker({ chat }: { chat: ChatState }) {
+export function modelOptions(chat: ChatState) {
   const chain = chat.models.map((entry) => entry.model);
-  const models = [...new Set([...chain, ...(chat.availableModels ?? [])])];
-  const primary = chain[0];
+  return { chain, primary: chain[0], models: [...new Set([...chain, ...(chat.availableModels ?? [])])] };
+}
+
+export function ModelPicker({ chat }: { chat: ChatState }) {
+  const { chain, primary, models } = modelOptions(chat);
   const list = useListbox(models.length, models.indexOf(primary ?? ""), (index) => {
     if (models[index] !== primary) post({ type: "setPrimaryModel", model: models[index] });
   });

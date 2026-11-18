@@ -107,7 +107,7 @@ let state: ChatState = {
     {
       id: "t1",
       prompt: "Explain how the CLI loads the app",
-      mentions: [],
+      mentions: ["src/flask/cli.py", "src/flask/helpers.py#get_debug_flag"],
       status: "done",
       model: primary,
       usage: { input: 8420, output: 612, cached: 5120 },
@@ -218,6 +218,10 @@ function handle(message: WebviewMessage) {
   switch (message.type) {
     case "ready":
       emit({ type: "state", state });
+      emit({ type: "attach", attachment: { id: "term-1", kind: "terminal", label: "terminal: pytest -q (exit 1)", command: "pytest -q", exitCode: 1, text: "1 failed, 97 passed" } });
+      break;
+    case "pinSelection":
+      emit({ type: "attach", attachment: { id: `sel-${Date.now()}`, kind: "selection", label: "cli.py:57-64", path: "src/flask/cli.py", startLine: 57, endLine: 64, text: "def config_command():" } });
       break;
     case "searchMentions": {
       const query = message.query.toLowerCase();
