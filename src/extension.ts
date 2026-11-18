@@ -267,6 +267,20 @@ export async function activate(context: vscode.ExtensionContext) {
       case "cancel":
         await runner.cancel();
         break;
+      case "restore": {
+        try {
+          const result = await runner.restoreTo(message.turnId, message.withCode);
+          if (result) reply({ type: "setDraft", text: result.prompt, mentions: result.mentions });
+        } catch (error) {
+          void vscode.window.showWarningMessage(`Anvil: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        break;
+      }
+      case "undoTurn": {
+        const result = await runner.undoTurn(message.turnId);
+        if (result.skipped.length) void vscode.window.showWarningMessage(`Anvil: not undone because they were edited since: ${result.skipped.join(", ")}`);
+        break;
+      }
       case "removeNote":
         runner.removeNote(message.id);
         break;
