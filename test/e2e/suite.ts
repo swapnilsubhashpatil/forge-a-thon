@@ -144,11 +144,6 @@ function verifyTaskB(): Record<string, unknown> {
   };
 }
 
-async function undoAll(api: AnvilApi): Promise<void> {
-  for (const changeSet of api.store.state.changeSets.filter((set) => !set.undone)) await api.ledger.undo(changeSet.id);
-  assert.equal(git("status --porcelain -- . :!.vscode"), "", "undo restores a clean tree");
-}
-
 /** Resets the workspace when Undo could not (e.g. a task failed half way), so every task starts clean. */
 function resetTree(): void {
   git("checkout -- .");
