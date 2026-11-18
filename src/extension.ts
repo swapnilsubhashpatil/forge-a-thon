@@ -9,7 +9,7 @@ import { TurnRunner, type RunnerSettings } from "./agent/turnRunner.ts";
 import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
-import { FINISH_FOLLOW_UP } from "./agent/finishGate.ts";
+import { FINISH_FOLLOW_UP, WRAP_UP } from "./agent/finishGate.ts";
 import { definedNames, ungroundedNames } from "./edits/grounding.ts";
 import { rankFiles } from "./context/ranker.ts";
 import { WorkspaceIndex } from "./context/workspaceIndex.ts";
@@ -170,7 +170,9 @@ export async function activate(context: vscode.ExtensionContext) {
       runner.markStarting(false);
     }
     // M8: edits accepted but the agent stopped without finish_task -> exactly one follow-up on the same session.
-    if (runner.needsFinishFollowUp()) {
+    if (runner.takeWrapUp()) {
+      await runner.run({ mode: "agent", title: "Wrap up", prompt: "Anvil: wrap up at the step limit", mentions: [], message: WRAP_UP, followUp: true });
+    } else if (runner.needsFinishFollowUp()) {
       await runner.run({ mode: "agent", title: "Verify and finish", prompt: "Anvil: verify and finish", mentions: [], message: FINISH_FOLLOW_UP, followUp: true });
     }
     await flushQueue();

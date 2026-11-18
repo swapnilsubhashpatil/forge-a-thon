@@ -92,6 +92,10 @@ export class TurnRunner {
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
   private noteCounter = 0;
+  /** Set when the last turn ended at TrueForge's iteration limit (M10). */
+  private hitStepLimit = false;
+  /** Main-thread model calls in the running turn, for the turn-budget hint. */
+  private mainModelCalls = 0;
   private readonly loopGuard = new LoopGuard();
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
@@ -201,6 +205,8 @@ export class TurnRunner {
     const isMain = announced > 0 || this.runningSubagents.size === 0;
     if (!isMain) return result;
     result = this.guardLoop(active, name, args, result);
+    const limit = this.deps.settings().iterationLimit;
+    if (this.mainModelCalls * 2 >= limit) result += turnBudget(this.mainModelCalls, limit);
     if (!this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
     const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
     const step = (turn?.steps.filter((entry) => entry.kind === "tool" && entry.threadTitle === undefined).length ?? 0) || 1;
@@ -244,6 +250,13 @@ export class TurnRunner {
       });
     }
     return decision.reply;
+  }
+
+  /** True once after a turn stopped at the step limit; the caller sends the wrap-up turn. */
+  takeWrapUp(): boolean {
+    const due = this.hitStepLimit;
+    this.hitStepLimit = false;
+    return due;
   }
 
   /** True when the last turn ended with accepted edits but no accepted finish_task, and was not itself a follow-up. */
@@ -303,6 +316,8 @@ export class TurnRunner {
     this.runningSubagents.clear();
     this.expectedMain.clear();
     this.loopGuard.reset();
+    this.hitStepLimit = false;
+    this.mainModelCalls = 0;
     if (!request.followUp) this.turnEdits = 0;
     this.deps.onBusyChange(true);
 
@@ -362,6 +377,13 @@ export class TurnRunner {
         if (result.kind === "done") {
           breaker.reset(model);
           this.healthy.add(model);
+          this.finish(turn, "done");
+          return;
+        }
+        // M10: the step limit is the task's size, not the model's fault: no failover, no breaker, one wrap-up turn.
+        if (result.kind === "failed" && result.failure.kind === "limit" && !active.cancelled) {
+          this.hitStepLimit = request.followUp !== true;
+          store.notice(turnId, "warning", `The agent used all ${this.deps.settings().iterationLimit} steps. ${this.hitStepLimit ? "Asking it to wrap up with a summary of what is done and what remains." : "Stopped."}`);
           this.finish(turn, "done");
           return;
         }
@@ -639,6 +661,7 @@ export class TurnRunner {
     switch (event.type) {
       case "model.message": {
         const threadId = event.threadId;
+        if (threadId === MAIN_THREAD) this.mainModelCalls += 1;
         if (threadId === MAIN_THREAD && event.usage && turn.context) {
           const usage = event.usage;
           const context = turn.context;
@@ -719,6 +742,12 @@ export class TurnRunner {
       turn.usage.cached += metrics.totalCacheReadTokens ?? 0;
     });
   }
+}
+
+/** Goose-style budget hint once half the steps are used, so the agent converges instead of hitting the wall. */
+function turnBudget(used: number, limit: number): string {
+  const nl = String.fromCharCode(10);
+  return `${nl}${nl}<turn-budget>${used}/${limit} steps used</turn-budget> Be direct: batch the remaining calls, verify, and call finish_task before the limit.`;
 }
 
 function producesOutput(event: HarnessEvent): boolean {
