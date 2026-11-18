@@ -6,7 +6,7 @@ import type { ContextReport, ModelHealth, ToolStep, Turn } from "../shared/proto
 import type { AgentMode, AgentProfiles } from "./agentProfile.ts";
 import type { ConversationStore } from "./conversationStore.ts";
 import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
-import { backoffDelay, classifyFailure, describeFailure, type CircuitBreaker, type Failure } from "./resilience.ts";
+import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
 import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts";
 
 export interface TurnRequest {
@@ -55,8 +55,13 @@ interface ActiveTurn {
 
 interface AgentSession {
   id: string;
-  model: string;
+  specKey: string;
   lastCompletedTurnId?: string;
+}
+
+interface SpecOverrides {
+  reasoningEffort?: string;
+  maxTokens?: number;
 }
 
 const MAIN_THREAD = "main";
@@ -174,6 +179,11 @@ export class TurnRunner {
           await delay(backoffDelay(0));
           result = await this.attempt(request, model, turn, active);
         }
+        if (result.kind === "failed" && result.failure.kind === "truncated" && !active.cancelled) {
+          const maxTokens = truncationRetryTokens(this.deps.profiles.maxTokens(request.mode));
+          store.notice(turnId, "info", `${model} ${describeFailure(result.failure)}. Retrying once with reasoning off and ${maxTokens.toLocaleString("en-US")} output tokens.`);
+          result = await this.attempt(request, model, turn, active, { reasoningEffort: "none", maxTokens });
+        }
         if (result.kind === "done") {
           breaker.reset(model);
           this.healthy.add(model);
@@ -189,7 +199,7 @@ export class TurnRunner {
           this.finish(turn, "error");
           return;
         }
-        if (result.failure.kind !== "context") breaker.trip(model, result.failure.message);
+        if (result.failure.kind !== "context" && result.failure.kind !== "truncated") breaker.trip(model, result.failure.message);
         this.healthy.delete(model);
         this.refreshModelHealth();
         this.deps.log(`Model ${model} failed: ${result.failure.message}`);
@@ -250,23 +260,29 @@ export class TurnRunner {
     });
   }
 
-  private specOptions() {
+  private specOptions(overrides: SpecOverrides = {}) {
     const settings = this.deps.settings();
-    return { toolServerName: settings.toolServerName, iterationLimit: settings.iterationLimit, reasoningEffort: settings.reasoningEffort };
+    return {
+      toolServerName: settings.toolServerName,
+      iterationLimit: settings.iterationLimit,
+      reasoningEffort: overrides.reasoningEffort ?? settings.reasoningEffort,
+      maxTokens: overrides.maxTokens,
+    };
   }
 
-  private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn): Promise<{ id: string; previousTurnId: string }> {
+  private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn, overrides: SpecOverrides): Promise<{ id: string; previousTurnId: string }> {
     const client = this.deps.client();
-    const spec = this.deps.profiles.spec(request.mode, model, this.specOptions());
+    const spec = this.deps.profiles.spec(request.mode, model, this.specOptions(overrides));
+    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null]);
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;
       return { id, previousTurnId: "none" };
     }
-    if (this.agentSession && this.agentSession.model !== model) {
+    if (this.agentSession && this.agentSession.specKey !== specKey) {
       try {
         await client.updateSessionSpec(this.agentSession.id, spec);
-        this.agentSession.model = model;
+        this.agentSession.specKey = specKey;
       } catch (error) {
         this.deps.log(`Could not switch the session model, starting a new session: ${errorText(error)}`);
         this.agentSession = undefined;
@@ -274,7 +290,7 @@ export class TurnRunner {
     }
     if (!this.agentSession) {
       const id = await client.createSession(spec, request.title);
-      this.agentSession = { id, model };
+      this.agentSession = { id, specKey };
       this.deps.store.update((state) => {
         state.sessionId = id;
         state.sessionUrl = client.sessionUrl(id);
@@ -284,7 +300,7 @@ export class TurnRunner {
     return { id: this.agentSession.id, previousTurnId: this.agentSession.lastCompletedTurnId ?? "none" };
   }
 
-  private async attempt(request: TurnRequest, model: string, turn: Turn, active: ActiveTurn): Promise<AttemptResult> {
+  private async attempt(request: TurnRequest, model: string, turn: Turn, active: ActiveTurn, overrides: SpecOverrides = {}): Promise<AttemptResult> {
     if (active.cancelled) return { kind: "cancelled" };
     const client = this.deps.client();
     const attemptAbort = new AbortController();
@@ -300,7 +316,7 @@ export class TurnRunner {
     const disarm = () => clearTimeout(watchdog);
 
     try {
-      const session = await this.ensureSession(request, model, active);
+      const session = await this.ensureSession(request, model, active, overrides);
       sessionId = session.id;
       const log = new EventLog();
       const answered = new Set<string>();

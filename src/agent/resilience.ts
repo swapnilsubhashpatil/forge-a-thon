@@ -1,4 +1,4 @@
-export type FailureKind = "auth" | "not-found" | "rate-limit" | "unavailable" | "timeout" | "context" | "unknown";
+export type FailureKind = "auth" | "not-found" | "rate-limit" | "unavailable" | "timeout" | "context" | "truncated" | "unknown";
 
 export interface Failure {
   kind: FailureKind;
@@ -7,6 +7,7 @@ export interface Failure {
 }
 
 const PATTERNS: Array<{ kind: FailureKind; pattern: RegExp }> = [
+  { kind: "truncated", pattern: /output truncated|hit \d+ token limit|finish_reason[ =:"']*length|max_tokens reached/i },
   { kind: "auth", pattern: /\b(401|403)\b|unauthori[sz]ed|forbidden|invalid[ _-]?(api[ _-]?)?key|incorrect api key|authentication|permission denied/i },
   { kind: "not-found", pattern: /\b404\b|model[^.]*not (found|exist)|no such model|unknown model|not configured|does not exist/i },
   { kind: "rate-limit", pattern: /\b429\b|rate.?limit|quota|too many requests|resource.?exhausted|payment required|\b402\b/i },
@@ -29,6 +30,7 @@ export function describeFailure(failure: Failure): string {
     unavailable: "provider unavailable",
     timeout: "no response in time",
     context: "context window exceeded",
+    truncated: "ran out of output tokens",
     unknown: "request failed",
   };
   return labels[failure.kind];
@@ -82,4 +84,10 @@ export class CircuitBreaker {
 function summarize(message: string): string {
   const firstLine = message.split(/\r?\n/).find((line) => line.trim()) ?? message;
   return firstLine.length > 160 ? `${firstLine.slice(0, 157)}…` : firstLine;
+}
+
+export const TRUNCATION_RETRY_MAX_TOKENS = 32_768;
+
+export function truncationRetryTokens(current: number): number {
+  return Math.min(TRUNCATION_RETRY_MAX_TOKENS, Math.max(current * 2, current + 1));
 }
