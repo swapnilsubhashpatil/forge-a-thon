@@ -13,6 +13,7 @@ import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFenc
 import { killAllCommands } from "../tools/commandRunner.ts";
 import { subagentDenial } from "./subagentPolicy.ts";
 import { LoopGuard } from "./loopGuard.ts";
+import { planReminder, validatePlan } from "./plan.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
@@ -205,6 +206,7 @@ export class TurnRunner {
     const isMain = announced > 0 || this.runningSubagents.size === 0;
     if (!isMain) return result;
     result = this.guardLoop(active, name, args, result);
+    if (name !== "update_plan") result += planReminder(this.deps.store.state.turns.find((entry) => entry.id === active.turnId)?.plan) ?? "";
     const limit = this.deps.settings().iterationLimit;
     if (this.mainModelCalls * 2 >= limit) result += turnBudget(this.mainModelCalls, limit);
     if (!this.deps.store.state.queue.some((note) => note.status === "queued")) return result;
@@ -218,6 +220,19 @@ export class TurnRunner {
     const label = delivered.length === 1 ? "your message" : `${delivered.length} messages`;
     this.deps.store.notice(active.turnId, "info", `Delivered ${label} to the agent with the result of step ${step}.`);
     return result + formatNotes(delivered);
+  }
+
+  /** The update_plan tool (M6): validates, stores the plan on the running turn for the checklist, replies. */
+  updatePlan(raw: unknown): string {
+    const active = this.active;
+    if (!active) return "No task is running.";
+    const update = validatePlan(raw);
+    if (!update.ok) return update.error;
+    const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
+    if (turn) this.deps.store.update(() => {
+      turn.plan = update.plan;
+    });
+    return "Plan updated.";
   }
 
   /** M7: appends a loop warning, or stops the turn, when the main agent keeps repeating an identical call. */
@@ -242,7 +257,8 @@ export class TurnRunner {
   finishTask(args: FinishArgs): string {
     const active = this.active;
     if (!active) return "No task is running.";
-    const decision = evaluateFinish(args, this.work);
+    const plan = this.deps.store.state.turns.find((entry) => entry.id === active.turnId)?.plan;
+    const decision = evaluateFinish(args, this.work, plan);
     if (decision.ok) {
       const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
       if (turn) this.deps.store.update(() => {

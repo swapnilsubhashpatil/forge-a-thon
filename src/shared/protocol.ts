@@ -114,6 +114,13 @@ export interface TokenUsage {
   cached: number;
 }
 
+export type PlanStatus = "pending" | "in_progress" | "completed" | "blocked" | "cancelled";
+
+export interface PlanItem {
+  step: string;
+  status: PlanStatus;
+}
+
 export interface FinishReport {
   summary: string;
   filesChanged: string[];
@@ -134,6 +141,8 @@ export interface Turn {
   usage: TokenUsage;
   /** Accepted finish_task report (M8). */
   finish?: FinishReport;
+  /** Latest plan from update_plan (M6). */
+  plan?: PlanItem[];
   /** Set on Anvil's own follow-up turns. */
   followUp?: boolean;
   startedAt: number;

@@ -136,6 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
         onCommandOutput: (command, text) => output.info(`$ ${command}\n${text}`),
         onCommandResult: (command, exitCode) => runner.noteCommand(command, exitCode),
         finishTask: (args) => runner.finishTask(args),
+        updatePlan: (plan) => runner.updatePlan(plan),
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
