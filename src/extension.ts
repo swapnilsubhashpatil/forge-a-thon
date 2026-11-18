@@ -144,6 +144,9 @@ export async function activate(context: vscode.ExtensionContext) {
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
       store.update((state) => {
+        state.availableModels = availableModels;
+      });
+      store.update((state) => {
         state.harness = { state: "ready", url: client.baseUrl };
       });
       runner.refreshModelHealth();
@@ -280,6 +283,14 @@ export async function activate(context: vscode.ExtensionContext) {
       case "undoTurn": {
         const result = await runner.undoTurn(message.turnId);
         if (result.skipped.length) void vscode.window.showWarningMessage(`Anvil: not undone because they were edited since: ${result.skipped.join(", ")}`);
+        break;
+      }
+      case "setPrimaryModel": {
+        // The picker sets the primary model; the rest of the fallback chain is kept behind it.
+        const chain = [message.model, ...settings().modelChain.filter((model) => model !== message.model)];
+        const target = config().inspect<string[]>("models.chain")?.workspaceValue !== undefined ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
+        await config().update("models.chain", chain, target);
+        runner.refreshModelHealth();
         break;
       }
       case "removeNote":

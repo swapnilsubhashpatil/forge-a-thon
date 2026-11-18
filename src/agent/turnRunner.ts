@@ -102,6 +102,8 @@ export class TurnRunner {
   private readonly mainModelCalls = new Set<string>();
   /** Tool call ids already counted into expectedMain (model.message is re-emitted on every delta). */
   private readonly announcedCalls = new Set<string>();
+  /** model.message events whose usage was already added to the live count. */
+  private readonly countedUsage = new Set<string>();
   private readonly loopGuard = new LoopGuard();
   /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
@@ -394,6 +396,7 @@ export class TurnRunner {
     this.hitStepLimit = false;
     this.mainModelCalls.clear();
     this.announcedCalls.clear();
+    this.countedUsage.clear();
     if (!request.followUp) {
       this.turnEdits = 0;
       this.failedEdits = 0;
@@ -750,6 +753,7 @@ export class TurnRunner {
       case "model.message": {
         const threadId = event.threadId;
         if (threadId === MAIN_THREAD) this.mainModelCalls.add(event.id);
+        if (event.usage) this.countLiveUsage(turn, event.id, event.usage);
         if (threadId === MAIN_THREAD && event.usage && turn.context) {
           const usage = event.usage;
           const context = turn.context;
@@ -824,11 +828,29 @@ export class TurnRunner {
   }
 
   private applyMetrics(turn: Turn, metrics: TrueForgeApi.TurnMetrics | undefined): void {
-    if (!metrics) return;
     this.deps.store.update(() => {
+      // TrueForge's totals replace the live estimate for this attempt.
+      turn.liveUsage = undefined;
+      if (!metrics) return;
       turn.usage.input += metrics.totalInputTokens ?? 0;
       turn.usage.output += metrics.totalOutputTokens ?? 0;
       turn.usage.cached += metrics.totalCacheReadTokens ?? 0;
+      if (metrics.totalReasoningTokens) turn.usage.reasoning = (turn.usage.reasoning ?? 0) + metrics.totalReasoningTokens;
+      if (metrics.totalCostInUsd) turn.usage.costUsd = (turn.usage.costUsd ?? 0) + metrics.totalCostInUsd;
+    });
+  }
+
+  /** Live token count while a turn runs: each completed model call once (events are re-emitted per delta). */
+  private countLiveUsage(turn: Turn, eventId: string, usage: TrueForgeApi.ModelMessageUsage): void {
+    if (this.countedUsage.has(eventId)) return;
+    this.countedUsage.add(eventId);
+    this.deps.store.update(() => {
+      const live = turn.liveUsage ?? { input: 0, output: 0, cached: 0, calls: 0 };
+      live.input += usage.inputTokens;
+      live.output += usage.outputTokens;
+      live.cached += usage.cacheReadTokens ?? 0;
+      live.calls += 1;
+      turn.liveUsage = live;
     });
   }
 }

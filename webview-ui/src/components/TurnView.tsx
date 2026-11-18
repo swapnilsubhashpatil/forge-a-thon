@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import type { ChangeSetSummary, PlanItem, Step, Turn } from "../../../src/shared/protocol.ts";
 import { post } from "../state/vscode.ts";
 import { cx, formatDuration, formatTokens, shortModel } from "../format.ts";
+import { formatUsd } from "../../../src/shared/sessionStats.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
 import { ContextCard } from "./ContextCard.tsx";
 import { Markdown } from "./Markdown.tsx";
@@ -165,7 +166,9 @@ function Footer({ turn }: { turn: Turn }) {
   const parts = [
     shortModel(turn.model),
     turn.endedAt ? formatDuration(turn.endedAt - turn.startedAt) : undefined,
+    `${turn.steps.filter((step) => step.kind === "tool").length} tools`,
     `${formatTokens(input)} in · ${formatTokens(output)} out${cached ? ` · ${formatTokens(cached)} cached` : ""}`,
+    turn.usage.costUsd !== undefined ? `≈${formatUsd(turn.usage.costUsd)}` : undefined,
   ].filter(Boolean);
 
   return (

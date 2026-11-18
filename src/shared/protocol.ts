@@ -129,6 +129,9 @@ export interface TokenUsage {
   input: number;
   output: number;
   cached: number;
+  /** TrueForge's own cost estimate in USD (turn metrics); absent when the provider reports none. */
+  costUsd?: number;
+  reasoning?: number;
 }
 
 export type PlanStatus = "pending" | "in_progress" | "completed" | "blocked" | "cancelled";
@@ -156,6 +159,8 @@ export interface Turn {
   status: TurnStatus;
   model: string;
   usage: TokenUsage;
+  /** Model calls completed in the attempt still running, not yet in `usage` (TrueForge totals arrive at turn end). */
+  liveUsage?: TokenUsage & { calls: number };
   /** Accepted finish_task report (M8). */
   finish?: FinishReport;
   /** Latest plan from update_plan (M6). */
@@ -214,6 +219,8 @@ export interface ChatState {
   changeSets: ChangeSetSummary[];
   /** Messages sent while a turn runs (M11). */
   queue: QueuedNote[];
+  /** Every model TrueForge has configured, for the composer's model picker. */
+  availableModels?: string[];
 }
 
 export type MentionKind = "file" | "symbol";
@@ -238,6 +245,7 @@ export type WebviewMessage =
   | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[] }
   | { type: "cancel" }
   | { type: "removeNote"; id: string }
+  | { type: "setPrimaryModel"; model: string }
   | { type: "restore"; turnId: string; withCode: boolean }
   | { type: "undoTurn"; turnId: string }
   | { type: "stopAndSend"; id: string }
