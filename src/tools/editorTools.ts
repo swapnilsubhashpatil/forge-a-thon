@@ -1,4 +1,3 @@
-import { exec } from "node:child_process";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { findReferences, findSymbol, searchCode } from "../context/codeSearch.ts";
@@ -8,6 +7,7 @@ import type { WorkspaceIndex } from "../context/workspaceIndex.ts";
 import type { EditCoordinator } from "../agent/editCoordinator.ts";
 import type { ContextReport } from "../shared/protocol.ts";
 import type { ToolDefinition } from "./toolServer.ts";
+import { formatCommandResult, runShell } from "./commandRunner.ts";
 
 export interface ToolServices {
   index: WorkspaceIndex;
@@ -24,7 +24,6 @@ export interface ToolServices {
 }
 
 const MAX_READ_LINES = 400;
-const MAX_COMMAND_OUTPUT_CHARS = 12_000;
 
 export class ReadCache {
   private readonly seen = new Map<string, string>();
@@ -180,7 +179,7 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
     {
       name: "run_command",
       title: "Run command",
-      description: "Run a shell command in the workspace root after the user approves it, e.g. tests. Returns exit code and output.",
+      description: "Run a shell command in the workspace root after the user approves it, e.g. tests. The first line of the result is a summary: exit code, test counts and first failure when recognised, and wall time. Long output keeps the start and the end. Commands with no output for 90s are stopped.",
       inputSchema: { command: z.string().min(1) },
       annotations: { readOnlyHint: false, destructiveHint: true },
       run: (args) => runCommand(String(args.command), services),
@@ -188,20 +187,14 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
   ];
 }
 
-function runCommand(command: string, services: ToolServices): Promise<string> {
-  return new Promise((resolve) => {
-    exec(command, { cwd: services.index.root, env: { ...process.env, ...services.commandEnv?.() }, timeout: services.commandTimeoutMs(), maxBuffer: 8 * 1024 * 1024, windowsHide: true }, (error, stdout, stderr) => {
-      const output = clip(`${stdout}${stderr ? `\n${stderr}` : ""}`.trim());
-      services.onCommandOutput(command, output);
-      const code = error ? (error.killed ? "timeout" : String(error.code ?? 1)) : "0";
-      services.onCommandResult?.(command, code);
-      resolve(`$ ${command}\nexit code: ${code}\n${output}`);
-    });
-  });
-}
+const IDLE_TIMEOUT_MS = 90_000;
 
-function clip(text: string): string {
-  if (text.length <= MAX_COMMAND_OUTPUT_CHARS) return text;
-  const half = MAX_COMMAND_OUTPUT_CHARS / 2;
-  return `${text.slice(0, half)}\n… ${text.length - MAX_COMMAND_OUTPUT_CHARS} characters omitted …\n${text.slice(-half)}`;
+async function runCommand(command: string, services: ToolServices): Promise<string> {
+  const timeoutMs = services.commandTimeoutMs();
+  const idleTimeoutMs = Math.min(IDLE_TIMEOUT_MS, timeoutMs);
+  const result = await runShell(command, { cwd: services.index.root, env: services.commandEnv?.(), timeoutMs, idleTimeoutMs });
+  const text = formatCommandResult(command, result, idleTimeoutMs);
+  services.onCommandOutput(command, text);
+  services.onCommandResult?.(command, result.exitCode);
+  return text;
 }
