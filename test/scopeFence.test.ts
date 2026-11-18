@@ -42,3 +42,10 @@ test("ranges merge when they overlap or touch", () => {
     { start: 30, end: 40 },
   ]);
 });
+
+test("a one-line change just past the slack is flagged; a pure insertion right after the range is not", () => {
+  const changed = computeHunks(file, change(file, { 23: "changed 23" }));
+  assert.deepEqual(flagHunks(changed, { ranges: [{ start: 10, end: 20 }], label: "x", slack: 2 }), ["x"]);
+  const inserted = computeHunks(file, file.replace("line 22\n", "line 22\nnew\n"));
+  assert.deepEqual(flagHunks(inserted, { ranges: [{ start: 10, end: 20 }], label: "x", slack: 2 }), [undefined]);
+});

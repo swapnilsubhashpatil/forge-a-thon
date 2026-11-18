@@ -19,7 +19,9 @@ export class LoopGuard {
   }
 
   record(name: string, args: Record<string, unknown>, result: string): LoopVerdict {
-    const digest = createHash("sha1").update(result).digest("hex").slice(0, 12);
+    // Wall times differ run to run ("1.0s" vs "0.8s"); ignore them so an unchanged failing test still counts as a repeat.
+    const stable = result.replace(/\b\d+(\.\d+)?\s?(ms|s)\b/g, "#t");
+    const digest = createHash("sha1").update(stable).digest("hex").slice(0, 12);
     this.history.push(`${callSignature(name, args)}#${digest}`);
     if (this.history.length > 40) this.history.shift();
     const repeats = Math.max(...[1, 2, 3].map((period) => this.cycleRepeats(period)));

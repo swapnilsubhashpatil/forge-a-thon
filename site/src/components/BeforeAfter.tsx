@@ -68,7 +68,7 @@ const traits: Trait[] = [
       ['Grounding warnings per run', '0', '0'],
       ['Loop nudges per run', '0', '0'],
     ],
-    note: 'Zero in both builds: the models that pass Task B stay in scope, call real functions and do not loop, so this task cannot show the guards working. They are covered by unit tests only.',
+    note: 'Zero in both builds on Task B: models that pass it stay in scope, call real functions and do not loop. The guards are shown working end to end by a scripted misbehaving model instead: scope (agent and inline), grounding, loop guard, early-stop follow-up, partial-rejection feedback, mid-turn note, step-limit wrap-up, selection attachment and read-only subagent, 9/9 pass through the real extension and TrueForge.',
     rows: [
       {
         tag: 'G2', term: 'Scope badges',

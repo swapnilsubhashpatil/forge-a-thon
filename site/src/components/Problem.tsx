@@ -24,8 +24,8 @@ const guards = [
       'Agent: amber “edited without reading” on lines no read_file or pack slice covered',
       'Never blocks Accept; the model is told which hunks were flagged',
     ],
-    proof: 'Unit-tested. Task B never triggered it (0 warnings in both builds), so it is not yet shown end to end.',
-    proven: false,
+    proof: 'Shown end to end with a scripted misbehaving model (fake-model guard suite, 9/9 pass). Real models never triggered it on Task B (0 warnings in both builds).',
+    proven: true,
   },
   {
     icon: SearchCheck, id: 'G3', complaint: 'It confidently edits a symbol that does not exist.',
@@ -36,8 +36,8 @@ const guards = [
       'Unknown name → red “`name` is not defined anywhere” badge',
       'Only flags when confident; skips attribute access on unknown objects',
     ],
-    proof: 'Unit-tested. Task B never triggered it (0 warnings in both builds), so it is not yet shown end to end.',
-    proven: false,
+    proof: 'Shown end to end with a scripted misbehaving model (fake-model guard suite, 9/9 pass). Real models never triggered it on Task B (0 warnings in both builds).',
+    proven: true,
   },
 ]
 
