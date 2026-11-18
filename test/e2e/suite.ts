@@ -13,7 +13,7 @@ interface AnvilApi {
   runner: {
     cancel(): Promise<void>;
     resolveApproval(id: string, allow: boolean): void;
-    restoreTo?(turnId: string, withCode: boolean): Promise<{ prompt: string; skipped: string[]; rewound: boolean } | undefined>;
+    restore(turnId: string, scope: "conversation" | "code" | "both"): Promise<{ prompt: string; mentions: string[] } | undefined>;
   };
   store: { state: ChatState };
   ledger: { undo(id: string): Promise<{ restored: string[]; skipped: string[] }> };
@@ -111,7 +111,6 @@ async function taskA(api: AnvilApi, label: string): Promise<Turn> {
 
 const PY = () => process.env.ANVIL_E2E_PYTHON ?? "python";
 
-/** Checks Task B the way the problem statement verifies it: pytest, flask --help, masked JSON, at least three files. */
 function verifyTaskB(): Record<string, unknown> {
   const cwd = root().fsPath.replace(/^[a-z](?=:)/, (drive) => drive.toUpperCase());
   const env = { ...process.env, PYTHONPATH: `${cwd}/src` };
@@ -148,7 +147,6 @@ function verifyTaskB(): Record<string, unknown> {
   };
 }
 
-/** Resets the workspace when Undo could not (e.g. a task failed half way), so every task starts clean. */
 function resetTree(): void {
   git("checkout -- .");
   git("clean -fdq -e .vscode");
@@ -160,7 +158,6 @@ export async function run(): Promise<void> {
   await api.ready;
   assert.equal(api.store.state.harness.state, "ready", `harness: ${JSON.stringify(api.store.state.harness)}`);
 
-  // Each task is scored on its own: a weak model failing Task A must not hide its Task B behaviour.
   const checks: Record<string, { ok: boolean; error?: string }> = {};
   const check = async (label: string, action: () => Promise<void>) => {
     try {
@@ -218,14 +215,11 @@ export async function run(): Promise<void> {
     taskB = verifyTaskB();
     console.log("taskB check:", JSON.stringify(taskB));
 
-    // Restore to before Task B with code: every change undone, prompt returned, later turns marked reverted.
-    const restoreTo = api.runner.restoreTo?.bind(api.runner);
     const taskBTurn = api.store.state.turns.find((turn) => turn.prompt === TASK_B);
-    if (restoreTo && taskBTurn) {
+    if (taskBTurn) {
       await check("restore", async () => {
-        const result = await restoreTo(taskBTurn.id, true);
+        const result = await api.runner.restore(taskBTurn.id, "both");
         assert.equal(result?.prompt, TASK_B);
-        assert.deepEqual(result?.skipped, []);
         assert.equal(git("status --porcelain -- . :!.vscode"), "", "restore with code leaves the tree clean");
         assert.ok(api.store.state.turns.filter((turn) => turn.prompt === TASK_B || turn.followUp).every((turn) => turn.reverted), "Task B turns marked reverted");
       });

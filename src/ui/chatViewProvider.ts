@@ -2,6 +2,8 @@ import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 import type { Attachment, ChatState, HostMessage, WebviewMessage } from "../shared/protocol.ts";
 
+type PanelView = Extract<HostMessage, { type: "showView" }>["view"];
+
 export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly viewId = "anvil.chat";
   private view: vscode.WebviewView | undefined;
@@ -36,16 +38,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     this.post({ type: "state", state });
   }
 
-  focusInput(): void {
-    this.post({ type: "focusInput" });
+  async attach(attachment: Attachment): Promise<void> {
+    await this.reveal();
+    this.post({ type: "attach", attachment });
   }
 
-  /** Reveals the chat and adds an attachment (selection or terminal text) to the draft. */
-  async attach(attachment: Attachment): Promise<void> {
+  async show(view: PanelView): Promise<void> {
+    await this.reveal();
+    this.post({ type: "showView", view });
+  }
+
+  private async reveal(): Promise<void> {
     await vscode.commands.executeCommand(`${ChatViewProvider.viewId}.focus`);
-    // A freshly revealed webview needs a moment to load before it can receive messages.
     for (let tries = 0; !this.view && tries < 20; tries++) await new Promise((resolve) => setTimeout(resolve, 100));
-    this.post({ type: "attach", attachment });
   }
 
   private post(message: HostMessage): void {

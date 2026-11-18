@@ -1,9 +1,3 @@
-// Scripted, deliberately misbehaving "model" for end-to-end guard tests (ticket 00).
-// An OpenAI-compatible /v1/chat/completions server that TrueForge calls like any provider. The scenario is chosen by a
-// marker in the conversation ("SCENARIO=loop") and each reply is decided from the transcript alone (how many tool
-// results came back, what they said), so runs are deterministic and need no state.
-//
-//   node scripts/fake-model.mjs [port]      (default 8799)
 import http from "node:http";
 
 const port = Number(process.argv[2] ?? process.env.FAKE_MODEL_PORT ?? 8799);
@@ -12,10 +6,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const text = (content) => ({ content });
 const call = (name, args) => ({ tool: name, args });
 
-/** Picks the reply for a request. `tools` are the names TrueForge offered (possibly prefixed with the server name). */
 function decide(allMessages, tools) {
   const content = (message) => (typeof message.content === "string" ? message.content : JSON.stringify(message.content ?? ""));
-  // The agent session is shared across scenarios: start from the latest user message that names a scenario.
   let start = 0;
   allMessages.forEach((message, i) => {
     if (message.role === "user" && /SCENARIO=\w+/.test(content(message))) start = i;
@@ -32,7 +24,6 @@ function decide(allMessages, tools) {
   const t = (name, args) => call(tool(name), args);
 
   switch (scenario) {
-    // G3 + G2: an edit that calls a function that exists nowhere, on lines the agent never read.
     case "grounding":
       if (step === 0) {
         return t("propose_edit", {
@@ -43,7 +34,6 @@ function decide(allMessages, tools) {
       }
       return text(has(/Grounding check/) && has(/edited without reading/) ? "GROUNDING_SEEN SCOPE_SEEN" : "NOT_SEEN");
 
-    // G2 inline: the selection is get_debug_flag, the edit lands in get_load_dotenv further down.
     case "scope":
       if (step === 0) {
         return t("propose_edit", {
@@ -54,11 +44,9 @@ function decide(allMessages, tools) {
       }
       return text(has(/outside selection/) ? "SCOPE_SEEN" : "NOT_SEEN");
 
-    // M7: the same read forever.
     case "loop":
       return t("read_file", { path: "src/flask/helpers.py", start_line: 1, end_line: 5, fresh: true });
 
-    // M8: edit, then claim done without verifying; on the follow-up, test and finish properly.
     case "earlystop":
       if (/did not call finish_task/.test(lastUser)) {
         if (results.at(-1)?.startsWith("Not accepted")) {
@@ -77,7 +65,6 @@ function decide(allMessages, tools) {
       }
       return text("Done, it should work.");
 
-    // M3: one propose_edit that produces two separate hunks; the test rejects the first and accepts the second.
     case "partial":
       if (step === 0) return t("read_file", { path: "src/flask/helpers.py", start_line: 1, end_line: 60 });
       if (step === 1) {
@@ -89,23 +76,19 @@ function decide(allMessages, tools) {
       }
       return text(has(/new baseline/) && has(/Current text of src\/flask\/helpers\.py/) ? "BASELINE_SEEN" : "NOT_SEEN");
 
-    // M11: three slow reads so the test can queue a note; report whether a tool result carried it.
     case "note":
       if (step < 3) return { ...t("read_file", { path: "src/flask/helpers.py", start_line: 1 + step * 10, end_line: 10 + step * 10 }), delayMs: 2500 };
       return text(has(/<user_note sent_mid_task>[\s\S]*NOTE_PAYLOAD/) ? "NOTE_SEEN" : "NOTE_MISSING");
 
-    // M10: distinct searches until TrueForge's iteration limit; on the wrap-up, finish without claiming verification.
     case "limit":
       if (/reached the step limit/.test(lastUser)) {
         return t("finish_task", { summary: "Stopped at the step limit while searching", verification: "No edits were made; nothing to verify.", verified: false });
       }
       return t("search_code", { query: `limit_probe_${step}` });
 
-    // Attachments: does the request carry the user's selection ahead of the context pack?
     case "attach":
       return text(/Selected by the user: src\/flask\/helpers\.py lines/.test(all) ? "ATTACH_SEEN" : "ATTACH_MISSING");
 
-    // M2: the parent starts a subagent through TrueForge's own subagent tool; the child tries to edit and to run tests.
     case "subagent": {
       const spawn = tools.find((name) => /sub_?agent/i.test(name));
       if (step === 0 && spawn) return { tool: spawn, args: fillArgs(spawn, "SCENARIO=subchild Inspect src/flask/helpers.py and report.") };
@@ -122,7 +105,6 @@ function decide(allMessages, tools) {
   }
 }
 
-/** Arguments for a tool we only know by schema: every required string gets `text`, other required fields a default. */
 let toolSchemas = new Map();
 function fillArgs(name, value) {
   const schema = toolSchemas.get(name) ?? {};

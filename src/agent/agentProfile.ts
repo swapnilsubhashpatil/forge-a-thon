@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AgentSpec } from "../harness/harnessClient.ts";
+import type { AgentMode } from "../shared/protocol.ts";
 
-export type AgentMode = "agent" | "inline";
+export type RunMode = AgentMode | "inline";
 export type PromptProfile = "auto" | "full" | "compact";
 
 export interface SpecOptions {
@@ -13,7 +14,6 @@ export interface SpecOptions {
   promptProfile?: PromptProfile;
 }
 
-/** Local models get the short agent prompt unless the user forces the full one (Gemini CLI ships the same split). */
 export function usesCompactPrompt(model: string, profile: PromptProfile = "auto"): boolean {
   if (profile === "compact") return true;
   if (profile === "full") return false;
@@ -33,28 +33,28 @@ interface AgentProfile {
 }
 
 export class AgentProfiles {
-  private readonly profiles: Record<AgentMode, AgentProfile>;
+  private readonly profiles: Record<RunMode, AgentProfile>;
   private readonly compactAgent: AgentProfile;
 
   constructor(extensionPath: string) {
     const load = (file: string) => JSON.parse(readFileSync(join(extensionPath, "agents", file), "utf8")) as AgentProfile;
-    this.profiles = { agent: load("anvil-agent.json"), inline: load("anvil-inline.json") };
+    this.profiles = { agent: load("anvil-agent.json"), ask: load("anvil-ask.json"), inline: load("anvil-inline.json") };
     this.compactAgent = load("anvil-agent-compact.json");
   }
 
-  private profileFor(mode: AgentMode, model: string, promptProfile?: PromptProfile): AgentProfile {
+  private profileFor(mode: RunMode, model: string, promptProfile?: PromptProfile): AgentProfile {
     return mode === "agent" && usesCompactPrompt(model, promptProfile) ? this.compactAgent : this.profiles[mode];
   }
 
-  compactionTokens(mode: AgentMode): number {
+  compactionTokens(mode: RunMode): number {
     return this.profiles[mode].compactionInputTokens;
   }
 
-  maxTokens(mode: AgentMode): number {
+  maxTokens(mode: RunMode): number {
     return this.profiles[mode].params.maxTokens;
   }
 
-  spec(mode: AgentMode, model: string, options: SpecOptions): AgentSpec {
+  spec(mode: RunMode, model: string, options: SpecOptions): AgentSpec {
     const profile = this.profileFor(mode, model, options.promptProfile);
     const effort = options.reasoningEffort ?? defaultReasoningEffort(model);
     const reasoning = effort ? { reasoningEffort: effort } : {};
@@ -77,7 +77,7 @@ export class AgentProfiles {
           compaction: { enabled: true, trigger: { type: "input_tokens", value: profile.compactionInputTokens } },
           largeToolResponse: { enabled: false },
         },
-        iterationLimit: mode === "agent" ? options.iterationLimit ?? profile.iterationLimit : profile.iterationLimit,
+        iterationLimit: mode === "inline" ? profile.iterationLimit : options.iterationLimit ?? profile.iterationLimit,
       },
     };
   }

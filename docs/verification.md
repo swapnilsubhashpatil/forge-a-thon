@@ -23,11 +23,10 @@ What has been checked, how, and what is still open. Updated 2026-11-06.
 | Extension inside VS Code (`@vscode/test-electron`): activation, harness connect, MCP registration, indexing, model listing, agent turn streamed through TrueForge to `done` | works |
 | `npm run harness` registers providers from `.env` | works (after switching to snake_case REST fields) |
 
-## Open: model-dependent end-to-end runs
+## Small local models
 
-The E2E suite (`npm run e2e`) runs Task A, Task C failover and cancel against a temporary Flask clone. On
-this machine only small local models were available (no hosted API keys), and they could not complete the
-inline edit:
+The E2E suite (`npm run e2e`) runs Task A, Task C failover and cancel against a temporary Flask clone. Small
+local models could not complete the inline edit:
 
 - **qwen3:4b with thinking** used its whole 4,096-token output budget on reasoning. That led to the
   `anvil.models.reasoningEffort` setting.
@@ -47,7 +46,7 @@ Run on 2026-11-06 with `npm run e2e` against pallets/flask 3.1.3, with `ANVIL_E2
 |---|---|---|---|
 | Task A: inline edit of `get_debug_flag` | Done. One hunk (+5 / -1), checked in Python. | 6.9 s | 7,878 / 430 / 3,746 |
 | Task C: failover | `broken/unreachable` failed ("bad port"). Switched to Sonnet, same edit. | 4.6 s | 7,878 / 433 / 7,872 |
-| Cancel mid-turn | Turn cancelled, pending edits discarded. | 15 ms | — |
+| Cancel mid-turn | Turn cancelled, pending edits discarded. | 15 ms | – |
 | Task B: `flask config` command | cli.py, docs/cli.rst and tests/test_cli.py (+51 lines). Agent ran pytest; the new tests pass. | 36.0 s | 130,437 / 2,951 / 109,447 |
 
 Context selection labelled cli.py, cli.rst and test_cli.py as targets and config.py as a reference. On its
@@ -55,8 +54,31 @@ first pytest run the agent hit an import error because `PYTHONPATH` was missing.
 `PYTHONPATH=src` and reran; the new tests passed (`2 passed`). The e2e harness needs a Python interpreter
 with Flask's dependencies, either on `PATH` or set through `ANVIL_E2E_PYTHON`.
 
+## Re-run after the UX iteration (2026-11-17)
+
+Branch `feat/ux-iteration`, same model and settings as above.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | clean |
+| `npm test` | 98 / 98 pass, including ledger, history, Ask mode, auto-approve, image content and UI rule tests |
+| `node scripts/e2e-guards.mjs` (scripted model) | 10 / 10 scenarios pass |
+| Task A inline edit | done, +5 / -1, 4.7 s, 5,841 / 427 / 2,726 tokens |
+| Task C failover | `broken/unreachable` failed, switched to Sonnet, 4.3 s |
+| Cancel mid-turn | cancelled, 74 ms |
+| Restore (conversation and code) | pass |
+| Task B `flask config` | 3 files changed, pytest 56 passed / 3 skipped, 20.6 s, 71,033 / 2,351 / 55,168 tokens |
+
+Python for the suites needs Flask installed (`pip install -e ../flask-3.1.3`); without its package metadata
+`test_get_version` fails and the M8 guard reports a false failure.
+
 ## Independent review
 
 A five-lens review (agent loop, diff safety, security, webview contract, lifecycle/packaging) reported 1
 critical and about 20 high/medium findings. All were fixed: commits `802f74d`, `8bd59a2`, `ceb78d5`,
-`6610e6f`, `7cb77d6`. See `conductor/decisions.md` D12–D17.
+`6610e6f`, `7cb77d6`. See [the decision log](../conductor/decisions.md) D12–D17.
+
+## Later runs
+
+The before/after agent-mode matrix across seven models and the nine guard scenarios against a scripted model are
+recorded in [benchmarks](benchmarks/README.md).

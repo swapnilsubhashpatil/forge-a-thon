@@ -66,7 +66,7 @@ export default function EditorDemo() {
         <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
         <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
         <span className="w-3 h-3 rounded-full bg-[#28c840]" />
-        <span className="ml-3 text-gray-400 font-sans text-xs">helpers.py — flask-3.1.3</span>
+        <span className="ml-3 text-gray-400 font-sans text-xs">helpers.py – flask-3.1.3</span>
       </div>
 
       <div className="grid md:grid-cols-[1fr_300px]">

@@ -1,66 +1,51 @@
 import type { ChatState, HarnessState } from "../../../src/shared/protocol.ts";
-import { cx, shortModel } from "../format.ts";
-import { post } from "../state/vscode.ts";
+import { cx } from "../format.ts";
+import { showView, type View } from "../state/store.ts";
 import { AnvilMark } from "./AnvilMark.tsx";
-import { healthOf } from "./ModelChain.tsx";
-import { Dot, Icon, IconButton } from "./primitives.tsx";
+import { Icon, StatusGlyph, type StatusKind } from "./primitives.tsx";
+import type { GlyphName } from "./Glyph.tsx";
 
-const harnessDot: Record<HarnessState, { className: string; label: string; pulse?: boolean }> = {
-  connecting: { className: "bg-yellow", label: "Connecting to TrueForge", pulse: true },
-  starting: { className: "bg-yellow", label: "Starting TrueForge", pulse: true },
-  ready: { className: "bg-green", label: "TrueForge ready" },
-  offline: { className: "bg-red", label: "TrueForge offline" },
+export const harnessStatus: Record<HarnessState, StatusKind> = {
+  connecting: "pending",
+  starting: "pending",
+  ready: "ready",
+  offline: "offline",
 };
 
-interface HeaderProps {
-  chat: ChatState;
-  chainOpen: boolean;
-  onToggleChain: () => void;
+function ViewButton({ view, current, icon, label }: { view: View; current: View; icon: GlyphName; label: string }) {
+  const active = view === current;
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      aria-label={label}
+      title={active ? "Back to chat" : label}
+      onClick={() => showView(active ? "chat" : view)}
+      className={cx("btn px-1.5", active ? "bg-hover text-fg" : "text-muted")}
+    >
+      <Icon name={icon} />
+      <span className="max-[340px]:hidden">{label}</span>
+    </button>
+  );
 }
 
-export function Header({ chat, chainOpen, onToggleChain }: HeaderProps) {
-  const harness = harnessDot[chat.harness.state];
-  const harnessTitle = [harness.label, chat.harness.url, chat.harness.message].filter(Boolean).join(" — ");
-  const fellBack = Boolean(chat.activeModel && chat.models[0] && chat.models[0].model !== chat.activeModel);
-  const activeHealth = healthOf(chat.models, chat.activeModel);
+export function Header({ chat, view }: { chat: ChatState; view: View }) {
+  const state = chat.harness.state;
+  const harnessTitle = [`TrueForge ${state}`, chat.harness.url, chat.harness.message].filter(Boolean).join(" · ");
 
   return (
-    <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-2">
-      <AnvilMark className="size-4 shrink-0 text-fg" />
-      <span className="text-sm font-semibold text-fg">Anvil</span>
-      <span role="status" aria-label={harnessTitle} title={harnessTitle} className="grid size-4 place-items-center">
-        <Dot className={harness.className} pulse={harness.pulse} />
-      </span>
-      {chat.sessionId && (
-        <span className="truncate font-mono text-2xs text-muted" title={`Session ${chat.sessionId}`}>
-          {chat.sessionId.slice(-8)}
-        </span>
-      )}
-      <span className="flex-1" />
-      <button
-        type="button"
-        aria-expanded={chainOpen}
-        aria-label="Model fallback chain"
-        title={chat.activeModel ? `Active model: ${chat.activeModel}` : "Model fallback chain"}
-        onClick={onToggleChain}
-        className={cx(
-          "flex h-6 min-w-0 items-center gap-1.5 rounded border px-1.5 text-xs hover:bg-hover",
-          fellBack ? "border-yellow/60 bg-yellow/10 text-fg" : "border-border text-fg",
-          chainOpen && "bg-hover",
-        )}
-      >
-        {fellBack ? <Icon name="arrow-swap" className="text-yellow" /> : <Dot className={activeHealth === "healthy" ? "bg-green" : "bg-muted/50"} />}
-        <span className="truncate">{chat.activeModel ? shortModel(chat.activeModel) : "No model"}</span>
-        <Icon name={chainOpen ? "chevron-up" : "chevron-down"} className="text-muted" />
+    <header className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border px-2">
+      <button type="button" onClick={() => showView("chat")} className="btn gap-1.5 px-1 text-sm font-semibold" title="Chat">
+        <AnvilMark className="size-4 text-strong" accent="var(--color-orange)" />
+        Anvil
       </button>
-      <IconButton icon="add" label="New session" onClick={() => post({ type: "newSession" })} />
-      <IconButton
-        icon="link-external"
-        label="Open session in TrueForge"
-        disabled={!chat.sessionId}
-        onClick={() => post({ type: "openSessionInHarness" })}
-      />
-      <IconButton icon="settings-gear" label="Configure models" onClick={() => post({ type: "configureModels" })} />
+      <span role="status" title={harnessTitle} className="flex items-center gap-1.5 text-xs text-muted">
+        <StatusGlyph kind={harnessStatus[state]} />
+        {state}
+      </span>
+      <span className="flex-1" />
+      <ViewButton view="history" current={view} icon="history" label="History" />
+      <ViewButton view="settings" current={view} icon="settings" label="Settings" />
     </header>
   );
 }

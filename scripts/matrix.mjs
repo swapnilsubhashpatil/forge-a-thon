@@ -1,11 +1,3 @@
-// Before/after benchmark: runs the e2e suite (Tasks A, C, cancel, B) for each model against `main` and this branch,
-// then aggregates the JSON reports into docs/benchmarks/agent-mode.{json,md}.
-//
-//   node scripts/matrix.mjs --models anthropic/claude-sonnet-5-5,ollama/qwen3-8b --variants main,branch --runs 2
-//   node scripts/matrix.mjs --report-only
-//
-// The same test suite drives both variants; only the extension build differs (main is built in a sibling worktree).
-// Requires TrueForge running with providers registered (`npm run harness`) and the Flask venv (ANVIL_E2E_PYTHON).
 import { execSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -64,7 +56,6 @@ async function run() {
           ANVIL_E2E_PYTHON: python,
           ANVIL_E2E_USER_DATA: mkdtempSync(join(tmpdir(), "anvil-vscode-")),
           ANVIL_E2E_REASONING: model.startsWith("ollama/") ? "none" : process.env.ANVIL_E2E_REASONING ?? "low",
-          // The agent's run_command must find a Python with Flask's test deps, as a developer's activated venv would.
           PATH: `${dirname(python)}${delimiter}${process.env.PATH ?? process.env.Path ?? ""}`,
           Path: `${dirname(python)}${delimiter}${process.env.PATH ?? process.env.Path ?? ""}`,
           VIRTUAL_ENV: dirname(dirname(python)),
@@ -77,7 +68,6 @@ async function run() {
       });
     });
 
-  // Local models share one GPU, so they run one at a time; hosted models run in parallel.
   const lane = async (queue, width) => {
     const workers = Array.from({ length: width }, async () => {
       for (let job = queue.shift(); job; job = queue.shift()) await runJob(job);
@@ -121,11 +111,9 @@ function metrics(report) {
     usage,
     cacheHit: usage.input ? usage.cached / usage.input : 0,
     seconds: (report.timings?.taskB ?? 0) / 1000,
-    // Context and state: did Anvil's prediction contain what the agent ended up editing, and how much did it look outside it.
     predictedShare: report.taskB?.filesChanged ? (report.taskB.files.filter((file) => top5.includes(file)).length / report.taskB.filesChanged) : undefined,
     readsOutsidePack: context?.fetched?.length ?? 0,
     readCalls: tools.read_file ?? 0,
-    // Feed-forward guardrails that fired (visible in tool results the model saw).
     loopNudges: steps.filter((step) => /Loop warning/.test(step.output ?? "")).length,
     scopeFlags: steps.filter((step) => /The user was warned about/.test(step.output ?? "")).length,
     groundingFlags: steps.filter((step) => /Grounding check/.test(step.output ?? "")).length,
@@ -145,7 +133,6 @@ function aggregate() {
       const [variant, model, n] = file.replace(/\.json$/, "").split("__");
       return { variant, model: model.replace("_", "/"), run: Number(n), ...metrics(JSON.parse(readFileSync(join(runsDir, file), "utf8"))) };
     });
-  // --only <regex> limits the report to providers that actually answered (see agent-mode-findings.md).
   if (args.only) rows.splice(0, rows.length, ...rows.filter((row) => new RegExp(args.only).test(row.model)));
   writeFileSync(join(root, "docs/benchmarks/agent-mode.json"), JSON.stringify(rows, null, 2));
 

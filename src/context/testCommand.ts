@@ -4,23 +4,17 @@ import { basename, extname, join } from "node:path";
 export interface TestCommand {
   command: string;
   reason: string;
-  /** Environment the command needs, applied by run_command itself (never inline, so it works on every shell). */
   env: Record<string, string>;
 }
 
 const PY_CONFIGS = ["pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini"];
 
-/**
- * Guess how to verify a change in this workspace. Returns undefined when unsure; the pack then says nothing,
- * because a wrong hint costs the model more than no hint.
- */
 export function detectTestCommand(root: string, workspaceFiles: string[], targets: string[]): TestCommand | undefined {
   const python = detectPython(root, workspaceFiles, targets);
   if (python) return python;
   return detectNode(root);
 }
 
-/** `src/<package>/__init__.py` layouts need src on the import path when the package is not installed. */
 export function pythonSrcLayout(root: string): boolean {
   const src = join(root, "src");
   if (!existsSync(src)) return false;
@@ -73,7 +67,6 @@ function matches(target: string, test: string): boolean {
   return stem(target) === stem(test) && !/(^|\/)(test_[^/]+|[^/]+_test)\.py$/.test(target);
 }
 
-/** The test file named after the highest-ranked target that has one, e.g. src/flask/cli.py -> tests/test_cli.py. */
 function companionTest(targets: string[], testFiles: string[]): string | undefined {
   for (const target of targets) {
     if (testFiles.includes(target)) return target;

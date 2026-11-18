@@ -1,13 +1,12 @@
-import type { ButtonHTMLAttributes } from "react";
+import { useId, type ButtonHTMLAttributes } from "react";
 import { cx, splitPath } from "../format.ts";
 import { post } from "../state/vscode.ts";
+import { Icon, type GlyphName } from "./Glyph.tsx";
 
-export function Icon({ name, className, spin }: { name: string; className?: string; spin?: boolean }) {
-  return <span aria-hidden="true" className={cx("codicon", `codicon-${name}`, spin && "codicon-modifier-spin", className)} />;
-}
+export { Icon };
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: string;
+  icon: GlyphName;
   label: string;
 }
 
@@ -17,10 +16,7 @@ export function IconButton({ icon, label, className, ...rest }: IconButtonProps)
       type="button"
       aria-label={label}
       title={label}
-      className={cx(
-        "grid size-6 shrink-0 place-items-center rounded text-fg hover:bg-hover disabled:hover:bg-transparent",
-        className,
-      )}
+      className={cx("btn btn-icon", className)}
       {...rest}
     >
       <Icon name={icon} />
@@ -47,7 +43,7 @@ export function PathLink({ path, line, className }: { path: string; line?: numbe
         event.stopPropagation();
         post({ type: "openFile", path, line });
       }}
-      className={cx("flex min-w-0 rounded-sm text-left hover:underline decoration-muted underline-offset-2", className)}
+      className={cx("flex min-w-0 rounded-sm text-left decoration-muted underline-offset-2 hover:underline", className)}
     >
       <PathText path={path} />
     </button>
@@ -62,6 +58,41 @@ export function DiffStat({ added, removed }: { added: number; removed: number })
   );
 }
 
-export function Dot({ className, pulse }: { className: string; pulse?: boolean }) {
-  return <span aria-hidden="true" className={cx("inline-block size-2 shrink-0 rounded-full", pulse && "animate-pulse-soft", className)} />;
+export type StatusKind = "ready" | "pending" | "offline" | "cooling" | "unknown";
+
+const statusTone: Record<StatusKind, string> = {
+  ready: "text-green",
+  pending: "text-yellow",
+  offline: "text-red",
+  cooling: "text-yellow",
+  unknown: "text-muted",
+};
+
+function pie(fraction: number): string {
+  if (fraction >= 1) return "M6 3.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 1 1 0-5Z";
+  const angle = 2 * Math.PI * Math.max(fraction, 0.05);
+  const x = 6 + 2.5 * Math.sin(angle);
+  const y = 6 - 2.5 * Math.cos(angle);
+  return `M6 6V3.5A2.5 2.5 0 ${fraction > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)}Z`;
+}
+
+export function StatusGlyph({ kind, fraction = 0.5, size = 12, className }: { kind: StatusKind; fraction?: number; size?: number; className?: string }) {
+  const mask = useId();
+  return (
+    <svg viewBox="0 0 12 12" width={size} height={size} aria-hidden="true" className={cx("shrink-0", statusTone[kind], className)}>
+      {kind === "ready" ? (
+        <>
+          <mask id={mask}>
+            <circle cx="6" cy="6" r="6" fill="white" />
+            <path d="m3.6 6.2 1.6 1.6 3.2-3.3" fill="none" stroke="black" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </mask>
+          <circle cx="6" cy="6" r="5.5" fill="currentColor" mask={`url(#${mask})`} />
+        </>
+      ) : (
+        <circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" strokeWidth="1.3" strokeDasharray={kind === "unknown" ? "2 1.85" : undefined} />
+      )}
+      {(kind === "pending" || kind === "cooling") && <path d={pie(fraction)} fill="currentColor" />}
+      {kind === "offline" && <path d="M3.2 8.8 8.8 3.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />}
+    </svg>
+  );
 }

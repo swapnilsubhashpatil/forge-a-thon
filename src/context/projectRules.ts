@@ -2,11 +2,6 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { estimateTokens } from "./tokens.ts";
 
-/**
- * Project rules: the conventions a repository writes down for coding agents (AGENTS.md is the cross-tool standard;
- * Claude Code reads CLAUDE.md, Cursor .cursorrules, Cline .clinerules, Copilot .github/copilot-instructions.md).
- * Anvil reads whichever exist at the workspace root and puts them at the top of the context pack.
- */
 export const RULE_FILES = ["AGENTS.md", "CLAUDE.md", ".anvil/rules.md", ".cursorrules", ".clinerules", ".github/copilot-instructions.md"];
 export const RULES_BUDGET_TOKENS = 1_200;
 
@@ -31,7 +26,6 @@ export function loadProjectRules(root: string, budgetTokens = RULES_BUDGET_TOKEN
       continue;
     }
     const body = readFileSync(path, "utf8").trim();
-    // Repos often symlink or copy CLAUDE.md to AGENTS.md; send identical content once.
     if (!body || seen.has(body)) continue;
     seen.add(body);
     const header = `From ${name}:`;

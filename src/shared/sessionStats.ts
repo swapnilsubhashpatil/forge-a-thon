@@ -5,17 +5,13 @@ export interface SessionTotals {
   input: number;
   output: number;
   cached: number;
-  /** Sum of TrueForge cost estimates; undefined when no turn reported one (local or unpriced models). */
   costUsd?: number;
-  /** True when some turns had a cost and others did not, so the total is a lower bound. */
   costPartial: boolean;
   cacheHit?: number;
-  /** Context of the most recent agent turn: latest call's input vs the compaction trigger. */
   context?: ContextLive;
   compactions: number;
 }
 
-/** Totals for the whole conversation, live: finished turns from TrueForge metrics, the running one from its live count. */
 export function sessionTotals(turns: Turn[]): SessionTotals {
   const counted = turns.filter((turn) => !turn.reverted);
   let input = 0;
@@ -54,9 +50,7 @@ export function sessionTotals(turns: Turn[]): SessionTotals {
 export interface RunStats {
   elapsedMs: number;
   toolCalls: number;
-  /** What the agent is doing right now, e.g. "Run command · pytest" or "Waiting for your review". */
   current: string;
-  /** Output tokens per second over completed model calls; undefined until the first call completes. */
   tokensPerSecond?: number;
 }
 

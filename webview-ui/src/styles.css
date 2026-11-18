@@ -9,8 +9,8 @@
   --color-editor: var(--vscode-editor-background);
   --color-input: var(--vscode-input-background);
   --color-input-fg: var(--vscode-input-foreground);
-  --color-input-border: var(--vscode-input-border, var(--color-border));
-  --color-border: var(--vscode-widget-border, color-mix(in srgb, var(--vscode-foreground) 14%, transparent));
+  --color-input-border: var(--vscode-contrastBorder, color-mix(in srgb, var(--vscode-foreground) 12%, transparent));
+  --color-border: var(--vscode-contrastBorder, color-mix(in srgb, var(--vscode-foreground) 9%, transparent));
   --color-focus: var(--vscode-focusBorder);
   --color-accent: var(--vscode-button-background);
   --color-accent-fg: var(--vscode-button-foreground);
@@ -19,6 +19,7 @@
   --color-secondary-fg: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   --color-secondary-hover: var(--vscode-button-secondaryHoverBackground, color-mix(in srgb, var(--vscode-foreground) 16%, transparent));
   --color-widget: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  --color-raised: color-mix(in srgb, var(--vscode-foreground) 3%, var(--vscode-editorWidget-background, var(--vscode-editor-background)));
   --color-selection: var(--vscode-list-activeSelectionBackground);
   --color-selection-fg: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
   --color-hover: var(--vscode-list-hoverBackground, color-mix(in srgb, var(--vscode-foreground) 6%, transparent));
@@ -35,11 +36,9 @@
   --color-badge: var(--vscode-badge-background);
   --color-badge-fg: var(--vscode-badge-foreground);
 
-  --font-sans: var(--vscode-font-family, system-ui, sans-serif);
-  --font-mono: var(--vscode-editor-font-family, ui-monospace, monospace);
+  --font-sans: "IBM Plex Sans", var(--vscode-font-family), system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", var(--vscode-editor-font-family), ui-monospace, monospace;
 
-  --text-2xs: 10px;
-  --text-2xs--line-height: 14px;
   --text-xs: 11px;
   --text-xs--line-height: 16px;
   --text-sm: 12px;
@@ -49,15 +48,22 @@
   --text-lg: 15px;
   --text-lg--line-height: 22px;
 
-  --animate-blink: blink 1s steps(1) infinite;
-  --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
 
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.16);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.16), 0 4px 12px rgb(0 0 0 / 0.16);
+  --shadow-lg: 0 1px 2px rgb(0 0 0 / 0.18), 0 8px 24px rgb(0 0 0 / 0.22);
 
-  @keyframes pulse-soft {
-    50% { opacity: 0.45; }
+  --animate-slide: slide 1.6s ease-in-out infinite;
+
+  @keyframes slide {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(300%); }
   }
 }
 
@@ -77,8 +83,8 @@
   }
 
   :focus-visible {
-    outline: 1px solid var(--color-focus);
-    outline-offset: -1px;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
   }
 
   button {
@@ -100,22 +106,86 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--vscode-scrollbarSlider-background);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    background: var(--vscode-scrollbarSlider-background) padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--vscode-scrollbarSlider-hoverBackground);
-  }
-
-  .codicon[class*="codicon-"] {
-    font-size: 14px;
+    background: var(--vscode-scrollbarSlider-hoverBackground) padding-box;
   }
 }
 
 @layer components {
+  .btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+    color: var(--color-fg);
+
+    &:hover:not(:disabled) { background: var(--color-hover); }
+  }
+
+  .btn-icon {
+    width: 24px;
+    padding: 0;
+    color: var(--color-muted);
+
+    &:hover:not(:disabled) { color: var(--color-fg); }
+  }
+
+  .btn-secondary {
+    background: var(--color-secondary);
+    color: var(--color-secondary-fg);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 6%, transparent), 0 0 0 1px var(--color-border);
+
+    &:hover:not(:disabled) { background: var(--color-secondary-hover); color: var(--color-secondary-fg); }
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent), var(--shadow-sm);
+
+    &:hover:not(:disabled) { background: var(--color-accent-hover); color: var(--color-accent-fg); }
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+    box-shadow: inset 0 -1px 0 var(--color-border);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--color-muted);
+  }
+
+  .popover {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-raised);
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+  }
+
   .turn-finished {
     content-visibility: auto;
     contain-intrinsic-size: auto 400px;
+
+    &:has(.popover) { content-visibility: visible; }
   }
 
   .markdown {
@@ -139,12 +209,13 @@
       font-family: var(--font-mono);
       font-size: 12px;
       padding: 1px 4px;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       background: var(--color-code);
     }
     & pre {
+      font-family: var(--font-mono);
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--color-border);
       background: var(--color-editor);
       overflow-x: auto;
@@ -155,18 +226,6 @@
     & table { border-collapse: collapse; font-size: 12px; }
     & th, & td { border: 1px solid var(--color-border); padding: 2px 8px; text-align: left; }
     & hr { border: 0; border-top: 1px solid var(--color-border); margin: 12px 0; }
-  }
-
-  .markdown.streaming > :last-child::after,
-  .markdown.streaming:empty::after {
-    content: "";
-    display: inline-block;
-    width: 7px;
-    height: 14px;
-    margin-left: 2px;
-    vertical-align: -2px;
-    background: var(--color-fg);
-    animation: var(--animate-blink);
   }
 
   .budget-bar {
@@ -182,6 +241,22 @@
     &::-webkit-progress-bar { background: transparent; }
     &::-webkit-progress-value { background: var(--color-blue); border-radius: 2px; }
     &.near-limit::-webkit-progress-value { background: var(--color-yellow); }
+  }
+
+  .slide-bar {
+    position: relative;
+    height: 2px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 30%;
+      background: var(--color-orange);
+      animation: var(--animate-slide);
+    }
   }
 
   .composer-input {

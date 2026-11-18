@@ -1,4 +1,4 @@
-import type { ChatState, NoticeTone, Step, Turn } from "../shared/protocol.ts";
+import type { AnvilSettings, ChatState, NoticeStep, NoticeTone, Step, Turn } from "../shared/protocol.ts";
 
 const EMIT_INTERVAL_MS = 33;
 
@@ -8,8 +8,13 @@ export class ConversationStore {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private noticeCounter = 0;
 
-  constructor(harnessUrl: string) {
+  constructor(harnessUrl: string, settings: AnvilSettings) {
     this.state = {
+      mode: "agent",
+      history: [],
+      pendingReviews: [],
+      settings,
+      mcpServers: [],
       turns: [],
       harness: { state: "connecting", url: harnessUrl },
       models: [],
@@ -51,14 +56,15 @@ export class ConversationStore {
     });
   }
 
-  notice(turnId: string, tone: NoticeTone, text: string): void {
+  notice(turnId: string, tone: NoticeTone, text: string, failover?: NoticeStep["failover"]): void {
     this.noticeCounter += 1;
-    this.upsertStep(turnId, { kind: "notice", id: `notice-${this.noticeCounter}`, tone, text });
+    this.upsertStep(turnId, { kind: "notice", id: `notice-${this.noticeCounter}`, tone, text, failover });
   }
 
   reset(): void {
     this.update((state) => {
       state.turns = [];
+      state.queue = [];
       state.sessionId = undefined;
       state.sessionUrl = undefined;
       state.busy = false;
