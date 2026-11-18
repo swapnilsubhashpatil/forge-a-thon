@@ -41,12 +41,12 @@ export default function Features() {
     <section id="features" ref={sectionRef} className="py-24 md:py-32 relative bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div ref={headingRef} className="text-center mb-20 max-w-3xl mx-auto">
-          <h2 className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4">What Anvil does</h2>
+          <h2 className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4">The baseline · already on main</h2>
           <h3 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-gray-900 tracking-tighter leading-tight">
             An agent you can actually review.
           </h3>
           <p className="mt-6 text-lg text-gray-500 max-w-2xl mx-auto">
-            Fast edits are easy. Trustworthy ones need visible context, reviewable diffs and a plan for when the model falls over.
+            What the agent-mode work builds on: the five capabilities the brief asks for, plus the review and failover surface around TrueForge.
           </p>
         </div>
 

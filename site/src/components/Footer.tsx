@@ -57,7 +57,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6 font-heading tracking-tight">Product</h4>
             <ul className="space-y-4">
-              {[['features', 'Features'], ['how', 'How it works'], ['benchmarks', 'Benchmarks'], ['faq', 'FAQ']].map(([id, l]) => (
+              {[['before-after', 'Before / After'], ['benchmarks', 'Results'], ['trueforge', 'vs TrueForge'], ['limits', 'Limits'], ['how', 'How it works'], ['faq', 'FAQ']].map(([id, l]) => (
                 <li key={id}><a href={`#${id}`} onClick={(e) => { e.preventDefault(); scrollToId(id) }} className="hover:text-white transition-colors">{l}</a></li>
               ))}
             </ul>

@@ -1,28 +1,37 @@
 import { useEffect, useRef } from 'react'
 import { gsap, prefersReducedMotion } from '../motion'
 
-type Stat = { value: number; decimals: number; suffix: string; label: string; description: string; aspect: string; visual: React.ReactNode }
+type Stat = {
+  value: number; decimals: number; prefix?: string; suffix: string
+  label: string; before: string; description: string; aspect: string; visual: React.ReactNode
+}
 
+// Every number below is from docs/benchmarks/agent-mode.md ("By harness trait"):
+// 7 models whose provider answered × 2 runs per build = 14 Task B runs per build.
 const stats: Stat[] = [
   {
-    value: 1, decimals: 2, suffix: '', label: 'recall@5 on Flask',
-    description: 'Every right file lands in the top five across 12 hand-labelled tasks. BM25 alone gets 0.71.',
-    aspect: 'aspect-[2/3]', visual: <RankVisual />,
+    value: 0, decimals: 0, suffix: '/14', label: 'Runs that stopped with untested edits',
+    before: 'Before: 11/14',
+    description: 'The agent changed code and ended the turn without running a single check after its last edit.',
+    aspect: 'aspect-[2/3]', visual: <DotsVisual before={11} after={0} tone="bad" />,
   },
   {
-    value: 97.5, decimals: 1, suffix: '%', label: 'Edits that land',
-    description: 'A matcher cascade (exact → whitespace → indentation → fuzzy) recovers sloppy model edits. Plain search/replace: 15.2%.',
-    aspect: 'aspect-[2/3]', visual: <CascadeVisual />,
+    value: 10, decimals: 0, suffix: '/14', label: '“Done” backed by a passing check',
+    before: 'Before: 0/14 (no mechanism)',
+    description: 'A completion gate only accepts “verified” if a command ran and passed after the last accepted edit. Every passing run finished this way.',
+    aspect: 'aspect-[2/3]', visual: <DotsVisual before={0} after={10} tone="good" />,
   },
   {
-    value: 4.2, decimals: 1, suffix: 'k', label: 'Tokens per context pack',
-    description: 'Ranked slices and a repo map instead of ~38k tokens of whole files.',
-    aspect: 'aspect-square', visual: <TokenVisual />,
+    value: 0.3, decimals: 1, suffix: '', label: 'Failed test runs per Task B',
+    before: 'Before: 3.1',
+    description: 'Before, pytest kept failing for environment reasons (missing PYTHONPATH=src, a lowercase Windows drive letter) and models burned turns on it.',
+    aspect: 'aspect-square', visual: <BarsVisual before={3.1} after={0.3} fmt={(v) => v.toFixed(1)} />,
   },
   {
-    value: 0, decimals: 0, suffix: '/60', label: 'Wrong-location edits',
-    description: 'Fuzzy matching refuses to guess between near-identical functions.',
-    aspect: 'aspect-square', visual: <TargetVisual />,
+    value: 27, decimals: 0, prefix: '−', suffix: '%', label: 'Input tokens per Task B',
+    before: '193k → 141k',
+    description: 'Fewer failing test loops and fewer file reads (5.2 → 4.3 read_file calls) mean less to send to the model.',
+    aspect: 'aspect-square', visual: <BarsVisual before={193} after={141} fmt={(v) => `${v}k`} />,
   },
 ]
 
@@ -48,7 +57,7 @@ export default function Stats() {
       // Count-up numbers, once
       stats.forEach((s, i) => {
         const el = numsRef.current[i]
-        if (!el) return
+        if (!el || s.value === 0) return
         const obj = { v: 0 }
         gsap.to(obj, {
           v: s.value, duration: 1.6, ease: 'power3.out',
@@ -65,11 +74,12 @@ export default function Stats() {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center md:text-left mb-8 md:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <h2 ref={headingRef} className="text-4xl md:text-5xl lg:text-7xl font-heading font-bold text-gray-900 tracking-tighter max-w-2xl leading-[1.1]">
-            We don't just generate.<br />
-            <span className="text-gray-400">We measure.</span>
+            Same models.<br />
+            <span className="text-gray-400">Better behaviour.</span>
           </h2>
           <p className="text-lg text-gray-600 font-medium max-w-sm md:text-right">
-            Numbers from reproducible benchmarks on Flask 3.1.3. Run them yourself with <code className="whitespace-nowrap font-mono text-sm bg-white px-1.5 py-0.5 rounded border border-gray-200">npm run bench</code>.
+            Before = branch <code className="font-mono text-sm bg-white px-1.5 py-0.5 rounded border border-gray-200">main</code>, after = the agent-mode work.
+            The same end-to-end suite drove both builds on Flask 3.1.3: 7 models, 2 runs each, 14 runs per build.
           </p>
         </div>
 
@@ -80,8 +90,11 @@ export default function Stats() {
                 {s.visual}
               </div>
               <div className="px-2">
-                <div className="text-4xl md:text-5xl font-heading font-extrabold text-black mb-2 tracking-tighter tabular-nums">
-                  <span ref={(el) => { numsRef.current[i] = el }}>{s.value.toFixed(s.decimals)}</span>{s.suffix}
+                <div className="flex items-baseline gap-3 flex-wrap mb-2">
+                  <div className="text-4xl md:text-5xl font-heading font-extrabold text-black tracking-tighter tabular-nums">
+                    {s.prefix}<span ref={(el) => { numsRef.current[i] = el }}>{s.value.toFixed(s.decimals)}</span>{s.suffix}
+                  </div>
+                  <span className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-gray-500 tabular-nums">{s.before}</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-1 tracking-tight">{s.label}</h3>
                 <p className="text-sm text-gray-500 font-medium leading-relaxed">{s.description}</p>
@@ -94,69 +107,48 @@ export default function Stats() {
   )
 }
 
-/* ---------- small decorative visuals inside the stat cards ---------- */
+/* ---------- small visuals inside the stat cards ---------- */
 
-function RankVisual() {
-  const rows = [
-    ['cli.py', 'target', 96], ['test_cli.py', 'test', 88], ['cli.rst', 'docs', 74],
-    ['app.py', 'related', 52], ['helpers.py', 'related', 41], ['config.py', 'reference', 22],
-  ] as const
+function DotsVisual({ before, after, tone }: { before: number; after: number; tone: 'good' | 'bad' }) {
+  const on = tone === 'good' ? 'bg-emerald-500' : 'bg-ember-500'
+  const row = (n: number, label: string, dim: boolean) => (
+    <div>
+      <div className="flex justify-between text-[11px] font-mono text-gray-500 mb-2">
+        <span className={dim ? 'text-gray-400' : 'text-gray-900 font-semibold'}>{label}</span>
+        <span>{n}/14</span>
+      </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {Array.from({ length: 14 }, (_, i) => (
+          <span key={i} className={`aspect-square rounded-full transition-transform duration-500 group-hover:scale-110 ${i < n ? (dim ? 'bg-gray-400' : on) : 'bg-gray-100'}`}
+            style={{ transitionDelay: `${i * 25}ms` }} />
+        ))}
+      </div>
+    </div>
+  )
   return (
-    <div className="absolute inset-0 p-6 flex flex-col justify-center gap-3 bg-gradient-to-b from-white to-gray-50">
-      {rows.map(([f, role, w], i) => (
-        <div key={f} className="text-[11px] font-mono">
-          <div className="flex justify-between text-gray-500 mb-1"><span className="text-gray-800">{f}</span><span>{role}</span></div>
-          <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-            <div className={`h-full rounded-full origin-left transition-transform duration-700 group-hover:scale-x-100 ${i < 5 ? 'bg-gray-900' : 'bg-gray-300'}`}
-              style={{ width: `${w}%`, transform: 'scaleX(.85)', transitionDelay: `${i * 60}ms` }} />
-          </div>
-        </div>
-      ))}
+    <div className="absolute inset-0 p-6 flex flex-col justify-center gap-8 bg-gradient-to-b from-white to-gray-50">
+      {row(before, 'before · main', true)}
+      {row(after, 'after · branch', false)}
+      <p className="text-[11px] text-gray-400 text-center">one dot = one Task B run</p>
     </div>
   )
 }
 
-function CascadeVisual() {
-  const stages = ['exact', 'whitespace', 'indentation', 'fuzzy']
-  return (
-    <div className="absolute inset-0 p-6 flex flex-col justify-center items-center gap-3 bg-gradient-to-b from-white to-ember-50/60">
-      {stages.map((s, i) => (
-        <div key={s} className="w-full flex flex-col items-center">
-          <div className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm flex justify-between transition-transform duration-500 group-hover:translate-x-1"
-            style={{ transitionDelay: `${i * 70}ms` }}>
-            <span>{s}</span><span className="text-gray-400 font-mono text-xs">{i + 1}</span>
-          </div>
-          {i < stages.length - 1 && <div className="h-3 w-px bg-gray-300" />}
-        </div>
-      ))}
-      <div className="mt-1 text-xs font-semibold text-ember-600">198 perturbed edits</div>
-    </div>
-  )
-}
-
-function TokenVisual() {
+function BarsVisual({ before, after, fmt }: { before: number; after: number; fmt: (v: number) => string }) {
+  const max = Math.max(before, after)
+  const h = (v: number) => `${Math.max(4, (v / max) * 150)}px`
   return (
     <div className="absolute inset-0 p-6 flex items-end justify-center gap-6 bg-gradient-to-b from-white to-gray-50">
       <div className="flex flex-col items-center gap-2 w-16">
-        <div className="w-full rounded-t-xl bg-gray-900 h-[22px] transition-all duration-700 group-hover:h-[28px]" />
-        <span className="text-[11px] font-mono text-gray-600">Anvil</span>
+        <span className="text-[11px] font-mono text-gray-400">{fmt(before)}</span>
+        <div className="w-full rounded-t-xl bg-gray-200 transition-all duration-700" style={{ height: h(before) }} />
+        <span className="text-[11px] font-mono text-gray-400">before</span>
       </div>
       <div className="flex flex-col items-center gap-2 w-16">
-        <div className="w-full rounded-t-xl bg-gray-200 h-[150px] transition-all duration-700 group-hover:h-[160px]" />
-        <span className="text-[11px] font-mono text-gray-400">top-8 files</span>
+        <span className="text-[11px] font-mono text-gray-900 font-semibold">{fmt(after)}</span>
+        <div className="w-full rounded-t-xl bg-gray-900 transition-all duration-700" style={{ height: h(after) }} />
+        <span className="text-[11px] font-mono text-gray-600">after</span>
       </div>
-    </div>
-  )
-}
-
-function TargetVisual() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white to-gray-50">
-      {[140, 100, 60].map((s, i) => (
-        <div key={s} className="absolute rounded-full border border-gray-200 transition-transform duration-700 group-hover:scale-110"
-          style={{ width: s, height: s, transitionDelay: `${i * 80}ms` }} />
-      ))}
-      <div className="w-4 h-4 rounded-full bg-ember-500 shadow-[0_0_0_6px_rgba(249,115,22,0.15)]" />
     </div>
   )
 }

@@ -6,6 +6,16 @@ truth = files the commit modified that existed before it; index built at the par
 Metrics: hit@1 / hit@5 = a truth file ranked first / in the top 5; all@5 = every truth file in the top 5 (LocAgent-style file Acc@5);
 recall@k = share of truth files in the top k; MRR = 1 / rank of the first truth file.
 
+## Before vs after the co-change + meta-file change (test split, 103 tasks)
+
+Same tasks and script, ranker at commit 2144788 (before) vs f5f66f2 (after). The tables below are the "after" run.
+
+| ranker | hit1 | hit5 | all5 | recall5 | recall10 | mrr |
+|---|---|---|---|---|---|---|
+| anvil before | 0.602 | 0.825 | 0.466 | 0.647 | 0.789 | 0.699 |
+| anvil after | 0.612 | 0.854 | 0.515 | 0.685 | 0.805 | 0.716 |
+| bm25 | 0.398 | 0.699 | 0.369 | 0.521 | 0.669 | 0.532 |
+
 ## dev (97 tasks)
 
 | ranker | hit1 | hit5 | all5 | recall5 | recall10 | mrr |

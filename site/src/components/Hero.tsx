@@ -76,10 +76,10 @@ export default function Hero() {
             <ArrowRight className="w-4 h-4 ml-2" />
           </a>
           <button
-            onClick={() => scrollToId('how')}
+            onClick={() => scrollToId('before-after')}
             className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 text-base font-semibold text-gray-900 transition-all duration-300 bg-white/50 border border-gray-200/50 rounded-full hover:bg-white/80 backdrop-blur-md active:scale-95"
           >
-            <Play className="w-4 h-4" /> See how it works
+            <Play className="w-4 h-4" /> See before vs after
           </button>
         </motion.div>
 

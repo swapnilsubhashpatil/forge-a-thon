@@ -8,6 +8,10 @@ import Features from './components/Features'
 import HowItWorks from './components/HowItWorks'
 import Benchmarks from './components/Benchmarks'
 import FAQ from './components/FAQ'
+import Problem from './components/Problem'
+import BeforeAfter from './components/BeforeAfter'
+import TrueForgeCompare from './components/TrueForgeCompare'
+import Limits from './components/Limits'
 import Footer from './components/Footer'
 import ScrollProgress from './components/ScrollProgress'
 
@@ -33,9 +37,13 @@ export default function App() {
       <Hero />
       <Stack />
       <Stats />
-      <Features />
-      <HowItWorks />
+      <Problem />
+      <BeforeAfter />
       <Benchmarks />
+      <TrueForgeCompare />
+      <Limits />
+      <HowItWorks />
+      <Features />
       <FAQ />
       <Footer />
     </div>

@@ -164,7 +164,7 @@ export default function EditorDemo() {
           <div className="mt-auto">
             <div className="flex justify-between text-[10px] text-gray-500 mb-1">
               <span>Token budget</span>
-              <span className="font-mono">{budget ? '4.2k' : '0'} / 6k</span>
+              <span className="font-mono">{budget ? '4.5k' : '0'} / 6k</span>
             </div>
             <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
               <motion.div className="h-full rounded-full bg-gradient-to-r from-ember-500 to-amber-300"
