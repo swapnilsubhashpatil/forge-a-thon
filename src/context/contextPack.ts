@@ -15,6 +15,7 @@ export async function buildContextPack(
   index: WorkspaceIndex,
   ranked: RankedFile[],
   budgetTokens: number,
+  verify?: { command: string; reason: string },
 ): Promise<{ text: string; report: ContextReport }> {
   const strategy =
     `Ranked ${index.files().length} files by @mentions, path match, BM25 term overlap, sibling symbols, test/docs companions and import-graph PageRank; ` +
@@ -30,6 +31,7 @@ export async function buildContextPack(
   };
 
   tryAdd(`Strategy: ${strategy}`);
+  if (verify) tryAdd(`Verify with (likely): ${verify.command}  (${verify.reason})`);
   const rows = ranked.slice(0, TABLE_ROWS).map((file) => `| ${file.path} | ${file.role} | ${file.reasons.join("; ")} |`);
   const table = ["Candidates:", "| path | role | why |", "|---|---|---|"];
   for (const row of rows) {
@@ -88,6 +90,7 @@ export async function buildContextPack(
       fetched: [],
       read: [],
       edited: [],
+      verify: verify?.command,
     },
   };
 }

@@ -14,6 +14,8 @@ export interface ToolServices {
   rgPath: string | undefined;
   edits: EditCoordinator;
   commandTimeoutMs: () => number;
+  /** Extra environment for run_command (e.g. PYTHONPATH=src for src layouts), set without shell-specific syntax. */
+  commandEnv?: () => Record<string, string>;
   currentContext: () => ContextReport | undefined;
   onFileRead: (path: string) => void;
   onCommandOutput: (command: string, output: string) => void;
@@ -167,7 +169,7 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
 
 function runCommand(command: string, services: ToolServices): Promise<string> {
   return new Promise((resolve) => {
-    exec(command, { cwd: services.index.root, timeout: services.commandTimeoutMs(), maxBuffer: 8 * 1024 * 1024, windowsHide: true }, (error, stdout, stderr) => {
+    exec(command, { cwd: services.index.root, env: { ...process.env, ...services.commandEnv?.() }, timeout: services.commandTimeoutMs(), maxBuffer: 8 * 1024 * 1024, windowsHide: true }, (error, stdout, stderr) => {
       const output = clip(`${stdout}${stderr ? `\n${stderr}` : ""}`.trim());
       services.onCommandOutput(command, output);
       const code = error ? (error.killed ? "timeout" : String(error.code ?? 1)) : "0";
