@@ -9,6 +9,7 @@ import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
 import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
 import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts";
 import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
+import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
   mode: AgentMode;
@@ -17,6 +18,8 @@ export interface TurnRequest {
   mentions: string[];
   message: string;
   context?: ContextReport;
+  /** Anvil's own follow-up (M8); never triggers another follow-up. */
+  followUp?: boolean;
 }
 
 export interface RunnerSettings {
@@ -82,6 +85,9 @@ export class TurnRunner {
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
   private noteCounter = 0;
+  /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
+  private work: WorkLog = {};
+  private turnEdits = 0;
   /** Subagent threads currently running; while any run, a tool call is only treated as main-thread when announced. */
   private readonly runningSubagents = new Set<string>();
   /** Signatures of main-thread tool calls seen in the event stream and not yet executed. */
@@ -121,6 +127,8 @@ export class TurnRunner {
   }
 
   noteFileEdited(path: string): void {
+    this.work.lastEditAt = Date.now();
+    if (this.active) this.turnEdits += 1;
     const context = this.activeContext();
     if (!context || context.edited.includes(path)) return;
     this.deps.store.update(() => context.edited.push(path));
@@ -189,7 +197,33 @@ export class TurnRunner {
     return result + formatNotes(delivered);
   }
 
+  noteCommand(command: string, exitCode: string): void {
+    this.work.lastCommand = { command, exitCode, at: Date.now() };
+  }
+
+  /** The finish_task tool (M8). Accepted reports are shown on the turn as a verified / not verified chip. */
+  finishTask(args: FinishArgs): string {
+    const active = this.active;
+    if (!active) return "No task is running.";
+    const decision = evaluateFinish(args, this.work);
+    if (decision.ok) {
+      const turn = this.deps.store.state.turns.find((entry) => entry.id === active.turnId);
+      if (turn) this.deps.store.update(() => {
+        turn.finish = decision.report;
+      });
+    }
+    return decision.reply;
+  }
+
+  /** True when the last turn ended with accepted edits but no accepted finish_task, and was not itself a follow-up. */
+  needsFinishFollowUp(): boolean {
+    const turn = this.deps.store.state.turns.at(-1);
+    if (!turn || turn.followUp) return false;
+    return needsFinishFollowUp({ status: turn.status, finish: turn.finish, editedFiles: this.turnEdits });
+  }
+
   resetSession(): void {
+    this.work = {};
     this.agentSession = undefined;
     this.deps.store.reset();
   }
@@ -218,6 +252,7 @@ export class TurnRunner {
     this.starting = false;
     this.runningSubagents.clear();
     this.expectedMain.clear();
+    if (!request.followUp) this.turnEdits = 0;
     this.deps.onBusyChange(true);
 
     const turn: Turn = {
@@ -229,6 +264,7 @@ export class TurnRunner {
       status: "running",
       model: "",
       usage: { input: 0, output: 0, cached: 0 },
+      followUp: request.followUp,
       startedAt: Date.now(),
     };
     store.update((state) => {

@@ -11,7 +11,7 @@
     "After editing, run the tests with run_command. Do not claim it works until a test passed.",
     "If the same test fails twice, stop and explain.",
     "If the user rejected a change, do not propose it again.",
-    "End with one short summary: files changed and test result."
+    "When done, call finish_task with a short summary. verified=true only if a test passed after your last edit."
   ],
   "toolsRequiringApproval": [
     "propose_edit",

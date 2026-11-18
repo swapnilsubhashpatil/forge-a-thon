@@ -78,6 +78,18 @@ function Footer({ turn }: { turn: Turn }) {
           Cancelled
         </span>
       )}
+      {turn.finish && (
+        <span
+          title={`${turn.finish.summary}\n${turn.finish.verification}`}
+          className={cx(
+            "flex shrink-0 items-center gap-1 rounded px-1.5",
+            turn.finish.verified ? "bg-green/14 text-green" : "bg-yellow/14 text-yellow",
+          )}
+        >
+          <Icon name={turn.finish.verified ? "pass" : "warning"} />
+          {turn.finish.verified ? `Verified: ${turn.finish.command ?? turn.finish.verification}` : `Not verified: ${turn.finish.verification}`}
+        </span>
+      )}
       {turn.status === "superseded" && (
         <span className="flex shrink-0 items-center gap-1 rounded bg-secondary px-1.5 text-secondary-fg" title="Stopped so your new message could be sent">
           <Icon name="arrow-right" />
