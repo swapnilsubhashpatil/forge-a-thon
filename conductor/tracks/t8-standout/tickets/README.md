@@ -21,3 +21,12 @@ Every ticket: one commit on `feat/agent-mode-behaviour`, `npm run typecheck` + `
 | 12 | [M6 plan tool](12-m6-plan-tool.md) | done |
 | 13 | [M10 wrap-up](13-m10-wrap-up.md) | done |
 | 14 | [Model matrix + write-up numbers](14-model-matrix-and-writeup.md) | after 09 |
+
+## Added after the benchmark (grilling round 3, 18 Nov)
+
+| # | Ticket | Status |
+|---|---|---|
+| 15 | M8 follow-up after edits that never applied (gap found by the benchmark) | done |
+| 16 | Send editor selection to chat (Ctrl+Alt+L, right-click), exact numbered lines, own 4k budget | done |
+| 17 | Send terminal selection or last command + output to chat (clipboard / shell integration) | done |
+| 18 | Restore to any message: message only or message + code; per-turn "Undo these changes" | done (e2e `restore` check) |
