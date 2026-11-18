@@ -2,6 +2,7 @@ import type { ContextReport } from "../shared/protocol.ts";
 import type { RankedFile } from "./ranker.ts";
 import { renderRepoMap } from "./repoMap.ts";
 import { estimateTokens } from "./tokens.ts";
+import type { ProjectRules } from "./projectRules.ts";
 import type { WorkspaceIndex } from "./workspaceIndex.ts";
 
 const TABLE_ROWS = 10;
@@ -16,6 +17,7 @@ export async function buildContextPack(
   ranked: RankedFile[],
   budgetTokens: number,
   verify?: { command: string; reason: string },
+  rules?: ProjectRules,
 ): Promise<{ text: string; report: ContextReport }> {
   const strategy =
     `Ranked ${index.files().length} files by @mentions, path match, BM25 term overlap, sibling symbols, test/docs companions and import-graph PageRank; ` +
@@ -32,6 +34,8 @@ export async function buildContextPack(
   };
 
   tryAdd(`Strategy: ${strategy}`);
+  // Project rules go first: they are the repository's own instructions, small and always relevant.
+  const rulesAdded = rules ? tryAdd(rules.text) : false;
   if (verify) tryAdd(`Verify with (likely): ${verify.command}  (${verify.reason})`);
   const rows = ranked.slice(0, TABLE_ROWS).map((file) => `| ${file.path} | ${file.role} | ${file.reasons.join("; ")} |`);
   const table = ["Candidates:", "| path | role | why |", "|---|---|---|"];
@@ -94,6 +98,7 @@ export async function buildContextPack(
       read: [],
       edited: [],
       verify: verify?.command,
+      rules: rulesAdded && rules ? rules.sources : undefined,
       slices,
     },
   };

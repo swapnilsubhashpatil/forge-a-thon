@@ -9,6 +9,7 @@ import { TurnRunner, type RunnerSettings } from "./agent/turnRunner.ts";
 import { findRipgrep, mentionCandidates } from "./context/codeSearch.ts";
 import { buildContextPack } from "./context/contextPack.ts";
 import { formatAttachments } from "./context/attachments.ts";
+import { loadProjectRules } from "./context/projectRules.ts";
 import { registerAttachCommands } from "./ui/attachCommands.ts";
 import { detectTestCommand, pythonSrcLayout } from "./context/testCommand.ts";
 import { FINISH_FOLLOW_UP, RETRY_EDITS_FOLLOW_UP, WRAP_UP } from "./agent/finishGate.ts";
@@ -219,7 +220,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const ranked = rankFiles(index, { text, mentions: mentionPaths, activeFiles });
     const targets = ranked.filter((file) => file.role !== "reference").map((file) => file.path);
     const verify = detectTestCommand(folder.uri.fsPath, index.files().map((file) => file.path), targets);
-    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify);
+    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify, loadProjectRules(folder.uri.fsPath));
     // What the user explicitly sent goes first, with its own budget (see attachments.ts).
     const attached = formatAttachments(attachments);
     if (attachments.length) {
