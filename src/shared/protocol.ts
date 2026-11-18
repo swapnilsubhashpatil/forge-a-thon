@@ -222,6 +222,21 @@ export interface AnvilSettings {
   budgetTokens: number;
 }
 
+export interface SkillSummary {
+  name: string;
+  description: string;
+  source: "project" | "user";
+  path: string;
+  enabled: boolean;
+}
+
+export interface EditorSelection {
+  path: string;
+  startLine: number;
+  endLine: number;
+  label: string;
+}
+
 export interface ChatState {
   conversationId?: string;
   mode: AgentMode;
@@ -229,6 +244,8 @@ export interface ChatState {
   pendingReviews: PendingReview[];
   settings: AnvilSettings;
   mcpServers: string[];
+  skills: SkillSummary[];
+  editorSelection?: EditorSelection;
   workspace?: { name: string; files: number; user?: string };
   sessionId?: string;
   sessionUrl?: string;
@@ -262,7 +279,13 @@ export type HostMessage =
 
 export type WebviewMessage =
   | { type: "ready" }
-  | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[]; mode: AgentMode }
+  | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[]; mode: AgentMode; includeSelection?: boolean }
+  | { type: "pinSelection" }
+  | { type: "dismissSelection" }
+  | { type: "createSkill"; name: string; description: string; scope: "project" | "user" }
+  | { type: "toggleSkill"; name: string; enabled: boolean }
+  | { type: "openSkill"; name: string }
+  | { type: "deleteSkill"; name: string }
   | { type: "cancel" }
   | { type: "removeNote"; id: string }
   | { type: "setPrimaryModel"; model: string }
