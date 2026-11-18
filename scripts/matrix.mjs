@@ -8,7 +8,7 @@
 // Requires TrueForge running with providers registered (`npm run harness`) and the Flask venv (ANVIL_E2E_PYTHON).
 import { execSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const runsDir = join(root, "docs/benchmarks/runs");
@@ -52,6 +52,10 @@ function run() {
             ANVIL_E2E_REPORT: report,
             ANVIL_E2E_EXTENSION: extension[variant],
             ANVIL_E2E_PYTHON: python,
+            // The agent's run_command must find a Python with Flask's test deps, as a developer's activated venv would.
+            PATH: `${dirname(python)}${delimiter}${process.env.PATH ?? process.env.Path ?? ""}`,
+            Path: `${dirname(python)}${delimiter}${process.env.PATH ?? process.env.Path ?? ""}`,
+            VIRTUAL_ENV: dirname(dirname(python)),
             ANVIL_E2E_REASONING: model.startsWith("ollama/") ? "none" : process.env.ANVIL_E2E_REASONING ?? "low",
           },
         });
