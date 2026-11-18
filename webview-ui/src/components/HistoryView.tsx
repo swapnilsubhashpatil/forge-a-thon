@@ -10,7 +10,7 @@ function HistoryRow({ entry, current }: { entry: ConversationSummary; current: b
   const details = [relativeTime(entry.updatedAt), entry.model && shortModel(entry.model), `${entry.edits} ${entry.edits === 1 ? "edit" : "edits"}`].filter(Boolean);
 
   return (
-    <li className={cx("flex items-center gap-2 rounded px-2 py-1.5 hover:bg-hover", current && "bg-hover")}>
+    <li className={cx("flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-hover", current && "bg-hover")}>
       <button
         type="button"
         onClick={() => {
@@ -23,14 +23,14 @@ function HistoryRow({ entry, current }: { entry: ConversationSummary; current: b
           {current && <Icon name="notch" size={10} className="text-orange" />}
           <span className="truncate text-sm text-fg">{entry.title}</span>
         </span>
-        <span className="truncate font-mono text-xs text-muted">{details.join(" · ")}</span>
+        <span className="truncate text-xs text-muted">{details.join(" · ")}</span>
       </button>
       {confirming ? (
-        <span className="flex shrink-0 items-center gap-1 text-xs">
-          <button type="button" autoFocus onClick={() => post({ type: "deleteHistory", id: entry.id })} className="rounded bg-red/20 px-1.5 py-0.5 text-fg hover:bg-red/30">
+        <span className="flex shrink-0 items-center gap-1.5 text-xs">
+          <button type="button" autoFocus onClick={() => post({ type: "deleteHistory", id: entry.id })} className="btn bg-red/20 hover:bg-red/30">
             Delete
           </button>
-          <button type="button" onClick={() => setConfirming(false)} className="rounded px-1.5 py-0.5 text-fg hover:bg-hover">
+          <button type="button" onClick={() => setConfirming(false)} className="btn">
             Cancel
           </button>
         </span>
@@ -40,7 +40,7 @@ function HistoryRow({ entry, current }: { entry: ConversationSummary; current: b
           aria-label={`Delete ${entry.title}`}
           title="Delete"
           onClick={() => setConfirming(true)}
-          className="grid size-6 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+          className="btn btn-icon"
         >
           <Icon name="trash" />
         </button>
@@ -57,7 +57,7 @@ export function HistoryView({ chat }: { chat: ChatState }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded border border-input-border bg-input px-2 focus-within:border-focus">
+        <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-input-border bg-input px-2 focus-within:border-focus">
           <Icon name="search" className="text-muted" />
           <input
             type="search"
@@ -74,13 +74,13 @@ export function HistoryView({ chat }: { chat: ChatState }) {
             post({ type: "newSession" });
             showView("chat");
           }}
-          className="flex h-7 shrink-0 items-center gap-1 rounded bg-accent px-2 text-sm text-accent-fg hover:bg-accent-hover"
+          className="btn btn-primary h-7"
         >
           <Icon name="plus" />
           New chat
         </button>
       </div>
-      <ul className="min-h-0 flex-1 overflow-y-auto px-1 pb-2" aria-label="Conversations">
+      <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 pb-2" aria-label="Conversations">
         {entries.map((entry) => (
           <HistoryRow key={entry.id} entry={entry} current={entry.id === chat.conversationId} />
         ))}

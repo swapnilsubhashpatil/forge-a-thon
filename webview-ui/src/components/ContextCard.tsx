@@ -31,12 +31,12 @@ function FileRow({ file, read, edited }: { file: ContextFile; read: boolean; edi
         type="button"
         title={`Open ${file.path} · relevance ${file.score.toFixed(2)}`}
         onClick={() => post({ type: "openFile", path: file.path })}
-        className="flex w-full flex-col gap-1 rounded px-2 py-1 text-left hover:bg-hover"
+        className="flex w-full flex-col gap-1 rounded-md px-2 py-1 text-left hover:bg-hover"
       >
         <span className="flex w-full items-center gap-2">
           <UsageMarks read={read} edited={edited} />
           <PathText path={file.path} className="font-mono text-xs" />
-          <span className={cx("shrink-0 rounded px-1.5 text-xs font-medium", roleStyles[file.role])}>{file.role}</span>
+          <span className={cx("shrink-0 rounded-sm px-1.5 text-xs font-medium", roleStyles[file.role])}>{file.role}</span>
           <span className="flex-1" />
           <span className="shrink-0 font-mono text-xs text-muted tabular-nums">{formatTokens(file.tokens)}</span>
         </span>
@@ -94,12 +94,12 @@ export function ContextCard({ report }: { report: ContextReport }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="rounded border border-border bg-editor/40" aria-label="Context selection">
+    <section className="rounded-lg border border-border bg-editor/40" aria-label="Context selection">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm hover:bg-hover"
+        className="flex min-h-8 w-full items-center gap-2 rounded-lg px-2.5 text-left text-sm hover:bg-hover"
       >
         <Icon name={open ? "chevron-down" : "chevron-right"} className="text-muted" />
         <Icon name="layers" className="text-blue" />

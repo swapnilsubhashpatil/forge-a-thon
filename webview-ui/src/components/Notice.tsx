@@ -17,7 +17,6 @@ function FailoverMarker({ failover }: { failover: NonNullable<NoticeStep["failov
       <span className="font-mono text-fg line-through decoration-muted">{shortModel(failover.from)}</span>
       <Icon name="arrow-right" />
       <span className="font-mono text-fg">{shortModel(failover.to)}</span>
-      <span>·</span>
       <span className="min-w-0 truncate">{failover.reason}</span>
     </div>
   );
@@ -27,7 +26,7 @@ export function Notice({ step }: { step: NoticeStep }) {
   if (step.failover) return <FailoverMarker failover={step.failover} />;
   const tone = tones[step.tone];
   return (
-    <div role={step.tone === "error" ? "alert" : "status"} className={cx("flex items-start gap-2 rounded border-l-2 px-3 py-2 text-sm text-fg", tone.border)}>
+    <div role={step.tone === "error" ? "alert" : "status"} className={cx("flex items-start gap-2 rounded-r-lg border-l-2 px-3 py-2 text-sm text-fg", tone.border)}>
       <Icon name={tone.icon} className={cx("mt-0.5", tone.text)} />
       <span className="min-w-0 flex-1 whitespace-pre-wrap">{step.text}</span>
     </div>

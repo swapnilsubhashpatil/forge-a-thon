@@ -229,7 +229,7 @@ export interface ChatState {
   pendingReviews: PendingReview[];
   settings: AnvilSettings;
   mcpServers: string[];
-  workspace?: { name: string; files: number };
+  workspace?: { name: string; files: number; user?: string };
   sessionId?: string;
   sessionUrl?: string;
   turns: Turn[];

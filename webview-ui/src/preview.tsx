@@ -55,7 +55,7 @@ const fallback = "google-gemini/gemini-2.5-pro";
 let state: ChatState = {
   conversationId: "conv-2",
   mode: "agent",
-  workspace: { name: "flask", files: 214 },
+  workspace: { name: "flask", files: 214, user: "Swapnil" },
   mcpServers: ["anvil-editor", "filesystem"],
   settings: {
     chain: [primary, fallback, "anthropic-main/claude-sonnet-4-5"],
@@ -235,6 +235,10 @@ function handle(message: WebviewMessage) {
           }),
         })),
       };
+      emit({ type: "state", state });
+      break;
+    case "newSession":
+      state = { ...state, turns: [], busy: false, queue: [], changeSets: [], pendingReviews: [] };
       emit({ type: "state", state });
       break;
     case "setMode":

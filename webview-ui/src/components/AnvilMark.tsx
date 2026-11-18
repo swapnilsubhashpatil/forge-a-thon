@@ -1,8 +1,11 @@
-export function AnvilMark({ className }: { className?: string }) {
+export const ANVIL_PATH = "M2 5.5h20V8a2 2 0 0 1-2 2h-3l-1.5 3v2.5l3.5 2.5v2H6v-2l3.5-2.5V13L8 10C5.5 7.4 3.6 6 2 5.5Z";
+export const SPARK_PATH = "M15 .5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6Z";
+
+export function AnvilMark({ className, accent }: { className?: string; accent?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M2 6h15c2.8 0 5 1.6 5 3.6 0 .3-.2.4-.5.4H18c-1.1 0-2 .9-2 2v1.2c0 .9.6 1.7 1.4 1.9l.6.2V18H6v-2.7l.6-.2c.8-.2 1.4-1 1.4-1.9V12c0-1.1-.9-2-2-2H4.5C3.1 10 2 8.9 2 7.5V6Z" />
-      <rect x="4" y="19" width="16" height="2" rx="0.5" />
+      <path d={ANVIL_PATH} />
+      <path d={SPARK_PATH} fill={accent ?? "currentColor"} />
     </svg>
   );
 }

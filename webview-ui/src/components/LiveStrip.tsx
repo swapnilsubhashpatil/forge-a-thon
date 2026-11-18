@@ -14,8 +14,8 @@ export function LiveStrip({ turn }: { turn: Turn }) {
   const waiting = stats.current === "Waiting for your review";
 
   return (
-    <div className="mb-1.5 overflow-hidden rounded border border-border bg-editor/60 text-xs" role="status" aria-live="polite">
-      <div className="flex items-center gap-2 px-2 py-1">
+    <div className="mb-2 overflow-hidden rounded-lg border border-border bg-raised text-xs" role="status" aria-live="polite">
+      <div className="flex min-h-7 items-center gap-2 px-2.5">
         <Icon name={waiting ? "clock" : "hammer"} className={waiting ? "text-yellow" : "text-orange"} />
         <span className="min-w-0 flex-1 truncate text-fg" title={stats.current}>
           {stats.current}

@@ -7,7 +7,7 @@ import { LiveStrip } from "./LiveStrip.tsx";
 import { AttachmentChip, IMAGE_TYPES, MAX_IMAGES, readImages } from "./AttachmentChip.tsx";
 import type { GlyphName } from "./Glyph.tsx";
 import { MentionMenu, mentionId } from "./MentionMenu.tsx";
-import { ModelPicker } from "./ModelPicker.tsx";
+import { ModelPicker, useListbox } from "./ModelPicker.tsx";
 import { Icon } from "./primitives.tsx";
 
 interface MentionQuery {
@@ -36,7 +36,7 @@ function usedMentions(draft: Draft): string[] {
 function OfflineHint({ chat }: { chat: ChatState }) {
   const offline = chat.harness.state === "offline";
   return (
-    <div className="mb-2 flex items-center gap-2 rounded border border-border bg-editor/60 px-2 py-1.5 text-xs">
+    <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-raised py-1 pr-1 pl-2.5 text-xs">
       <Icon name={offline ? "offline" : "clock"} className={offline ? "text-red" : "text-muted"} />
       <span className="min-w-0 flex-1 text-muted">
         {offline
@@ -49,7 +49,7 @@ function OfflineHint({ chat }: { chat: ChatState }) {
         <button
           type="button"
           onClick={() => post({ type: "reconnect" })}
-          className="shrink-0 rounded bg-secondary px-2 py-0.5 text-secondary-fg hover:bg-secondary-hover"
+          className="btn btn-secondary"
         >
           Reconnect
         </button>
@@ -61,10 +61,10 @@ function OfflineHint({ chat }: { chat: ChatState }) {
 function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
   const delivered = note.status === "delivered";
   return (
-    <li className="flex items-start gap-1.5 rounded border border-border bg-editor/60 px-2 py-1 text-xs">
-      <Icon name={delivered ? "check" : "clock"} className={cx("mt-0.5 shrink-0", delivered ? "text-green" : "text-muted")} />
+    <li className="flex min-h-8 flex-wrap items-center gap-x-1.5 rounded-lg border border-border bg-raised py-1 pr-1 pl-2.5 text-xs">
+      <Icon name={delivered ? "check-circle" : "clock"} className={delivered ? "text-green" : "text-muted"} />
       <span className="min-w-0 flex-1 break-words text-fg">{note.text}</span>
-      <span className="shrink-0 text-xs text-muted">
+      <span className="shrink-0 text-muted max-[400px]:hidden">
         {delivered ? `delivered at step ${note.deliveredAtStep}` : busy ? "queued for next step" : "queued"}
       </span>
       {!delivered && (
@@ -73,7 +73,7 @@ function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
             type="button"
             title="Stop the current run and send this now"
             onClick={() => post({ type: "stopAndSend", id: note.id })}
-            className="shrink-0 rounded bg-secondary px-1.5 text-xs text-secondary-fg hover:bg-secondary-hover"
+            className="btn btn-secondary"
           >
             {busy ? "Stop and send" : "Send"}
           </button>
@@ -82,7 +82,7 @@ function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
             aria-label="Remove queued message"
             title="Remove"
             onClick={() => post({ type: "removeNote", id: note.id })}
-            className="grid size-4 shrink-0 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+            className="btn btn-icon"
           >
             <Icon name="close" />
           </button>
@@ -93,27 +93,62 @@ function NoteChip({ note, busy }: { note: QueuedNote; busy: boolean }) {
 }
 
 const modes: Array<{ value: AgentMode; label: string; icon: GlyphName; hint: string; tone: string }> = [
-  { value: "agent", label: "Agent", icon: "hammer", hint: "Agent: reads, edits and runs commands", tone: "text-orange" },
-  { value: "ask", label: "Ask", icon: "lens", hint: "Ask: reads the code and answers, no edits", tone: "text-blue" },
+  { value: "agent", label: "Agent", icon: "hammer", hint: "Reads, edits and runs commands", tone: "text-orange" },
+  { value: "ask", label: "Ask", icon: "lens", hint: "Reads the code and answers, no edits", tone: "text-blue" },
 ];
 
-function ModeSwitch({ mode }: { mode: AgentMode }) {
+function modeId(index: number): string {
+  return `mode-option-${index}`;
+}
+
+function ModeMenu({ mode }: { mode: AgentMode }) {
+  const selected = modes.findIndex((entry) => entry.value === mode);
+  const current = modes[selected];
+  const list = useListbox(modes.length, selected, (index) => {
+    if (modes[index].value !== mode) post({ type: "setMode", mode: modes[index].value });
+  });
+
   return (
-    <div role="radiogroup" aria-label="Mode" className="flex h-6 shrink-0 items-center rounded border border-border p-px text-xs">
-      {modes.map(({ value, label, icon, hint, tone }) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={mode === value}
-          title={hint}
-          onClick={() => mode !== value && post({ type: "setMode", mode: value })}
-          className={cx("flex h-full items-center gap-1 rounded-sm px-1.5", mode === value ? cx("bg-hover", tone) : "text-muted hover:text-fg")}
-        >
-          <Icon name={icon} />
-          {label}
-        </button>
-      ))}
+    <div className="shrink-0" onBlur={list.onBlur}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={list.open}
+        aria-controls={list.open ? "mode-menu" : undefined}
+        aria-activedescendant={list.open ? modeId(list.active) : undefined}
+        aria-label={`Mode: ${current.label}`}
+        title={`${current.label}: ${current.hint}`}
+        onClick={list.toggle}
+        onKeyDown={list.onKeyDown}
+        className="btn gap-1.5 px-1.5"
+      >
+        <Icon name={current.icon} className={current.tone} />
+        {current.label}
+        <Icon name="chevron-up" size={12} className="text-muted" />
+      </button>
+      {list.open && (
+        <ul id="mode-menu" role="listbox" aria-label="Mode" className="popover absolute bottom-full left-0 z-20 mb-1.5 w-64 max-w-full">
+          {modes.map(({ value, label, icon, hint, tone }, index) => (
+            <li
+              key={value}
+              id={modeId(index)}
+              role="option"
+              aria-selected={value === mode}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => list.setActive(index)}
+              onClick={() => list.choose(index)}
+              className={cx("flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5", index === list.active && "bg-hover")}
+            >
+              <Icon name={icon} size={16} className={tone} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-fg">{label}</span>
+                <span className="block truncate text-xs text-muted">{hint}</span>
+              </span>
+              {value === mode && <Icon name="check" className="text-fg" />}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -240,7 +275,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
   const ask = chat.mode === "ask";
 
   return (
-    <div className="shrink-0 border-t border-border px-3 pt-2 pb-2">
+    <div className="shrink-0 px-3 pt-2 pb-3">
       {!ready && <OfflineHint chat={chat} />}
       {chat.busy && runningTurn && <LiveStrip turn={runningTurn} />}
       {chat.queue.length > 0 && (
@@ -256,7 +291,10 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
           event.preventDefault();
           void addImages([...event.dataTransfer.files]);
         }}
-        className={cx("relative rounded border bg-input", ask ? "border-blue/50 focus-within:border-blue" : "border-orange/50 focus-within:border-orange")}
+        className={cx(
+          "relative rounded-xl border bg-input shadow-md transition-colors",
+          ask ? "border-blue/30 focus-within:border-blue/70" : "border-orange/30 focus-within:border-orange/70",
+        )}
       >
         {(draft.attachments?.length ?? 0) > 0 && (
           <ul className="flex flex-wrap gap-1 px-2 pt-2" aria-label="Attached to this message">
@@ -285,8 +323,8 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             chat.busy
               ? "Anvil is working. Steer it with a note, or Esc to stop"
               : ask
-                ? "Ask about the code – @ to add files or symbols"
-                : "Describe a change – @ to add files or symbols"
+                ? "Ask about the code, @ to add files or symbols"
+                : "Describe a change, @ to add files or symbols"
           }
           onChange={(event) => updateText(event.target.value, event.target.selectionStart)}
           onKeyDown={onKeyDown}
@@ -297,7 +335,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             void addImages(files);
           }}
           onBlur={() => setMention(undefined)}
-          className="composer-input block w-full resize-none bg-transparent px-2.5 pt-2 text-base text-input-fg outline-none placeholder:text-muted"
+          className="composer-input block w-full resize-none bg-transparent px-3 pt-2.5 text-base text-input-fg outline-none placeholder:text-muted"
         />
         <input
           ref={fileRef}
@@ -310,8 +348,8 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             event.target.value = "";
           }}
         />
-        <div className="flex flex-wrap items-center gap-1 px-1.5 pb-1.5">
-          <ModeSwitch mode={chat.mode} />
+        <div className="flex flex-wrap items-center gap-1.5 px-1.5 pb-1.5">
+          <ModeMenu mode={chat.mode} />
           <ModelPicker chat={chat} />
           <span className="flex-1" />
           <button
@@ -319,7 +357,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             aria-label="Mention a file or symbol"
             title="Mention a file or symbol"
             onClick={insertAt}
-            className="grid size-6 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+            className="btn btn-icon"
           >
             <Icon name="at" />
           </button>
@@ -328,31 +366,33 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
             aria-label="Attach an image"
             title="Attach an image (or paste or drop one)"
             onClick={() => fileRef.current?.click()}
-            className="grid size-6 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+            className="btn btn-icon"
           >
             <Icon name="image" />
           </button>
           {chat.busy && (
             <button
               type="button"
+              aria-label="Steer"
               title="Send a note the agent reads at its next step"
               disabled={!canSend}
               onClick={send}
-              className={cx("flex h-6 items-center gap-1 rounded bg-secondary px-2 text-xs text-secondary-fg", canSend && "hover:bg-secondary-hover")}
+              className="btn btn-secondary"
             >
               <Icon name="steer" />
-              Steer
+              <span className="max-[400px]:hidden">Steer</span>
             </button>
           )}
           {chat.busy ? (
             <button
               type="button"
+              aria-label="Stop"
               title="Stop (Esc)"
               onClick={() => post({ type: "cancel" })}
-              className="flex h-6 items-center gap-1 rounded bg-secondary px-2 text-xs text-secondary-fg hover:bg-secondary-hover"
+              className="btn btn-secondary"
             >
               <Icon name="stop" />
-              Stop
+              <span className="max-[400px]:hidden">Stop</span>
             </button>
           ) : (
             <button
@@ -361,7 +401,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
               title="Send (Enter)"
               disabled={!canSend}
               onClick={send}
-              className={cx("grid size-6 place-items-center rounded bg-accent text-accent-fg", canSend && "hover:bg-accent-hover")}
+              className="btn btn-icon btn-primary"
             >
               <Icon name="up" bold />
             </button>

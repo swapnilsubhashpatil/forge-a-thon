@@ -18,7 +18,7 @@ export function SessionStrip({ chat }: { chat: ChatState }) {
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         title="Usage for this conversation"
-        className="flex w-full items-center gap-2 px-2 py-0.5 text-left text-muted hover:bg-hover"
+        className="flex h-6 w-full items-center gap-2 px-3 text-left text-muted hover:bg-hover"
       >
         <progress
           className={cx("budget-bar flex-1", ratio > 0.8 && "near-limit")}
@@ -29,7 +29,7 @@ export function SessionStrip({ chat }: { chat: ChatState }) {
         <span className="shrink-0 font-mono tabular-nums">{context ? `${Math.round(ratio * 100)}% context` : `${formatTokens(totals.input)} tokens`}</span>
       </button>
       {open && (
-        <div className="max-h-56 overflow-y-auto border-t border-border px-2 py-1.5">
+        <div className="max-h-56 overflow-y-auto border-t border-border px-3 py-2">
           <dl className="mb-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
             {context && (
               <>

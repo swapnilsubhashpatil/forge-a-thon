@@ -4,7 +4,7 @@ import { Icon } from "./primitives.tsx";
 export function Reasoning({ step, active }: { step: ReasoningStep; active: boolean }) {
   return (
     <details className="group text-sm text-muted">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded py-0.5 hover:text-fg [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-6 cursor-pointer list-none items-center gap-1.5 rounded-md hover:text-fg [&::-webkit-details-marker]:hidden">
         <Icon name="chevron-right" className="transition-transform group-open:rotate-90" />
         <span>{active ? "Thinking…" : "Thinking"}</span>
       </summary>
