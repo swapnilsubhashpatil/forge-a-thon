@@ -54,6 +54,24 @@ first pytest run the agent hit an import error because `PYTHONPATH` was missing.
 `PYTHONPATH=src` and reran; the new tests passed (`2 passed`). The e2e harness needs a Python interpreter
 with Flask's dependencies, either on `PATH` or set through `ANVIL_E2E_PYTHON`.
 
+## Re-run after the UX iteration (2026-11-17)
+
+Branch `feat/ux-iteration`, same model and settings as above.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | clean |
+| `npm test` | 98 / 98 pass, including ledger, history, Ask mode, auto-approve, image content and UI rule tests |
+| `node scripts/e2e-guards.mjs` (scripted model) | 10 / 10 scenarios pass |
+| Task A inline edit | done, +5 / -1, 4.7 s, 5,841 / 427 / 2,726 tokens |
+| Task C failover | `broken/unreachable` failed, switched to Sonnet, 4.3 s |
+| Cancel mid-turn | cancelled, 74 ms |
+| Restore (conversation and code) | pass |
+| Task B `flask config` | 3 files changed, pytest 56 passed / 3 skipped, 20.6 s, 71,033 / 2,351 / 55,168 tokens |
+
+Python for the suites needs Flask installed (`pip install -e ../flask-3.1.3`); without its package metadata
+`test_get_version` fails and the M8 guard reports a false failure.
+
 ## Independent review
 
 A five-lens review (agent loop, diff safety, security, webview contract, lifecycle/packaging) reported 1

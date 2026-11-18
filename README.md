@@ -58,14 +58,15 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 
 | Feature | How to use it |
 |---|---|
-| Inline edit | Select code, `Ctrl+Alt+K`, type the instruction. Hunks appear in place; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+N` rejects |
+| Inline edit | Select code, `Ctrl+Alt+K`, type the instruction. Hunks appear in place; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+X` rejects, `Alt+F5` / `Shift+Alt+F5` jump between changes |
 | Agent mode | Side panel. One request drives TrueForge's tool loop over Anvil's MCP tools (repo map, search, symbols, read, edit, create, run) |
 | Ask mode | Mode switch in the composer. Read-only tools, no edits |
 | Context | `@file` and `@symbol` mentions plus automatic ranking under a token budget, shown on the Context card |
 | Selection to chat | `Ctrl+Alt+L` adds the editor selection, the terminal selection, or the last terminal command and its output |
 | Ask about selection | `Ctrl+Alt+Q`, or the lightbulb and hover link on selected code |
 | Diff review | Per-hunk Accept / Reject in the editor; rejected hunks are reported back to the model |
-| Changes tray | Edited files with +/- counts, Open diff, Keep, Undo, and Keep all / Discard all |
+| Changes tray | Edited files with +/- counts, Open diff and Undo, plus Keep all / Discard all |
+| Settings view | Model chain order, reasoning effort, review mode, auto-approved commands, context budget, MCP servers |
 | Revert | On any user message: conversation only, code only, or both |
 | Stop, Continue, Retry | Stop (`Ctrl+Alt+Backspace`) cancels the turn and discards pending edits; Continue or Retry resumes a stopped or failed turn |
 | Steering | Messages sent while the agent works are queued and reach it at the next tool call |
