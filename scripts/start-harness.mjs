@@ -74,7 +74,9 @@ if (process.env.OLLAMA_MODEL) {
   const models = list(process.env.OLLAMA_MODEL).map((modelId) => ({
     model_id: modelId,
     name: slug(modelId),
-    properties: { context_length: 32768, max_output_tokens: 8192, reasoning_efforts: ["none", "low", "medium", "high"] },
+    // Ollama defaults to a 4k context and silently truncates longer prompts; create *-16k variants with
+    // `PARAMETER num_ctx 16384` (see README) and register them with their real window.
+    properties: { context_length: 16384, max_output_tokens: 4096, reasoning_efforts: ["none", "low", "medium", "high"] },
   }));
   await put("/settings/model-providers", {
     manifest: { type: "custom", name: "ollama", base_url: process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1", models },
