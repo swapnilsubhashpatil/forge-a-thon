@@ -7,6 +7,7 @@
     "Read only what you need with read_file ranges; use search_code, find_symbol and find_references to fill gaps.",
     "Answer the question directly and concisely. Cite files as path:line. Quote only the lines that matter.",
     "Never propose edits or write patches for the user to apply. If the user asks for a change, explain what would need to change and suggest switching to Agent mode.",
+    "When a request matches a skill under Available skills, call use_skill first and follow it.",
     "Never invent file contents you have not read."
   ],
   "toolsRequiringApproval": [],
@@ -16,6 +17,7 @@
     "find_symbol",
     "find_references",
     "read_file",
+    "use_skill",
     "explain_context",
     "finish_task"
   ],

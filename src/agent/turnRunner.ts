@@ -125,8 +125,8 @@ export class TurnRunner {
   }
 
   currentContext(): ContextReport | undefined {
-    const turns = this.deps.store.state.turns;
-    return turns[turns.length - 1]?.context;
+    if (this.active) return this.deps.store.turn(this.active.turnId)?.context;
+    return this.deps.store.state.turns.at(-1)?.context;
   }
 
   noteFileRead(path: string, startLine?: number, endLine?: number): void {
@@ -155,7 +155,7 @@ export class TurnRunner {
 
   private activeContext(): ContextReport | undefined {
     if (!this.active) return undefined;
-    return this.deps.store.state.turns.find((turn) => turn.id === this.active?.turnId)?.context;
+    return this.deps.store.turn(this.active.turnId)?.context;
   }
 
   queueNote(text: string, mentions: string[]): void {
@@ -371,7 +371,7 @@ export class TurnRunner {
     });
   }
 
-  async run(request: TurnRequest): Promise<void> {
+  async run(request: TurnRequest): Promise<Turn> {
     if (this.active) throw new Error("A turn is already running. Cancel it first.");
     const { store, ledger, edits, breaker } = this.deps;
     this.turnCounter += 1;
@@ -408,7 +408,8 @@ export class TurnRunner {
       startedAt: Date.now(),
     };
     store.update((state) => {
-      state.turns.push(turn);
+      if (request.mode === "inline") store.offstage.set(turnId, turn);
+      else state.turns.push(turn);
       state.busy = true;
     });
     const changeSetId = ledger.begin(request.title);
@@ -422,7 +423,7 @@ export class TurnRunner {
       if (!chain.length) {
         store.notice(turnId, "error", "No models configured. Run “Anvil: Configure Model Fallback Chain” or add a model provider in TrueForge.");
         this.finish(turn, "error");
-        return;
+        return turn;
       }
       let previous: { model: string; failure: Failure } | undefined;
       for (const model of breaker.order(chain)) {
@@ -456,17 +457,17 @@ export class TurnRunner {
           breaker.reset(model);
           this.healthy.add(model);
           this.finish(turn, "done");
-          return;
+          return turn;
         }
         if (result.kind === "failed" && result.failure.kind === "limit" && !active.cancelled) {
-          this.hitStepLimit = request.followUp !== true;
+          this.hitStepLimit = request.followUp !== true && request.mode !== "inline";
           store.notice(turnId, "warning", `The agent used all ${this.deps.settings().iterationLimit} steps. ${this.hitStepLimit ? "Asking it to wrap up with a summary of what is done and what remains." : "Stopped."}`);
           this.finish(turn, "done");
-          return;
+          return turn;
         }
         if (result.kind === "cancelled" || active.cancelled) {
           this.finish(turn, active.superseded ? "superseded" : "cancelled");
-          return;
+          return turn;
         }
         if (hasImages(request) && IMAGE_ERROR.test(result.kind === "harness" ? result.message : result.failure.message)) {
           store.notice(turnId, "warning", `${model} could not read the attached image. Pick a model that accepts images, or remove the image and send again.`);
@@ -474,7 +475,7 @@ export class TurnRunner {
         if (result.kind === "harness") {
           store.notice(turnId, "error", `TrueForge request failed: ${result.message}. Models were not blamed; check the harness and press Reconnect if needed.`);
           this.finish(turn, "error");
-          return;
+          return turn;
         }
         if (result.failure.kind !== "context" && result.failure.kind !== "truncated") breaker.trip(model, result.failure.message);
         this.healthy.delete(model);
@@ -500,8 +501,10 @@ export class TurnRunner {
       this.refreshModelHealth();
       store.flush();
       this.deps.onBusyChange(false);
+      store.offstage.delete(turnId);
       ended();
     }
+    return turn;
   }
 
   async stop(): Promise<void> {

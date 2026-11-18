@@ -48,7 +48,7 @@ Run **Anvil: Configure Model Fallback Chain** and pick a primary and a fallback 
 
 | Task | Steps | Verify |
 |---|---|---|
-| A | Open `src/flask/helpers.py`, select `get_debug_flag`, press `Ctrl+Alt+K`, type the instruction, accept or reject hunks | `FLASK_DEBUG=off python -c "from flask.helpers import get_debug_flag; print(get_debug_flag())"` prints `False` |
+| A | Open `src/flask/helpers.py`, select `get_debug_flag`, press `Ctrl+Alt+K` (or click **Edit** above the selection), type the instruction in the inline box, `Ctrl+Enter`, accept, reject or keep both per hunk | `FLASK_DEBUG=off python -c "from flask.helpers import get_debug_flag; print(get_debug_flag())"` prints `False` |
 | B | Paste the Task B prompt in the panel; watch the Context card, tool rows and reviews; open the TrueForge session from the header | `pytest tests/test_cli.py -q`, `flask --app <app> config`, `git diff --stat` (3+ files) |
 | C | Set `BROKEN_PROVIDER_FOR_DEMO=1`, rerun `npm run harness`, put `broken/unreachable` first in the chain, repeat Task A | The failover notice names the error and the fallback model; `git status` is clean until you accept |
 
@@ -58,13 +58,14 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 
 | Feature | How to use it |
 |---|---|
-| Inline edit | Select code, `Ctrl+Alt+K`, type the instruction. Hunks appear in place; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+X` rejects, `Alt+F5` / `Shift+Alt+F5` jump between changes |
+| Selection toolbar | Selecting code shows **Edit** (`Ctrl+Alt+K`), **Ask** (`Ctrl+Alt+Q`) and **Add to chat** (`Ctrl+Alt+L`) right above it |
+| Inline edit | Select code, `Ctrl+Alt+K`. An inline box opens in the editor (not the chat): type the change, `Ctrl+Enter`. Hunks appear in place with Accept / Reject / Keep both and Open diff; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+X` rejects, `Alt+F5` / `Shift+Alt+F5` jump between changes. Type in **Refine…** to iterate on the same lines, **Done** closes it, `Esc` or Stop cancels a run |
 | Agent mode | Side panel. One request drives TrueForge's tool loop over Anvil's MCP tools (repo map, search, symbols, read, edit, create, run) |
 | Ask mode | Mode switch in the composer. Read-only tools, no edits |
 | Context | `@file` and `@symbol` mentions plus automatic ranking under a token budget, shown on the Context card |
-| Selection to chat | `Ctrl+Alt+L` adds the editor selection, the terminal selection, or the last terminal command and its output |
-| Ask about selection | `Ctrl+Alt+Q`, or the lightbulb and hover link on selected code |
-| Diff review | Per-hunk Accept / Reject in the editor; rejected hunks are reported back to the model |
+| Selection to chat | The current editor selection shows as a live chip in the composer and is sent with the next message; `x` skips it, the pin keeps it so you can collect selections from several files. `Ctrl+Alt+L` adds the editor selection, the terminal selection, or the last terminal command and its output |
+| Ask about selection | `Ctrl+Alt+Q` or **Ask** above the selection: attaches it and switches to Ask mode |
+| Diff review | Per-hunk Accept / Reject / Keep both in the editor, Open diff for a side-by-side view; rejected and kept-both hunks are reported back to the model |
 | Changes tray | Edited files with +/- counts, Open diff and Undo, plus Keep all / Discard all |
 | Settings view | Model chain order, reasoning effort, review mode, auto-approved commands, context budget, MCP servers |
 | Revert | On any user message: conversation only, code only, or both |
@@ -74,6 +75,7 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | Images | Paste, drop or attach images to a message |
 | Model picker | Pick the model for the next message; the chain falls back on failure |
 | Usage | Session strip with tokens, cache hits and cost |
+| Skills | Folders with a `SKILL.md` in `.anvil/skills` or `.claude/skills` (workspace or home). The agent loads a matching one with `use_skill`; type `/` in the composer to run one yourself; manage them under Settings → Skills. See [docs/skills.md](docs/skills.md) |
 
 ## Settings
 
@@ -90,7 +92,9 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | `anvil.resilience.firstEventTimeoutSeconds` | `45` | Fail over when no model output arrives in time |
 | `anvil.harness.url` | `http://localhost:8790` | TrueForge server |
 | `anvil.harness.autoStart` | `true` | Start TrueForge with npx when none is reachable |
-| `anvil.selection.askActions` | `true` | Lightbulb and hover link on selected code |
+| `anvil.selection.askActions` | `true` | Edit / Ask / Add to chat toolbar above selected code |
+| `anvil.selection.autoAttach` | `true` | Send the current editor selection with the next chat message |
+| `anvil.skills.disabled` | `[]` | Skill names hidden from the agent |
 
 Most of these are also editable from the panel's Settings view.
 
@@ -120,6 +124,7 @@ Layout: `src/` extension host (`agent/`, `context/`, `edits/`, `harness/`, `tool
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Skills](docs/skills.md)
 - [Benchmarks](docs/benchmarks/README.md)
 - [Verification record](docs/verification.md)
 - [Decision log](conductor/decisions.md)

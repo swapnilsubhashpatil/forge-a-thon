@@ -46,6 +46,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): T
       return { title: `Found usages of ${String(args.name ?? "")}` };
     case "repo_map":
       return { title: "Mapped repository", detail: Array.isArray(args.focus) ? args.focus.join(", ") : undefined };
+    case "use_skill":
+      return { title: `Used skill ${String(args.name ?? "")}` };
     case "explain_context":
       return { title: "Reviewed context selection" };
     case "propose_edit":

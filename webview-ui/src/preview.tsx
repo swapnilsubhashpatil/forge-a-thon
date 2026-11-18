@@ -57,6 +57,11 @@ let state: ChatState = {
   mode: "agent",
   workspace: { name: "flask", files: 214, user: "Swapnil" },
   mcpServers: ["anvil-editor", "filesystem"],
+  skills: [
+    { name: "release-notes", description: "Use when writing release notes from merged PRs", source: "project", path: ".anvil/skills/release-notes/SKILL.md", enabled: true },
+    { name: "flask-cli", description: "Use when adding or changing a flask CLI command", source: "project", path: ".claude/skills/flask-cli/SKILL.md", enabled: true },
+    { name: "commit-writer", description: "Write Conventional Commit messages", source: "user", path: "~/.claude/skills/commit-writer/SKILL.md", enabled: false },
+  ],
   settings: {
     chain: [primary, fallback, "anthropic-main/claude-sonnet-4-5"],
     reasoningEffort: "default",
@@ -69,6 +74,7 @@ let state: ChatState = {
     { id: "conv-1", title: "Why does the dev server reload twice?", updatedAt: now - 26 * 3_600_000, turns: 4, model: primary, edits: 0 },
   ],
   pendingReviews: [{ path: "src/flask/cli.py", hunks: 2, added: 12, removed: 1 }],
+  editorSelection: { path: "src/flask/cli.py", startLine: 57, endLine: 64, label: "cli.py:57-64" },
   availableModels: [primary, fallback, "anthropic-main/claude-sonnet-4-5", "ollama/qwen3-8b"],
   sessionId: "ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   sessionUrl: "http://localhost:8790/sessions/ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",

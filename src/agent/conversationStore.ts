@@ -7,6 +7,7 @@ export class ConversationStore {
   private readonly listeners = new Set<(state: ChatState) => void>();
   private timer: ReturnType<typeof setTimeout> | undefined;
   private noticeCounter = 0;
+  readonly offstage = new Map<string, Turn>();
 
   constructor(harnessUrl: string, settings: AnvilSettings) {
     this.state = {
@@ -15,6 +16,7 @@ export class ConversationStore {
       pendingReviews: [],
       settings,
       mcpServers: [],
+      skills: [],
       turns: [],
       harness: { state: "connecting", url: harnessUrl },
       models: [],
@@ -42,7 +44,7 @@ export class ConversationStore {
   }
 
   turn(turnId: string): Turn | undefined {
-    return this.state.turns.find((turn) => turn.id === turnId);
+    return this.state.turns.find((turn) => turn.id === turnId) ?? this.offstage.get(turnId);
   }
 
   upsertStep<T extends Step>(turnId: string, step: T, merge?: (existing: T) => void): void {

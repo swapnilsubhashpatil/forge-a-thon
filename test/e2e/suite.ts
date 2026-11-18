@@ -9,7 +9,7 @@ import type { ChatState, Turn } from "../../src/shared/protocol.ts";
 interface AnvilApi {
   ready: Promise<void>;
   sendPrompt(text: string, mentions: string[]): Promise<void>;
-  runInline(path: string, firstLine: number, lastLine: number, instruction: string): Promise<void>;
+  runInline(path: string, firstLine: number, lastLine: number, instruction: string): Promise<Turn>;
   runner: {
     cancel(): Promise<void>;
     resolveApproval(id: string, allow: boolean): void;
@@ -95,12 +95,12 @@ async function useChain(chain: string[]): Promise<void> {
 
 async function taskA(api: AnvilApi, label: string): Promise<Turn> {
   const stop = autoReview(api);
+  let turn: Turn;
   try {
-    await timed(label, () => api.runInline("src/flask/helpers.py", 27, 32, TASK_A));
+    turn = await timed(label, () => api.runInline("src/flask/helpers.py", 27, 32, TASK_A));
   } finally {
     stop();
   }
-  const turn = lastTurn(api);
   console.log(`${label}:`, describe(turn));
   assert.equal(turn.status, "done");
   assert.equal(python("from flask.helpers import get_debug_flag; print(get_debug_flag())", { FLASK_DEBUG: "off" }), "False");

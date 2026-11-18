@@ -146,7 +146,7 @@ function propose(tool: string, args: Record<string, unknown>, path: string, base
 }
 
 function unchanged(text: string, status: "accepted" | "discarded"): ReviewOutcome {
-  return { status, accepted: 0, rejected: 0, total: 0, finalText: text, rejectedPatch: "", stat: { added: 0, removed: 0 } };
+  return { status, accepted: 0, rejected: 0, keptBoth: 0, total: 0, finalText: text, rejectedPatch: "", stat: { added: 0, removed: 0 } };
 }
 
 function isNoChange(outcome: ReviewOutcome): boolean {
@@ -173,11 +173,9 @@ function describeOutcome(result: EditResult & { ok: true }): string {
     case "partial":
       return [
         `Partially applied to ${path} (${stat}): the user accepted ${outcome.accepted} of ${outcome.total} change(s) and rejected ${outcome.rejected}.`,
+        ...(outcome.keptBoth ? [`For ${outcome.keptBoth} of the accepted change(s) the user chose Keep both: the original lines were kept and your new lines were inserted right after them. Both versions are now in the file; do not remove either unless the user asks.`] : []),
         NEW_BASELINE,
-        "Rejected changes (not applied, do not re-propose them unless the user asks):",
-        "```diff",
-        outcome.rejectedPatch.trim(),
-        "```",
+        ...(outcome.rejected ? ["Rejected changes (not applied, do not re-propose them unless the user asks):", "```diff", outcome.rejectedPatch.trim(), "```"] : []),
         ...currentText(path, outcome.currentRegion),
       ].join("\n");
     case "rejected":

@@ -1,4 +1,4 @@
-import type { Attachment } from "../../../src/shared/protocol.ts";
+import type { Attachment, EditorSelection } from "../../../src/shared/protocol.ts";
 import { post } from "../state/vscode.ts";
 import { Icon } from "./primitives.tsx";
 
@@ -57,6 +57,27 @@ export function AttachmentChip({ attachment, onRemove }: { attachment: Attachmen
       )}
       {lines !== undefined && <span className="font-mono text-muted">{lines} lines</span>}
       <button type="button" aria-label={`Remove ${attachment.label}`} onClick={onRemove} className="btn btn-icon">
+        <Icon name="close" size={12} />
+      </button>
+    </li>
+  );
+}
+
+export function LiveSelectionChip({ selection }: { selection: EditorSelection }) {
+  return (
+    <li
+      className="flex h-7 items-center gap-1.5 rounded-md border border-dashed border-blue/50 bg-blue/10 pl-1.5 text-xs text-fg"
+      title="Your current editor selection. It is sent with your next message; pin it to keep it while you select elsewhere."
+    >
+      <Icon name="eye" className="text-blue" />
+      <button type="button" title={`Open ${selection.path}`} onClick={() => post({ type: "openFile", path: selection.path, line: selection.startLine })} className="font-mono hover:underline">
+        {selection.label}
+      </button>
+      <span className="text-muted max-[400px]:hidden">selection</span>
+      <button type="button" aria-label={`Pin ${selection.label}`} title="Pin, then select more code to add several" onClick={() => post({ type: "pinSelection" })} className="btn btn-icon">
+        <Icon name="pin" size={12} />
+      </button>
+      <button type="button" aria-label={`Do not send ${selection.label}`} title="Do not send this selection" onClick={() => post({ type: "dismissSelection" })} className="btn btn-icon">
         <Icon name="close" size={12} />
       </button>
     </li>
