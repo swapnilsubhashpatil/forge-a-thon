@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import * as vscode from "vscode";
-import { AgentProfiles } from "./agent/agentProfile.ts";
+import { AgentProfiles, type PromptProfile } from "./agent/agentProfile.ts";
 import { ConversationStore } from "./agent/conversationStore.ts";
 import { EditCoordinator } from "./agent/editCoordinator.ts";
 import { CircuitBreaker } from "./agent/resilience.ts";
@@ -46,6 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
       firstEventTimeoutMs: config().get<number>("resilience.firstEventTimeoutSeconds", 45) * 1000,
       iterationLimit: config().get<number>("agent.iterationLimit", 60),
       reasoningEffort: reasoningEffort === "default" ? undefined : reasoningEffort,
+      promptProfile: config().get<PromptProfile>("agent.promptProfile", "auto"),
       toolServerName,
     };
   };

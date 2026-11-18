@@ -3,7 +3,7 @@ import { EventLog, type ApprovalDecision, type HarnessClient, type HarnessEvent 
 import type { ChangeLedger } from "../edits/changeLedger.ts";
 import type { ReviewController } from "../edits/reviewController.ts";
 import type { ContextReport, ModelHealth, ToolStep, Turn } from "../shared/protocol.ts";
-import type { AgentMode, AgentProfiles } from "./agentProfile.ts";
+import type { AgentMode, AgentProfiles, PromptProfile } from "./agentProfile.ts";
 import type { ConversationStore } from "./conversationStore.ts";
 import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
 import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
@@ -23,6 +23,7 @@ export interface RunnerSettings {
   firstEventTimeoutMs: number;
   iterationLimit: number;
   reasoningEffort?: string;
+  promptProfile?: PromptProfile;
   toolServerName: string;
 }
 
@@ -287,13 +288,14 @@ export class TurnRunner {
       iterationLimit: settings.iterationLimit,
       reasoningEffort: overrides.reasoningEffort ?? settings.reasoningEffort,
       maxTokens: overrides.maxTokens,
+      promptProfile: settings.promptProfile,
     };
   }
 
   private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn, overrides: SpecOverrides): Promise<{ id: string; previousTurnId: string }> {
     const client = this.deps.client();
     const spec = this.deps.profiles.spec(request.mode, model, this.specOptions(overrides));
-    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null]);
+    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, this.deps.settings().promptProfile ?? "auto"]);
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;
