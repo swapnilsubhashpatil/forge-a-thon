@@ -23,7 +23,21 @@ TrueForge in local mode. No item adds completion, a model, a service, an account
 - [ ] S4 Rescue step: detect empty or text-only edit turns, parse the edit locally, one rewrite retry, normal per-hunk review (B3)
 - [ ] S5 Held-out context benchmark built from Flask commit history (B1, C2)
 
+## Agent-mode behaviour (details, before/after, benchmarks and edge cases: [agent-mode-handoff.md](agent-mode-handoff.md))
+- [ ] T1 Fake model server for deterministic guard tests + before/after benchmark runner (B3, C2)
+- [ ] M1 Agent instructions: phases, preambles, persistence, change-surface checklist (A2)
+- [ ] M2 Subagents read-only: auto-deny writes and commands from non-main threads (A2, B4)
+- [ ] M3 Partial-rejection feedback with current region text (B2)
+- [ ] M4 `run_command` summary line, tail-heavy clip, process-group kill (A2)
+- [ ] M5 Detected test command in the context pack (B1, A2)
+- [ ] M6 `update_plan` tool and live checklist (A2, A3)
+- [ ] M7 Stuck-loop guard: nudge at 3, stop at 5 (A2, A3)
+- [ ] M8 `finish_task` verification gate and one follow-up (A2, B2)
+- [ ] M9 Live metrics strip (A3, B4)
+- [ ] M10 Wrap-up turn at the iteration limit (A2)
+
 ## Parked (Round 2 / finals only)
+- M11 Messages sent mid-turn delivered at the next tool result (design in agent-mode-handoff.md §10; swap in only by decision)
 - Pre-review test run in a git worktree ("shadow workspace")
 - Git co-change and stack-trace ranking signals
 - Skills / Code Mode on TrueForge's local macOS sandbox
