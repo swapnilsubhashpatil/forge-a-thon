@@ -78,6 +78,12 @@ function Footer({ turn }: { turn: Turn }) {
           Cancelled
         </span>
       )}
+      {turn.status === "superseded" && (
+        <span className="flex shrink-0 items-center gap-1 rounded bg-secondary px-1.5 text-secondary-fg" title="Stopped so your new message could be sent">
+          <Icon name="arrow-right" />
+          Superseded by your message
+        </span>
+      )}
       {turn.status === "error" && (
         <span className="flex shrink-0 items-center gap-1 rounded bg-red/14 px-1.5 text-red">
           <Icon name="error" />

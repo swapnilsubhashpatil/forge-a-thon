@@ -27,7 +27,10 @@ export interface RunningToolServer {
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
-export async function startToolServer(tools: ToolDefinition[], log: (line: string) => void): Promise<RunningToolServer> {
+/** Post-processes every successful tool result, e.g. to deliver messages the user sent mid-turn. */
+export type ResultDecorator = (name: string, args: Record<string, unknown>, result: string) => string;
+
+export async function startToolServer(tools: ToolDefinition[], log: (line: string) => void, decorate?: ResultDecorator): Promise<RunningToolServer> {
   const token = randomBytes(24).toString("hex");
   const expected = Buffer.from(`Bearer ${token}`);
 
@@ -39,7 +42,8 @@ export async function startToolServer(tools: ToolDefinition[], log: (line: strin
         { title: tool.title, description: tool.description, inputSchema: tool.inputSchema, annotations: tool.annotations },
         async (args: Record<string, unknown>) => {
           try {
-            return { content: [{ type: "text" as const, text: await tool.run(args) }] };
+            const result = await tool.run(args);
+            return { content: [{ type: "text" as const, text: decorate ? decorate(tool.name, args, result) : result }] };
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             log(`Tool ${tool.name} failed: ${message}`);
