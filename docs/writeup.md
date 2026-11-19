@@ -1,7 +1,7 @@
 # Anvil: a VS Code coding agent on TrueForge
 
 ## Team
-_Team name and members: fill in before submission._
+**TODO before submission: team name and members.**
 
 ## Starting point
 Anvil is a new extension written for this hackathon, with no fork. We surveyed Cline, Continue, Roo Code,
@@ -60,12 +60,16 @@ Measured on Flask 3.1.3 with 12 hand-labelled tasks (`npm run bench`):
 
 | | recall@5 | MRR |
 |---|---|---|
-| Anvil | 1.00 | 0.85 |
+| Anvil | 0.96 | 0.85 |
 | BM25 | 0.71 | 0.43 |
 | Path-only | 0.21 | 0.14 |
 
-The pack averages about 4.2k tokens, against about 38k to send the top eight files whole. No embeddings are
-used, because the rules ban direct calls to model providers.
+The pack averages about 4.5k tokens, against about 43k to send the top eight files whole. On a held-out set of 200
+real Flask commits (request = commit subject, truth = files changed), Anvil puts a changed file in the top five 85%
+of the time against 70% for BM25. Files that often change together in git history rank each other up, and project
+rules files (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.clinerules`, `.github/copilot-instructions.md`,
+`.anvil/rules.md`) go into the pack. No embeddings are used, because the rules ban direct calls to model providers.
+Details: [benchmarks](benchmarks/README.md).
 
 ## Model setup
 Models are configured in TrueForge (Settings → Models, or `npm run harness`, which reads `.env`). The
@@ -88,6 +92,45 @@ one retry with jittered backoff. The model's circuit breaker then opens for 60 s
 switches to the next model, the same request is sent again, and the panel explains what failed and what took
 over. Nothing reaches the disk before review, so a failed attempt leaves `git status` clean.
 
+## Agent behaviour
+Measured across seven models, before and after (full table in [benchmarks](benchmarks/README.md)): untested
+edits at the end of Task B fell from 11/14 runs to 0/14, and failed test runs per task from 3.1 to 0.3.
+
+- **Plan checklist and finish gate.** The agent keeps an `update_plan` checklist. `finish_task` is accepted only
+  when a passing check ran after the last accepted edit; otherwise the agent gets one follow-up to verify, and a
+  verified finish shows a chip in the panel.
+- **Loop guard.** Repeated identical calls or short cycles get a nudge at three and stop the turn at five.
+- **Step-limit wrap-up.** At the iteration limit the agent gets one wrap-up turn to summarise instead of failing over.
+- **Read-only subagents.** Subagents may read, search and run read-only commands; edits and tests are refused.
+- **Rejection feedback.** When hunks are rejected the model receives the new baseline and the current file text.
+- **Follow-up on unapplied edits.** A turn that ends after edits that never applied gets one follow-up to retry.
+- **`run_command`.** A one-line summary, an inactivity timeout plus a hard cap, and a process-tree kill on Stop.
+- **Scope and grounding badges.** Hunks outside the selection, edits to unread lines, and calls to names that exist
+  nowhere are flagged on the review and reported to the model.
+- **Queued steering notes.** Messages typed while the agent works are queued and delivered inside the next tool result.
+- **Editor to chat.** `Ctrl+Alt+L` sends the selection, terminal selection or last terminal command to the chat;
+  `Ctrl+Alt+Q` or the lightbulb asks about selected code.
+- **Restore to any message**, with or without its code changes.
+- **Session usage strip** (tokens, cache hits, cost) and a **model picker** for the next message.
+
+A scripted misbehaving model (`node scripts/e2e-guards.mjs`) drives the real extension, TrueForge and MCP server
+through nine guard scenarios; all pass, and they found four bugs that are now fixed.
+
+## UX in this release
+- **Agent and Ask modes.** Ask uses a read-only agent spec with no subagents.
+- **Chat history.** Conversations are saved with their TrueForge session; open, search, delete, start new.
+- **Revert with three scopes** on every user message: conversation only, code only, or both.
+- **Continue and Retry** on a stopped or failed turn.
+- **Changes tray** above the composer: edited files with +/- counts, Open diff, Keep, Undo, and Keep all / Discard all.
+- **Review modes.** Review each edit before it lands, or apply at once and review later from the tray.
+- **Images.** Paste, drop or attach; sent to the model as file content.
+- **@symbol for every language** through VS Code's symbol providers, merged with Anvil's own index.
+- **Settings view** for the model chain, reasoning effort, review mode, auto-approved command prefixes and the MCP
+  servers TrueForge sees.
+- **Auto-approve.** Command prefixes that run without asking, plus "Allow for this session" on approval cards.
+- **Failover marker** on the turn: which model failed, why, and which took over.
+- **Type and icons.** IBM Plex Sans and Mono with a custom glyph set; colours stay on VS Code theme tokens.
+
 ## Scorecard
 _Fill in after recording; timestamps must match the video._
 
@@ -105,7 +148,7 @@ _Fill in after recording; timestamps must match the video._
 
 ## Tools used
 TrueForge 0.185.1 and `@truefoundry/trueforge-sdk` 0.185.0, `@modelcontextprotocol/sdk`, VS Code extension
-API, React 19, Vite 8, Tailwind CSS 4, codicons, jsdiff, esbuild, `@vscode/test-electron`, Ollama
+API, React 19, Vite 8, Tailwind CSS 4, IBM Plex, Phosphor icons, jsdiff, esbuild, `@vscode/test-electron`, Ollama
 (`qwen3:4b` and `qwen3:8b` for local testing). We used Claude Code as a coding assistant during development.
 
 ## Known limitations
@@ -114,4 +157,5 @@ API, React 19, Vite 8, Tailwind CSS 4, codicons, jsdiff, esbuild, `@vscode/test-
 - If the user types into a file while its review is open, that review is discarded (the baseline is restored and a warning shown) instead of being merged.
 - Small local models (around 4B parameters) sometimes write tool calls as text instead of calling the tool. The instructions forbid it, but the result still depends on the model.
 - With Auto Save on, a save during review discards that review, so the review text never reaches disk. Anvil warns when Auto Save is on.
+- The scope, grounding and loop guards never fire on Task B, because the models that pass it behave; they are proven against a scripted model instead.
 - Single-root workspaces only. Skills and Code Mode are not used, because they need a paid sandbox.

@@ -59,12 +59,12 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done, `[-]` dropped (reason given).
 ## Lane C – Docs, benchmarks, tests
 
 - [ ] C1 Unit tests: ChangeLedger (partial undo, conflict, multi-set order), history store, webview store reducer.
-- [ ] C2 Em-dash and blink check in `npm test`.
-- [ ] C3 README: feature table and keys updated (modes, history, revert, tray, images, settings, Ctrl+Alt+L / Q, steering).
-- [ ] C4 Write-up: Sumeet's features, new UX, Team section; scorecard rows ready for video timestamps.
+- [x] C2 Em-dash and blink check in `npm test`.
+- [~] C3 README: feature table and keys updated (modes, history, revert, tray, images, settings, Ctrl+Alt+L / Q, steering).
+- [~] C4 Write-up: Sumeet's features, new UX, Team section; scorecard rows ready for video timestamps.
 - [ ] C5 Verification record: re-run typecheck, unit, guard and e2e suites; record results.
-- [ ] C6 Benchmarks page: link the before/after and held-out results; one-paragraph summary.
-- [ ] C7 Decide on `docs/claude-planning-session.md` before the repo goes public (contains a local username).
+- [x] C6 Benchmarks page: link the before/after and held-out results; one-paragraph summary.
+- [x] C7 Decide on `docs/claude-planning-session.md` before the repo goes public (contains a local username).
 
 ## Out of scope for this iteration
 
