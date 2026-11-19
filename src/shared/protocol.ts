@@ -223,6 +223,16 @@ export interface AnvilSettings {
   budgetTokens: number;
 }
 
+export interface McpServerInfo {
+  name: string;
+  url: string;
+  description?: string;
+  enabled: boolean;
+  status: "unknown" | "testing" | "ok" | "error";
+  tools?: string[];
+  error?: string;
+}
+
 export interface SkillSummary {
   name: string;
   description: string;
@@ -244,7 +254,7 @@ export interface ChatState {
   history: ConversationSummary[];
   pendingReviews: PendingReview[];
   settings: AnvilSettings;
-  mcpServers: string[];
+  mcpServers: McpServerInfo[];
   skills: SkillSummary[];
   editorSelection?: EditorSelection;
   workspace?: { name: string; files: number; user?: string };
@@ -281,6 +291,10 @@ export type HostMessage =
 export type WebviewMessage =
   | { type: "ready" }
   | { type: "send"; text: string; mentions: string[]; attachments?: Attachment[]; mode: AgentMode; includeSelection?: boolean }
+  | { type: "addMcpServer"; name: string; url: string; description?: string; headerName?: string; headerValue?: string }
+  | { type: "testMcpServer"; name: string }
+  | { type: "removeMcpServer"; name: string }
+  | { type: "toggleMcpServer"; name: string; enabled: boolean }
   | { type: "pinSelection" }
   | { type: "dismissSelection" }
   | { type: "createSkill"; name: string; description: string; scope: "project" | "user" }
