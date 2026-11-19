@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import type { ChangeSetSummary, PlanItem, Step, Turn } from "../../../src/shared/protocol.ts";
+import type { ChangeSetSummary, PlanItem, RevertScope, Step, Turn } from "../../../src/shared/protocol.ts";
 import { post } from "../state/vscode.ts";
 import { cx, formatDuration, formatTokens, shortModel } from "../format.ts";
 import { formatUsd } from "../../../src/shared/sessionStats.ts";
@@ -10,12 +10,13 @@ import { Notice } from "./Notice.tsx";
 import { Reasoning } from "./Reasoning.tsx";
 import { SubagentRow } from "./SubagentRow.tsx";
 import { ToolRow } from "./ToolRow.tsx";
+import type { GlyphName } from "./Glyph.tsx";
 import { Icon } from "./primitives.tsx";
 
 function StepView({ step, live }: { step: Step; live: boolean }) {
   switch (step.kind) {
     case "text":
-      return <Markdown text={step.text} streaming={live} />;
+      return <Markdown text={step.text} />;
     case "reasoning":
       return <Reasoning step={step} active={live} />;
     case "tool":
@@ -38,57 +39,86 @@ function gapBefore(step: Step, previous: Step | undefined): string {
   return isCompact(step) && isCompact(previous) ? "mt-0.5" : "mt-3";
 }
 
-function RestoreMenu({ turn, disabled }: { turn: Turn; disabled: boolean }) {
-  const [open, setOpen] = useState(false);
-  const restore = (withCode: boolean) => {
-    setOpen(false);
-    post({ type: "restore", turnId: turn.id, withCode });
+const revertScopes: Array<{ scope: RevertScope; label: string; hint: string }> = [
+  { scope: "conversation", label: "Conversation only", hint: "Rewind the chat to before this message and put it back in the input. Files stay as they are." },
+  { scope: "code", label: "Code only", hint: "Undo file edits made from this message onward. The chat stays." },
+  { scope: "both", label: "Conversation and code", hint: "Rewind the chat and undo file edits made from this message onward." },
+];
+
+const menuButton = "rounded px-1.5 py-0.5 text-xs text-fg hover:bg-hover";
+
+function RevertMenu({ turnId, busy }: { turnId: string; busy: boolean }) {
+  const [stage, setStage] = useState<"closed" | "open" | RevertScope>("closed");
+  const current = busy ? "closed" : stage;
+  const run = (scope: RevertScope) => {
+    setStage("closed");
+    post({ type: "restore", turnId, scope });
   };
-  return (
-    <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-      {open ? (
-        <>
-          <button type="button" onClick={() => restore(false)} className="rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover" title="Rewind the conversation to before this message and put it back in the input. Code stays as it is.">
-            Restore message
+
+  if (current === "closed") {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => setStage("open")}
+        title={busy ? "Stop the running turn to revert" : "Revert to before this message"}
+        className="flex items-center gap-1 rounded px-1 text-xs text-muted opacity-70 hover:bg-hover hover:opacity-100"
+      >
+        <Icon name="undo" />
+        Revert
+      </button>
+    );
+  }
+
+  if (current === "open") {
+    return (
+      <div role="menu" aria-label="Revert" className="flex flex-wrap items-center justify-end gap-0.5">
+        {revertScopes.map(({ scope, label, hint }) => (
+          <button key={scope} type="button" role="menuitem" title={hint} onClick={() => (scope === "conversation" ? run(scope) : setStage(scope))} className={menuButton}>
+            {label}
           </button>
-          <button type="button" onClick={() => restore(true)} className="rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover" title="Also undo the code changes of this turn and every later turn. Files you edited since are skipped.">
-            Restore message and code
-          </button>
-          <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="grid size-5 place-items-center rounded text-muted hover:bg-hover">
-            <Icon name="close" />
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setOpen(true)}
-          title={disabled ? "Stop the running turn to restore" : "Restore to this message"}
-          className="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-2xs text-secondary-fg hover:bg-secondary-hover disabled:opacity-50"
-        >
-          <Icon name="discard" />
-          Restore
+        ))}
+        <button type="button" aria-label="Close" onClick={() => setStage("closed")} className="grid size-5 place-items-center rounded text-muted hover:bg-hover">
+          <Icon name="close" />
         </button>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div role="alertdialog" aria-label="Confirm revert" className="flex flex-wrap items-center justify-end gap-1 text-xs">
+      <span className="text-muted">Undo file edits from this message on?</span>
+      <button type="button" autoFocus onClick={() => run(current)} className="rounded bg-accent px-1.5 py-0.5 text-accent-fg hover:bg-accent-hover">
+        Revert
+      </button>
+      <button type="button" onClick={() => setStage("closed")} className={menuButton}>
+        Cancel
+      </button>
     </div>
   );
 }
 
 function Prompt({ turn, busy }: { turn: Turn; busy: boolean }) {
   return (
-    <div className="group relative rounded border border-border bg-input/60 px-3 py-2">
-      {!turn.reverted && !turn.followUp && turn.status !== "running" && turn.status !== "paused" && <RestoreMenu turn={turn} disabled={busy} />}
-      {turn.reverted && (
-        <span className="mb-1 flex items-center gap-1 text-2xs text-muted">
-          <Icon name="history" />
-          Reverted: no longer part of the agent's history
+    <div className="rounded border border-border bg-input/60 px-3 py-2">
+      <div className="mb-0.5 flex items-start gap-2">
+        <span className="flex min-w-0 flex-1 items-center gap-1 text-xs text-muted">
+          {turn.reverted ? (
+            <>
+              <Icon name="history" />
+              Reverted: no longer part of the agent's history
+            </>
+          ) : (
+            turn.followUp && "Follow-up from Anvil"
+          )}
         </span>
-      )}
+        {!turn.reverted && <RevertMenu turnId={turn.id} busy={busy} />}
+      </div>
       <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
       {turn.mentions.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {turn.mentions.map((mention) => (
-            <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-2xs text-fg">
+            <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-xs text-fg">
               @{mention}
             </span>
           ))}
@@ -101,18 +131,18 @@ function Prompt({ turn, busy }: { turn: Turn; busy: boolean }) {
 function Working({ paused }: { paused: boolean }) {
   return (
     <div className="mt-3 flex items-center gap-2 px-1 text-sm text-muted">
-      <Icon name={paused ? "watch" : "loading"} spin={!paused} />
-      <span className="animate-pulse-soft">{paused ? "Waiting for your review…" : "Working…"}</span>
+      <Icon name={paused ? "clock" : "hammer"} className={paused ? "text-yellow" : "text-orange"} />
+      <span>{paused ? "Waiting for your review…" : "Working…"}</span>
     </div>
   );
 }
 
-const planIcons: Record<PlanItem["status"], { icon: string; tone: string }> = {
-  pending: { icon: "circle-large-outline", tone: "text-muted" },
-  in_progress: { icon: "arrow-circle-right", tone: "text-blue" },
-  completed: { icon: "pass-filled", tone: "text-green" },
+const planIcons: Record<PlanItem["status"], { icon: GlyphName; tone: string }> = {
+  pending: { icon: "circle", tone: "text-muted" },
+  in_progress: { icon: "arrow-right", tone: "text-orange" },
+  completed: { icon: "check-circle", tone: "text-green" },
   blocked: { icon: "error", tone: "text-yellow" },
-  cancelled: { icon: "circle-slash", tone: "text-muted" },
+  cancelled: { icon: "skip", tone: "text-muted" },
 };
 
 function PlanChecklist({ plan }: { plan: PlanItem[] }) {
@@ -120,9 +150,9 @@ function PlanChecklist({ plan }: { plan: PlanItem[] }) {
   return (
     <section className="rounded border border-border bg-editor/40 px-2 py-1.5" aria-label="Agent plan">
       <div className="mb-1 flex items-center gap-2 text-xs text-muted">
-        <Icon name="checklist" />
+        <Icon name="plan" />
         <span className="text-fg">Plan</span>
-        <span className="tabular-nums">
+        <span className="font-mono tabular-nums">
           {done}/{plan.length}
         </span>
       </div>
@@ -138,30 +168,40 @@ function PlanChecklist({ plan }: { plan: PlanItem[] }) {
   );
 }
 
-function TurnChanges({ changeSet, turnId }: { changeSet: ChangeSetSummary; turnId: string }) {
+function TurnChanges({ changeSet }: { changeSet: ChangeSetSummary }) {
   const added = changeSet.files.reduce((sum, file) => sum + file.added, 0);
   const removed = changeSet.files.reduce((sum, file) => sum + file.removed, 0);
+  const state = changeSet.undone ? "undone" : changeSet.kept ? "kept" : undefined;
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted">
       <Icon name="diff" />
-      <span>
+      <span className="font-mono tabular-nums">
         {changeSet.files.length} {changeSet.files.length === 1 ? "file" : "files"} <span className="text-added">+{added}</span> <span className="text-removed">−{removed}</span>
       </span>
       <span className="min-w-0 truncate" title={changeSet.files.map((file) => file.path).join("\n")}>
         {changeSet.files.map((file) => file.path.split("/").pop()).join(", ")}
       </span>
-      {changeSet.undone ? (
-        <span className="rounded bg-secondary px-1.5 text-secondary-fg">undone</span>
-      ) : (
-        <button type="button" onClick={() => post({ type: "undoTurn", turnId })} className="rounded bg-secondary px-1.5 text-secondary-fg hover:bg-secondary-hover" title="Undo this turn's code changes only; the conversation stays">
-          Undo these changes
-        </button>
-      )}
+      {state && <span className="rounded bg-secondary px-1.5 text-secondary-fg">{state}</span>}
     </div>
   );
 }
 
-function Footer({ turn }: { turn: Turn }) {
+function Resume({ turnId }: { turnId: string }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <button type="button" onClick={() => post({ type: "continue" })} className="flex items-center gap-1 rounded bg-secondary px-1.5 text-secondary-fg hover:bg-secondary-hover" title="Pick up where the agent stopped">
+        <Icon name="play" />
+        Continue
+      </button>
+      <button type="button" onClick={() => post({ type: "retry", turnId })} className="flex items-center gap-1 rounded bg-secondary px-1.5 text-secondary-fg hover:bg-secondary-hover" title="Run this message again">
+        <Icon name="retry" />
+        Retry
+      </button>
+    </span>
+  );
+}
+
+function Footer({ turn, resumable }: { turn: Turn; resumable: boolean }) {
   const { input, output, cached } = turn.usage;
   const parts = [
     shortModel(turn.model),
@@ -175,7 +215,7 @@ function Footer({ turn }: { turn: Turn }) {
     <div className="mt-3 flex items-center gap-2 text-xs text-muted">
       {turn.status === "cancelled" && (
         <span className="flex shrink-0 items-center gap-1 rounded bg-secondary px-1.5 text-secondary-fg">
-          <Icon name="debug-stop" />
+          <Icon name="stop" />
           Cancelled
         </span>
       )}
@@ -187,7 +227,7 @@ function Footer({ turn }: { turn: Turn }) {
             turn.finish.verified ? "bg-green/14 text-green" : "bg-yellow/14 text-yellow",
           )}
         >
-          <Icon name={turn.finish.verified ? "pass" : "warning"} />
+          <Icon name={turn.finish.verified ? "check-circle" : "warning"} />
           {turn.finish.verified ? `Verified: ${turn.finish.command ?? turn.finish.verification}` : `Not verified: ${turn.finish.verification}`}
         </span>
       )}
@@ -203,7 +243,8 @@ function Footer({ turn }: { turn: Turn }) {
           Failed
         </span>
       )}
-      <span className="truncate" title={turn.model}>{parts.join(" · ")}</span>
+      {resumable && <Resume turnId={turn.id} />}
+      <span className="truncate font-mono" title={turn.model}>{parts.join(" · ")}</span>
     </div>
   );
 }
@@ -222,13 +263,16 @@ export const TurnView = memo(function TurnView({ turn, latest, busy, changeSet }
   const running = turn.status === "running";
   const live = running || turn.status === "paused";
   const last = turn.steps.at(-1);
+  const resumable = latest && !busy && (turn.status === "cancelled" || turn.status === "error");
 
   return (
-    <article className={cx("flex flex-col px-3 py-4", !live && "turn-finished", turn.reverted && "opacity-50")}>
+    <article className={cx("relative flex flex-col py-4 pr-3 pl-8", !live && "turn-finished", turn.reverted && "opacity-50")}>
+      <span aria-hidden="true" className="absolute top-0 bottom-0 left-[18.5px] w-px bg-border" />
+      <Icon name="notch" className={cx("absolute top-[27px] left-3", turn.reverted ? "text-muted" : "text-orange")} />
       <Prompt turn={turn} busy={busy} />
       {turn.context && (
         <div className="mt-3">
-          <ContextCard report={turn.context} defaultOpen={latest} />
+          <ContextCard report={turn.context} />
         </div>
       )}
       {turn.plan && turn.plan.length > 0 && (
@@ -242,8 +286,8 @@ export const TurnView = memo(function TurnView({ turn, latest, busy, changeSet }
         </div>
       ))}
       {showsWorking(turn) && <Working paused={turn.status === "paused" || turn.steps.some((step) => step.kind === "tool" && step.status === "awaiting-approval")} />}
-      {!live && <Footer turn={turn} />}
-      {!live && changeSet && changeSet.files.length > 0 && <TurnChanges changeSet={changeSet} turnId={turn.id} />}
+      {!live && <Footer turn={turn} resumable={resumable} />}
+      {!live && changeSet && changeSet.files.length > 0 && <TurnChanges changeSet={changeSet} />}
     </article>
   );
 });

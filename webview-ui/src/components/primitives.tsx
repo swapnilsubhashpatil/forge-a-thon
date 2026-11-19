@@ -1,13 +1,12 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cx, splitPath } from "../format.ts";
 import { post } from "../state/vscode.ts";
+import { Icon, type GlyphName } from "./Glyph.tsx";
 
-export function Icon({ name, className, spin }: { name: string; className?: string; spin?: boolean }) {
-  return <span aria-hidden="true" className={cx("codicon", `codicon-${name}`, spin && "codicon-modifier-spin", className)} />;
-}
+export { Icon };
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: string;
+  icon: GlyphName;
   label: string;
 }
 
@@ -17,10 +16,7 @@ export function IconButton({ icon, label, className, ...rest }: IconButtonProps)
       type="button"
       aria-label={label}
       title={label}
-      className={cx(
-        "grid size-6 shrink-0 place-items-center rounded text-fg hover:bg-hover disabled:hover:bg-transparent",
-        className,
-      )}
+      className={cx("grid size-6 shrink-0 place-items-center rounded text-fg hover:bg-hover disabled:hover:bg-transparent", className)}
       {...rest}
     >
       <Icon name={icon} />
@@ -47,7 +43,7 @@ export function PathLink({ path, line, className }: { path: string; line?: numbe
         event.stopPropagation();
         post({ type: "openFile", path, line });
       }}
-      className={cx("flex min-w-0 rounded-sm text-left hover:underline decoration-muted underline-offset-2", className)}
+      className={cx("flex min-w-0 rounded-sm text-left decoration-muted underline-offset-2 hover:underline", className)}
     >
       <PathText path={path} />
     </button>
@@ -62,6 +58,6 @@ export function DiffStat({ added, removed }: { added: number; removed: number })
   );
 }
 
-export function Dot({ className, pulse }: { className: string; pulse?: boolean }) {
-  return <span aria-hidden="true" className={cx("inline-block size-2 shrink-0 rounded-full", pulse && "animate-pulse-soft", className)} />;
+export function Dot({ className }: { className: string }) {
+  return <span aria-hidden="true" className={cx("inline-block size-2 shrink-0 rounded-full", className)} />;
 }

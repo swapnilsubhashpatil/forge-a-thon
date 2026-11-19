@@ -1,23 +1,23 @@
 import { useState } from "react";
 import type { ToolStatus, ToolStep } from "../../../src/shared/protocol.ts";
 import { cx, toolBaseName } from "../format.ts";
+import type { GlyphName } from "./Glyph.tsx";
 import { DiffStat, Icon, PathLink } from "./primitives.tsx";
 
-const toolIcons: Record<string, string> = {
+const toolIcons: Record<string, GlyphName> = {
   read_file: "file",
   search_code: "search",
-  find_symbol: "symbol-method",
-  repo_map: "list-tree",
+  find_symbol: "symbol",
+  repo_map: "tree",
   propose_edit: "edit",
-  create_file: "new-file",
+  create_file: "file-plus",
   run_command: "terminal",
   explain_context: "info",
-  find_references: "references",
-  finish_task: "pass",
-  update_plan: "checklist",
+  find_references: "link",
+  finish_task: "check-circle",
+  update_plan: "plan",
 };
 
-/** One-glance outcome for a finished call: the run_command summary line, or why an edit was not applied. */
 function resultChip(step: ToolStep): { text: string; tone: string } | undefined {
   if (!step.output) return undefined;
   if (toolBaseName(step.name) === "run_command") {
@@ -38,13 +38,13 @@ function resultChip(step: ToolStep): { text: string; tone: string } | undefined 
 function StatusIcon({ status }: { status: ToolStatus }) {
   switch (status) {
     case "running":
-      return <Icon name="loading" spin className="text-muted" />;
+      return <Icon name="pending" className="text-muted" />;
     case "awaiting-approval":
-      return <Icon name="circle-large-outline" className="animate-pulse-soft text-yellow" />;
+      return <Icon name="clock" className="text-yellow" />;
     case "done":
       return <Icon name="check" className="text-green" />;
     case "denied":
-      return <Icon name="circle-slash" className="text-muted" />;
+      return <Icon name="skip" className="text-muted" />;
     case "error":
       return <Icon name="close" className="text-red" />;
   }
@@ -84,14 +84,14 @@ export function ToolRow({ step }: { step: ToolStep }) {
         {step.detail && <span className="min-w-0 truncate text-muted" title={step.detail}>{step.detail}</span>}
         <span className="flex-1" />
         {step.threadTitle && (
-          <span className="max-w-28 shrink-0 truncate rounded bg-purple/12 px-1.5 text-2xs text-purple" title={step.threadTitle}>
+          <span className="max-w-28 shrink-0 truncate rounded bg-purple/12 px-1.5 text-xs text-purple" title={step.threadTitle}>
             {step.threadTitle}
           </span>
         )}
         {(() => {
           const chip = step.status === "running" ? undefined : resultChip(step);
           return chip ? (
-            <span className={cx("max-w-48 shrink-0 truncate rounded px-1.5 text-2xs", chip.tone)} title={chip.text}>
+            <span className={cx("max-w-48 shrink-0 truncate rounded px-1.5 text-xs", chip.tone)} title={chip.text}>
               {chip.text}
             </span>
           ) : null;
