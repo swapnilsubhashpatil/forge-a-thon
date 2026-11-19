@@ -205,6 +205,21 @@ export async function run(): Promise<void> {
     assert.ok(turns[0].context?.attachments?.some((entry) => entry.label === "helpers.py:28-32"), "context card does not list the attachment");
   });
 
+  // Ask about a selection: the lightbulb action and the hover link appear on selected code, and not without a selection.
+  await scenario(api, "Ask-about-selection icon and hover", async () => {
+    const uri = vscode.Uri.joinPath(root(), "src", "flask", "helpers.py");
+    const editor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
+    const range = new vscode.Range(27, 0, 32, 10);
+    editor.selection = new vscode.Selection(range.start, range.end);
+    const actions = await vscode.commands.executeCommand<vscode.CodeAction[]>("vscode.executeCodeActionProvider", uri, range);
+    assert.ok(actions.some((action) => action.title === "Ask Anvil about this"), `actions: ${actions.map((action) => action.title).join(", ")}`);
+    const hovers = await vscode.commands.executeCommand<vscode.Hover[]>("vscode.executeHoverProvider", uri, new vscode.Position(29, 6));
+    const hoverText = hovers.flatMap((hover) => hover.contents.map((part) => (typeof part === "string" ? part : part.value))).join("\n");
+    assert.match(hoverText, /Ask Anvil about this/, "no hover link on the selection");
+    const empty = await vscode.commands.executeCommand<vscode.CodeAction[]>("vscode.executeCodeActionProvider", uri, new vscode.Range(29, 2, 29, 2));
+    assert.ok(!empty.some((action) => action.title === "Ask Anvil about this"), "action shown without a selection");
+  });
+
   // M2: the subagent's edit and test run are refused; a read-only git command is allowed.
   await scenario(api, "M2 read-only subagent", async () => {
     const stop = autoApprove(api);

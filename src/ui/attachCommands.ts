@@ -10,6 +10,24 @@ interface Execution {
   exitCode?: number;
 }
 
+/** The active selection as exact, whole lines (an empty selection means the cursor's line). */
+export function selectionFromEditor(editor: vscode.TextEditor | undefined, folder: vscode.Uri): Attachment | undefined {
+  if (!editor) return undefined;
+  const path = vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/");
+  if (path === editor.document.uri.fsPath && !editor.document.uri.fsPath.startsWith(folder.fsPath)) {
+    void vscode.window.showWarningMessage("Anvil: only files inside the workspace can be added to the chat.");
+    return undefined;
+  }
+  const selection = editor.selection;
+  const startLine = selection.start.line;
+  // A selection ending at column 0 of the next line means "up to the previous line".
+  const endLine = selection.end.character === 0 && selection.end.line > startLine ? selection.end.line - 1 : selection.end.line;
+  const range = selection.isEmpty
+    ? editor.document.lineAt(startLine).range
+    : new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length);
+  return selectionAttachment(path, startLine + 1, endLine + 1, editor.document.getText(range));
+}
+
 /**
  * "Add to Anvil chat" for editor selections and terminal text. The editor selection is exact lines; the terminal
  * has no selection API, so the selection is copied through the clipboard (restored afterwards), and the last command
@@ -36,21 +54,8 @@ export function registerAttachCommands(folder: vscode.Uri, attach: (attachment: 
   const closed = vscode.window.onDidCloseTerminal((terminal) => last.delete(terminal));
 
   const addSelection = vscode.commands.registerCommand("anvil.addSelectionToChat", async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    const path = vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/");
-    if (path === editor.document.uri.fsPath && !editor.document.uri.fsPath.startsWith(folder.fsPath)) {
-      void vscode.window.showWarningMessage("Anvil: only files inside the workspace can be added to the chat.");
-      return;
-    }
-    const selection = editor.selection;
-    const startLine = selection.start.line;
-    // A selection ending at column 0 of the next line means "up to the previous line".
-    const endLine = selection.end.character === 0 && selection.end.line > startLine ? selection.end.line - 1 : selection.end.line;
-    const range = selection.isEmpty
-      ? editor.document.lineAt(startLine).range
-      : new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length);
-    await attach(selectionAttachment(path, startLine + 1, endLine + 1, editor.document.getText(range)));
+    const attachment = selectionFromEditor(vscode.window.activeTextEditor, folder);
+    if (attachment) await attach(attachment);
   });
 
   const addTerminalSelection = vscode.commands.registerCommand("anvil.addTerminalSelectionToChat", async () => {

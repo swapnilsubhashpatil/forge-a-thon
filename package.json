@@ -118,6 +118,12 @@
         "command": "anvil.addTerminalOutputToChat",
         "title": "Add Last Terminal Command to Anvil Chat",
         "category": "Anvil"
+      },
+      {
+        "command": "anvil.askAboutSelection",
+        "title": "Ask Anvil About Selection",
+        "category": "Anvil",
+        "icon": "$(comment-discussion)"
       }
     ],
     "keybindings": [
@@ -162,6 +168,12 @@
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l",
         "when": "terminalFocus && !terminalTextSelected"
+      },
+      {
+        "command": "anvil.askAboutSelection",
+        "key": "ctrl+alt+q",
+        "mac": "cmd+alt+q",
+        "when": "editorTextFocus"
       }
     ],
     "menus": {
@@ -190,6 +202,11 @@
         }
       ],
       "editor/context": [
+        {
+          "command": "anvil.askAboutSelection",
+          "when": "editorHasSelection",
+          "group": "1_modification@0"
+        },
         {
           "command": "anvil.inlineEdit",
           "when": "editorHasSelection",
@@ -286,6 +303,11 @@
           ],
           "default": "default",
           "markdownDescription": "Reasoning effort passed to the model. `none` disables thinking on models such as Qwen 3, which makes local models much faster. With `default`, `ollama/` models get `none` and hosted models keep their own default."
+        },
+        "anvil.selection.askActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the “Ask Anvil about this” lightbulb action and hover link on selected code."
         }
       }
     }
