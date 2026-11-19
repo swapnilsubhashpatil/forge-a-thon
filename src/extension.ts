@@ -301,7 +301,7 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     await chatView.show("chat");
     await sendPrompt(text, [], [attachment], "ask");
-  });
+  }, () => store.state.workspace?.user);
   const messages = new MessageRouter({
     folder: folder.uri,
     store,
