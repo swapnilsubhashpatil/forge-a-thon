@@ -2,8 +2,9 @@ import type { TrueForgeApi } from "@truefoundry/trueforge-sdk";
 import { EventLog, type ApprovalDecision, type HarnessClient, type HarnessEvent } from "../harness/harnessClient.ts";
 import type { ChangeLedger } from "../edits/changeLedger.ts";
 import type { ReviewController } from "../edits/reviewController.ts";
-import type { ContextReport, ModelHealth, ToolStep, Turn } from "../shared/protocol.ts";
-import type { AgentMode, AgentProfiles, PromptProfile } from "./agentProfile.ts";
+import type { Attachment, ContextReport, ModelHealth, RevertScope, ToolStep, Turn } from "../shared/protocol.ts";
+import type { AgentProfiles, PromptProfile, RunMode } from "./agentProfile.ts";
+import { messageContent } from "../context/attachments.ts";
 import type { ConversationStore } from "./conversationStore.ts";
 import { EDIT_TOOLS, type EditCoordinator } from "./editCoordinator.ts";
 import { backoffDelay, classifyFailure, describeFailure, truncationRetryTokens, type CircuitBreaker, type Failure } from "./resilience.ts";
@@ -11,21 +12,20 @@ import { describeToolCall, extractText, parseArguments } from "./toolCallView.ts
 import { callSignature, deliverQueued, formatNotes, takeLeftovers } from "./noteQueue.ts";
 import { mergeRanges, type LineRange, type ScopeFence } from "../edits/scopeFence.ts";
 import { killAllCommands } from "../tools/commandRunner.ts";
-import { subagentDenial } from "./subagentPolicy.ts";
+import { isAutoApproved, subagentDenial } from "./subagentPolicy.ts";
 import { LoopGuard } from "./loopGuard.ts";
 import { planReminder, validatePlan } from "./plan.ts";
 import { evaluateFinish, needsFinishFollowUp, type FinishArgs, type FollowUpKind, type WorkLog } from "./finishGate.ts";
 
 export interface TurnRequest {
-  mode: AgentMode;
+  mode: RunMode;
   title: string;
   prompt: string;
   mentions: string[];
   message: string;
+  attachments?: Attachment[];
   context?: ContextReport;
-  /** Anvil's own follow-up (M8); never triggers another follow-up. */
   followUp?: boolean;
-  /** Inline edits: the selected lines (1-based, inclusive), the G2 fence. */
   selection?: { path: string; start: number; end: number };
 }
 
@@ -36,6 +36,7 @@ export interface RunnerSettings {
   reasoningEffort?: string;
   promptProfile?: PromptProfile;
   toolServerName: string;
+  autoApprove: string[];
 }
 
 export interface TurnRunnerDeps {
@@ -59,14 +60,13 @@ type AttemptResult =
 
 interface ActiveTurn {
   turnId: string;
-  mode: AgentMode;
+  mode: RunMode;
   selection?: TurnRequest["selection"];
   abort: AbortController;
   cancelled: boolean;
-  /** Cancelled by "Stop and send" rather than Stop. */
   superseded?: boolean;
   sessionId?: string;
-  approvals: Map<string, (allow: boolean) => void>;
+  approvals: Map<string, (allow: boolean, forSession?: boolean) => void>;
 }
 
 interface AgentSession {
@@ -88,36 +88,26 @@ export class TurnRunner {
   private readonly deps: TurnRunnerDeps;
   private agentSession: AgentSession | undefined;
   private active: ActiveTurn | undefined;
+  private running: Promise<void> = Promise.resolve();
   private starting = false;
   private readonly healthy = new Set<string>();
   private readonly threadTitles = new Map<string, string>();
   private turnCounter = 0;
   private noteCounter = 0;
-  /** Set when the last turn ended at TrueForge's iteration limit (M10). */
   private hitStepLimit = false;
-  /**
-   * Main-thread model calls in the running turn, for the turn-budget hint. Keyed by event id: the event log re-emits
-   * the same model.message on every streamed delta, so counting events would overcount many times over.
-   */
   private readonly mainModelCalls = new Set<string>();
-  /** Tool call ids already counted into expectedMain (model.message is re-emitted on every delta). */
   private readonly announcedCalls = new Set<string>();
-  /** model.message events whose usage was already added to the live count. */
   private readonly countedUsage = new Set<string>();
   private readonly loopGuard = new LoopGuard();
-  /** Session-wide record of accepted edits and commands, so a follow-up turn can verify edits from the turn before. */
   private work: WorkLog = {};
   private turnEdits = 0;
-  /** Main-thread edit attempts that could not be applied (no match, missing file), for the M8 follow-up. */
   private failedEdits = 0;
-  /** G2: lines of each file the agent has seen this session (read_file ranges). */
   private readonly seen = new Map<string, LineRange[]>();
-  /** Files edited this session; their line numbers have shifted, so earlier reads no longer map and they are not fenced. */
   private readonly shifted = new Set<string>();
-  /** Subagent threads currently running; while any run, a tool call is only treated as main-thread when announced. */
   private readonly runningSubagents = new Set<string>();
-  /** Signatures of main-thread tool calls seen in the event stream and not yet executed. */
   private readonly expectedMain = new Map<string, number>();
+  private readonly allowedForSession = new Set<string>();
+  private readonly attachments = new Map<string, Attachment[]>();
 
   constructor(deps: TurnRunnerDeps) {
     this.deps = deps;
@@ -163,13 +153,11 @@ export class TurnRunner {
     this.deps.store.update(() => context.edited.push(path));
   }
 
-  /** Context of the running turn only, so late tool calls never touch a finished turn's scorecard. */
   private activeContext(): ContextReport | undefined {
     if (!this.active) return undefined;
     return this.deps.store.state.turns.find((turn) => turn.id === this.active?.turnId)?.context;
   }
 
-  /** Holds a message sent while a turn runs (M11). */
   queueNote(text: string, mentions: string[]): void {
     this.noteCounter += 1;
     const id = `note-${Date.now().toString(36)}-${this.noteCounter}`;
@@ -182,7 +170,6 @@ export class TurnRunner {
     });
   }
 
-  /** Takes one queued note out of the queue, e.g. for "Stop and send". */
   takeNote(id: string): { text: string; mentions: string[] } | undefined {
     const note = this.deps.store.state.queue.find((entry) => entry.id === id && entry.status === "queued");
     if (!note) return undefined;
@@ -190,7 +177,6 @@ export class TurnRunner {
     return { text: note.text, mentions: note.mentions };
   }
 
-  /** Undelivered notes, removed from the queue and joined into the next prompt. */
   takeLeftovers(): { text: string; mentions: string[] } | undefined {
     let leftovers: { text: string; mentions: string[] } | undefined;
     this.deps.store.update((state) => {
@@ -199,13 +185,9 @@ export class TurnRunner {
     return leftovers;
   }
 
-  /**
-   * Called by the tool server with every tool result. Appends queued notes to the next main-thread result of an
-   * agent turn; subagent results and inline turns never carry them.
-   */
   decorateToolResult(name: string, args: Record<string, unknown>, result: string): string {
     const active = this.active;
-    if (!active || active.cancelled || active.mode !== "agent") return result;
+    if (!active || active.cancelled || active.mode === "inline") return result;
     const signature = callSignature(name, args);
     const announced = this.expectedMain.get(signature) ?? 0;
     if (announced > 0) {
@@ -231,7 +213,6 @@ export class TurnRunner {
     return result + formatNotes(delivered);
   }
 
-  /** The update_plan tool (M6): validates, stores the plan on the running turn for the checklist, replies. */
   updatePlan(raw: unknown): string {
     const active = this.active;
     if (!active) return "No task is running.";
@@ -244,7 +225,6 @@ export class TurnRunner {
     return "Plan updated.";
   }
 
-  /** M7: appends a loop warning, or stops the turn, when the main agent keeps repeating an identical call. */
   private guardLoop(active: ActiveTurn, name: string, args: Record<string, unknown>, result: string): string {
     const verdict = this.loopGuard.record(name, args, result);
     if (verdict.action === "ok") return result;
@@ -261,7 +241,6 @@ export class TurnRunner {
     this.work.lastCommand = { command, exitCode, at: Date.now() };
   }
 
-  /** The finish_task tool (M8). Accepted reports are shown on the turn as a verified / not verified chip. */
   finishTask(args: FinishArgs): string {
     const active = this.active;
     if (!active) return "No task is running.";
@@ -276,24 +255,18 @@ export class TurnRunner {
     return decision.reply;
   }
 
-  /** True once after a turn stopped at the step limit; the caller sends the wrap-up turn. */
   takeWrapUp(): boolean {
     const due = this.hitStepLimit;
     this.hitStepLimit = false;
     return due;
   }
 
-  /** True when the last turn ended with accepted edits but no accepted finish_task, and was not itself a follow-up. */
   needsFinishFollowUp(): FollowUpKind | undefined {
     const turn = this.deps.store.state.turns.at(-1);
     if (!turn || turn.followUp) return undefined;
     return needsFinishFollowUp({ status: turn.status, finish: turn.finish, editedFiles: this.turnEdits, failedEdits: this.failedEdits });
   }
 
-  /**
-   * G2 fence for an edit to an existing file: the selection for inline edits, otherwise the lines the agent read or
-   * was shown in the pack. Files already edited this session are not fenced (their line numbers moved).
-   */
   fenceFor(path: string): ScopeFence | undefined {
     const active = this.active;
     if (!active) return undefined;
@@ -307,64 +280,81 @@ export class TurnRunner {
     return { ranges: mergeRanges([...(this.seen.get(path) ?? []), ...fromPack]), label: "edited without reading", slack: 1 };
   }
 
-  /**
-   * "Restore" on a past message: rewinds the agent's conversation to just before that turn (TrueForge continues the
-   * session from the turn it chained from, so later turns drop out of its history), optionally undoing the code of
-   * that turn and every later one, newest first. Files edited by hand since are skipped, never overwritten.
-   */
-  async restoreTo(turnId: string, withCode: boolean): Promise<{ prompt: string; mentions: string[]; restored: string[]; skipped: string[]; rewound: boolean } | undefined> {
+  async restore(turnId: string, scope: RevertScope): Promise<{ prompt: string; mentions: string[] } | undefined> {
     if (this.busy) throw new Error("Stop the running turn before restoring.");
     const turns = this.deps.store.state.turns;
     const index = turns.findIndex((turn) => turn.id === turnId);
     if (index < 0) return undefined;
     const target = turns[index];
     const later = turns.slice(index).filter((turn) => !turn.reverted);
-    const restored: string[] = [];
+    const skipped = scope === "conversation" ? [] : await this.undoCode(later);
+    const rewound = scope !== "code" && this.rewind(later);
+    const quoted = `“${target.prompt.slice(0, 60)}”`;
+    const what = scope === "code"
+      ? `Undid the code changes from ${quoted} onwards; the conversation is unchanged.`
+      : !rewound
+        ? `Nothing to rewind: the agent never received ${quoted}.`
+        : scope === "both"
+          ? `Restored the conversation and code to before ${quoted}.`
+          : `Restored the conversation to before ${quoted}; code left as it is.`;
+    const tone = skipped.length ? "warning" : "info";
+    this.deps.store.notice(target.id, tone, skipped.length ? `${what} Skipped (edited since): ${[...new Set(skipped)].join(", ")}.` : what);
+    return rewound ? { prompt: target.prompt, mentions: target.mentions } : undefined;
+  }
+
+  attachmentsOf(turnId: string): Attachment[] {
+    return this.attachments.get(turnId) ?? [];
+  }
+
+  private async undoCode(turns: Turn[]): Promise<string[]> {
     const skipped: string[] = [];
-    if (withCode) {
-      for (const turn of [...later].reverse()) {
-        if (!turn.changeSetId) continue;
-        const result = await this.deps.ledger.undo(turn.changeSetId);
-        restored.push(...result.restored);
-        skipped.push(...result.skipped);
-      }
+    for (const turn of [...turns].reverse()) {
+      if (turn.changeSetId) skipped.push(...(await this.deps.ledger.undo(turn.changeSetId)).skipped);
     }
-    // Rewind the conversation: only possible while the session the turn ran in is still the current one.
-    let rewound = false;
-    const chain = target.chain;
-    if (chain && this.agentSession?.id === chain.sessionId) {
-      this.agentSession.lastCompletedTurnId = chain.previousTurnId === "none" ? undefined : chain.previousTurnId;
-      rewound = true;
-    } else if (chain) {
-      this.agentSession = undefined;
-      rewound = true;
-    }
+    return skipped;
+  }
+
+  private rewind(turns: Turn[]): boolean {
+    const chain = turns.find((turn) => turn.chain)?.chain;
+    if (!chain) return false;
+    const specKey = this.agentSession?.id === chain.sessionId ? this.agentSession.specKey : "";
+    this.attachSession(chain.sessionId, chain.previousTurnId === "none" ? undefined : chain.previousTurnId, specKey);
     this.work = {};
     this.seen.clear();
     this.shifted.clear();
     this.deps.store.update(() => {
-      for (const turn of later) turn.reverted = true;
+      for (const turn of turns) turn.reverted = true;
     });
-    if (rewound || withCode) {
-      const what = withCode ? `Restored the conversation and code to before “${target.prompt.slice(0, 60)}”.` : `Restored the conversation to before “${target.prompt.slice(0, 60)}”; code left as it is.`;
-      this.deps.store.notice(target.id, skipped.length ? "warning" : "info", skipped.length ? `${what} Skipped (edited since): ${[...new Set(skipped)].join(", ")}.` : what);
-    }
-    return { prompt: target.prompt, mentions: target.mentions, restored, skipped, rewound };
+    return true;
   }
 
-  /** Undo only one turn's accepted code changes, leaving the conversation as it is. */
   async undoTurn(turnId: string): Promise<{ restored: string[]; skipped: string[] }> {
     const turn = this.deps.store.state.turns.find((entry) => entry.id === turnId);
     if (!turn?.changeSetId) return { restored: [], skipped: [] };
     return this.deps.ledger.undo(turn.changeSetId);
   }
 
-  resetSession(): void {
+  resetSession(session?: { id: string; lastTurnId?: string }): void {
     this.work = {};
     this.seen.clear();
     this.shifted.clear();
+    this.allowedForSession.clear();
     this.agentSession = undefined;
     this.deps.store.reset();
+    if (session) this.attachSession(session.id, session.lastTurnId, "");
+  }
+
+  currentSession(): { id: string; lastTurnId?: string } | undefined {
+    return this.agentSession && { id: this.agentSession.id, lastTurnId: this.agentSession.lastCompletedTurnId };
+  }
+
+  private attachSession(id: string, lastCompletedTurnId: string | undefined, specKey: string): AgentSession {
+    this.agentSession = { id, specKey, lastCompletedTurnId };
+    this.deps.store.update((state) => {
+      state.sessionId = id;
+      state.sessionUrl = this.deps.client().sessionUrl(id);
+    });
+    return this.agentSession;
   }
 
   refreshModelHealth(): void {
@@ -388,6 +378,8 @@ export class TurnRunner {
     const turnId = `turn-${Date.now().toString(36)}-${this.turnCounter}`;
     const active: ActiveTurn = { turnId, mode: request.mode, selection: request.selection, abort: new AbortController(), cancelled: false, approvals: new Map() };
     this.active = active;
+    let ended = () => {};
+    this.running = new Promise((resolve) => (ended = resolve));
     this.starting = false;
     this.runningSubagents.clear();
     this.expectedMain.clear();
@@ -401,6 +393,7 @@ export class TurnRunner {
       this.failedEdits = 0;
     }
     this.deps.onBusyChange(true);
+    if (request.attachments?.length) this.attachments.set(turnId, request.attachments);
 
     const turn: Turn = {
       id: turnId,
@@ -434,7 +427,8 @@ export class TurnRunner {
       let previous: { model: string; failure: Failure } | undefined;
       for (const model of breaker.order(chain)) {
         if (previous) {
-          store.notice(turnId, "warning", `${previous.model} ${describeFailure(previous.failure)} (${previous.failure.message}). Switched to ${model}.`);
+          const reason = describeFailure(previous.failure);
+          store.notice(turnId, "warning", `${previous.model} ${reason} (${previous.failure.message}). Switched to ${model}.`, { from: previous.model, to: model, reason });
         } else if (breaker.isOpen(model)) {
           store.notice(turnId, "warning", `Every model is cooling down after recent failures. Retrying ${model}.`);
         }
@@ -443,7 +437,7 @@ export class TurnRunner {
           state.activeModel = model;
         });
         let result = await this.attempt(request, model, turn, active);
-        if (result.kind === "harness" && result.sessionMissing && request.mode === "agent" && !active.cancelled) {
+        if (result.kind === "harness" && result.sessionMissing && request.mode !== "inline" && !active.cancelled) {
           this.agentSession = undefined;
           store.notice(turnId, "info", "The TrueForge session was no longer available. Started a new session.");
           result = await this.attempt(request, model, turn, active);
@@ -464,7 +458,6 @@ export class TurnRunner {
           this.finish(turn, "done");
           return;
         }
-        // M10: the step limit is the task's size, not the model's fault: no failover, no breaker, one wrap-up turn.
         if (result.kind === "failed" && result.failure.kind === "limit" && !active.cancelled) {
           this.hitStepLimit = request.followUp !== true;
           store.notice(turnId, "warning", `The agent used all ${this.deps.settings().iterationLimit} steps. ${this.hitStepLimit ? "Asking it to wrap up with a summary of what is done and what remains." : "Stopped."}`);
@@ -474,6 +467,9 @@ export class TurnRunner {
         if (result.kind === "cancelled" || active.cancelled) {
           this.finish(turn, active.superseded ? "superseded" : "cancelled");
           return;
+        }
+        if (hasImages(request) && IMAGE_ERROR.test(result.kind === "harness" ? result.message : result.failure.message)) {
+          store.notice(turnId, "warning", `${model} could not read the attached image. Pick a model that accepts images, or remove the image and send again.`);
         }
         if (result.kind === "harness") {
           store.notice(turnId, "error", `TrueForge request failed: ${result.message}. Models were not blamed; check the harness and press Reconnect if needed.`);
@@ -504,7 +500,13 @@ export class TurnRunner {
       this.refreshModelHealth();
       store.flush();
       this.deps.onBusyChange(false);
+      ended();
     }
+  }
+
+  async stop(): Promise<void> {
+    await this.cancel();
+    await this.running;
   }
 
   async cancel(options: { superseded?: boolean } = {}): Promise<void> {
@@ -523,11 +525,11 @@ export class TurnRunner {
     }
   }
 
-  resolveApproval(approvalKey: string, allow: boolean): void {
+  resolveApproval(approvalKey: string, allow: boolean, forSession = false): void {
     const resolve = this.active?.approvals.get(approvalKey);
     if (!resolve) return;
     this.active?.approvals.delete(approvalKey);
-    resolve(allow);
+    resolve(allow, forSession);
   }
 
   private finish(turn: Turn, status: Turn["status"]): void {
@@ -558,9 +560,8 @@ export class TurnRunner {
   private async ensureSession(request: TurnRequest, model: string, active: ActiveTurn, overrides: SpecOverrides): Promise<{ id: string; previousTurnId: string }> {
     const client = this.deps.client();
     const spec = this.deps.profiles.spec(request.mode, model, this.specOptions(overrides));
-    // Everything that changes the spec must be in the key, or a settings change never reaches TrueForge mid-session.
     const settings = this.deps.settings();
-    const specKey = JSON.stringify([model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, settings.promptProfile ?? "auto", settings.iterationLimit, settings.reasoningEffort ?? null]);
+    const specKey = JSON.stringify([request.mode, model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, settings.promptProfile ?? "auto", settings.iterationLimit, settings.reasoningEffort ?? null]);
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;
@@ -571,20 +572,14 @@ export class TurnRunner {
         await client.updateSessionSpec(this.agentSession.id, spec);
         this.agentSession.specKey = specKey;
       } catch (error) {
-        this.deps.log(`Could not switch the session model, starting a new session: ${errorText(error)}`);
+        this.deps.log(`Could not update the session, starting a new session: ${errorText(error)}`);
+        this.deps.store.notice(active.turnId, "info", "The earlier TrueForge session could not be continued, so a new one was started. Earlier messages stay visible, but the agent does not remember them.");
         this.agentSession = undefined;
       }
     }
-    if (!this.agentSession) {
-      const id = await client.createSession(spec, request.title);
-      this.agentSession = { id, specKey };
-      this.deps.store.update((state) => {
-        state.sessionId = id;
-        state.sessionUrl = client.sessionUrl(id);
-      });
-    }
-    active.sessionId = this.agentSession.id;
-    return { id: this.agentSession.id, previousTurnId: this.agentSession.lastCompletedTurnId ?? "none" };
+    const session = this.agentSession ?? this.attachSession(await client.createSession(spec, request.title), undefined, specKey);
+    active.sessionId = session.id;
+    return { id: session.id, previousTurnId: session.lastCompletedTurnId ?? "none" };
   }
 
   private async attempt(request: TurnRequest, model: string, turn: Turn, active: ActiveTurn, overrides: SpecOverrides = {}): Promise<AttemptResult> {
@@ -605,7 +600,7 @@ export class TurnRunner {
     try {
       const session = await this.ensureSession(request, model, active, overrides);
       sessionId = session.id;
-      if (request.mode === "agent") {
+      if (request.mode !== "inline") {
         this.deps.store.update(() => {
           turn.chain = { sessionId: session.id, previousTurnId: session.previousTurnId };
         });
@@ -615,7 +610,7 @@ export class TurnRunner {
       const pending: TrueForgeApi.ToolApprovalRequiredEvent[] = [];
       let harnessTurnId: string | undefined;
       let pauseReason: string | undefined;
-      let stream = await client.startTurn(session.id, request.message, session.previousTurnId, attemptAbort.signal);
+      let stream = await client.startTurn(session.id, messageContent(request.message, request.attachments), session.previousTurnId, attemptAbort.signal);
       for (let resumes = 0; resumes < MAX_RESUMES; resumes += 1) {
         let paused = false;
         for await (const raw of stream) {
@@ -634,15 +629,14 @@ export class TurnRunner {
             disarm();
             this.applyMetrics(turn, event.state.metrics);
             if (event.state.status === "done") {
-              if (this.agentSession && request.mode === "agent" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
+              if (this.agentSession && request.mode !== "inline" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
               return { kind: "done" };
             }
             if (event.state.status === "cancelled") {
               return active.cancelled ? { kind: "cancelled" } : { kind: "failed", failure: classifyFailure(`timeout: turn cancelled by the server (${event.state.reason})`) };
             }
             const failure = classifyFailure(event.state.message);
-            // A turn stopped by the step limit did real work; the wrap-up must continue from it, not from the turn before.
-            if (failure.kind === "limit" && this.agentSession && request.mode === "agent" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
+            if (failure.kind === "limit" && this.agentSession && request.mode !== "inline" && harnessTurnId) this.agentSession.lastCompletedTurnId = harnessTurnId;
             return { kind: "failed", failure };
           }
           this.render(turn, event);
@@ -721,10 +715,6 @@ export class TurnRunner {
         this.upsertTool(turn, { id: ref.id, status: "denied", output: subagentReason }, name, args, threadId);
         return { ...base, allow: false, reason: subagentReason };
       }
-      if (threadId !== MAIN_THREAD && name === "run_command") {
-        this.upsertTool(turn, { id: ref.id, status: "running" }, name, args, threadId);
-        return { ...base, allow: true };
-      }
 
       if (EDIT_TOOLS.has(name)) {
         const result = await this.deps.edits.resolve(name, args);
@@ -740,11 +730,20 @@ export class TurnRunner {
         return reason ? { ...base, allow: false, reason } : { ...base, allow: true };
       }
 
+      const detail = typeof args.command === "string" ? args.command : JSON.stringify(args, null, 2);
+      const sessionKey = `${name}:${detail}`;
+      const preApproved = this.allowedForSession.has(sessionKey) || (name === "run_command" && isAutoApproved(detail, this.deps.settings().autoApprove));
+      if (preApproved && !active.cancelled) {
+        this.upsertTool(turn, { id: ref.id, status: "running" }, name, args, threadId);
+        return { ...base, allow: true };
+      }
       const view = describeToolCall(name, args);
       const approvalId = `approval-${key}`;
-      const detail = typeof args.command === "string" ? args.command : JSON.stringify(args, null, 2);
       this.deps.store.upsertStep(turn.id, { kind: "approval", id: approvalId, toolCallId: key, toolName: name, title: view.title, detail, status: "pending" });
-      const allow = active.cancelled ? false : await new Promise<boolean>((resolve) => active.approvals.set(key, resolve));
+      const allow = active.cancelled ? false : await new Promise<boolean>((resolve) => active.approvals.set(key, (allowed, forSession) => {
+        if (allowed && forSession) this.allowedForSession.add(sessionKey);
+        resolve(allowed);
+      }));
       this.deps.store.upsertStep(turn.id, { kind: "approval", id: approvalId, toolCallId: key, toolName: name, title: view.title, detail, status: allow ? "allowed" : "denied" });
       this.upsertTool(turn, { id: ref.id, status: allow ? "running" : "denied" }, name, args, threadId);
       return allow ? { ...base, allow: true } : { ...base, allow: false, reason: "The user declined to run this. Continue without it or ask what they prefer." };
@@ -833,7 +832,6 @@ export class TurnRunner {
 
   private applyMetrics(turn: Turn, metrics: TrueForgeApi.TurnMetrics | undefined): void {
     this.deps.store.update(() => {
-      // TrueForge's totals replace the live estimate for this attempt.
       turn.liveUsage = undefined;
       if (!metrics) return;
       turn.usage.input += metrics.totalInputTokens ?? 0;
@@ -844,7 +842,6 @@ export class TurnRunner {
     });
   }
 
-  /** Live token count while a turn runs: each completed model call once (events are re-emitted per delta). */
   private countLiveUsage(turn: Turn, eventId: string, usage: TrueForgeApi.ModelMessageUsage): void {
     if (this.countedUsage.has(eventId)) return;
     this.countedUsage.add(eventId);
@@ -859,10 +856,15 @@ export class TurnRunner {
   }
 }
 
-/** Goose-style budget hint once half the steps are used, so the agent converges instead of hitting the wall. */
 function turnBudget(used: number, limit: number): string {
   const nl = String.fromCharCode(10);
   return `${nl}${nl}<turn-budget>${used}/${limit} steps used</turn-budget> Be direct: batch the remaining calls, verify, and call finish_task before the limit.`;
+}
+
+const IMAGE_ERROR = /image|vision|multimodal|file content|mime/i;
+
+function hasImages(request: TurnRequest): boolean {
+  return request.attachments?.some((attachment) => attachment.kind === "image") ?? false;
 }
 
 function producesOutput(event: HarnessEvent): boolean {

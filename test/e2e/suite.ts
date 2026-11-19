@@ -13,7 +13,7 @@ interface AnvilApi {
   runner: {
     cancel(): Promise<void>;
     resolveApproval(id: string, allow: boolean): void;
-    restoreTo?(turnId: string, withCode: boolean): Promise<{ prompt: string; skipped: string[]; rewound: boolean } | undefined>;
+    restore(turnId: string, scope: "conversation" | "code" | "both"): Promise<{ prompt: string; mentions: string[] } | undefined>;
   };
   store: { state: ChatState };
   ledger: { undo(id: string): Promise<{ restored: string[]; skipped: string[] }> };
@@ -218,14 +218,11 @@ export async function run(): Promise<void> {
     taskB = verifyTaskB();
     console.log("taskB check:", JSON.stringify(taskB));
 
-    // Restore to before Task B with code: every change undone, prompt returned, later turns marked reverted.
-    const restoreTo = api.runner.restoreTo?.bind(api.runner);
     const taskBTurn = api.store.state.turns.find((turn) => turn.prompt === TASK_B);
-    if (restoreTo && taskBTurn) {
+    if (taskBTurn) {
       await check("restore", async () => {
-        const result = await restoreTo(taskBTurn.id, true);
+        const result = await api.runner.restore(taskBTurn.id, "both");
         assert.equal(result?.prompt, TASK_B);
-        assert.deepEqual(result?.skipped, []);
         assert.equal(git("status --porcelain -- . :!.vscode"), "", "restore with code leaves the tree clean");
         assert.ok(api.store.state.turns.filter((turn) => turn.prompt === TASK_B || turn.followUp).every((turn) => turn.reverted), "Task B turns marked reverted");
       });

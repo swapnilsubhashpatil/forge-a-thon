@@ -200,6 +200,7 @@ export interface ChangedFile {
   path: string;
   added: number;
   removed: number;
+  undone?: boolean;
 }
 
 export interface ChangeSetSummary {

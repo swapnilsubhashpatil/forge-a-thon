@@ -73,3 +73,12 @@ test("TrueForge's iteration limit is its own failure kind, never a model fault t
   assert.equal(failure.kind, "limit");
   assert.equal(failure.retrySameModel, false);
 });
+
+test("ask mode is read-only: no edit or command tools, no subagents", () => {
+  const spec = profiles.spec("ask", "anthropic/claude-sonnet-5-5", { toolServerName: "t" });
+  const tools = spec.mcpServers?.[0]?.enableTools ?? [];
+  for (const tool of ["propose_edit", "create_file", "run_command", "@all"]) assert.ok(!tools.includes(tool), tool);
+  assert.ok(tools.includes("read_file"));
+  assert.equal(spec.config?.dynamicSubAgents?.enabled, false);
+  assert.match(spec.instructions ?? "", /never change files/i);
+});
