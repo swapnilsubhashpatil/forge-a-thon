@@ -14,7 +14,6 @@ export interface ToolServices {
   rgPath: string | undefined;
   edits: EditCoordinator;
   commandTimeoutMs: () => number;
-  /** Extra environment for run_command (e.g. PYTHONPATH=src for src layouts), set without shell-specific syntax. */
   commandEnv?: () => Record<string, string>;
   currentContext: () => ContextReport | undefined;
   onFileRead: (path: string, startLine: number, endLine: number) => void;

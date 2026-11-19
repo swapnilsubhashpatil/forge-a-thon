@@ -27,7 +27,6 @@ export interface RunningToolServer {
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
-/** Post-processes every successful tool result, e.g. to deliver messages the user sent mid-turn. */
 export type ResultDecorator = (name: string, args: Record<string, unknown>, result: string) => string;
 
 export async function startToolServer(tools: ToolDefinition[], log: (line: string) => void, decorate?: ResultDecorator): Promise<RunningToolServer> {

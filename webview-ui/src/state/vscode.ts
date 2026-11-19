@@ -11,7 +11,6 @@ declare function acquireVsCodeApi(): VsCodeApi;
 export interface Draft {
   text: string;
   mentions: string[];
-  /** Selections and terminal output sent to the chat, sent with the next message. */
   attachments?: Attachment[];
 }
 

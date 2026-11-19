@@ -1,10 +1,5 @@
 import { computeHunks, splitLines } from "./hunks.ts";
 
-/**
- * M3: after a partial or full rejection the model's picture of the file is stale. Send the current text around
- * every rejected change, numbered like read_file output, so the next old_string matches first time
- * (Roo: "use these changes as the new baseline"; Aider: "don't re-send them").
- */
 export function currentRegion(finalText: string, proposal: string, radius = 4, maxLines = 60): string | undefined {
   const lines = splitLines(finalText).map((line) => line.replace(/\r?\n$/, ""));
   const spans: Array<[number, number]> = computeHunks(finalText, proposal).map((hunk) => [
