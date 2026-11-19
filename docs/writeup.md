@@ -121,7 +121,7 @@ through nine guard scenarios; all pass, and they found four bugs that are now fi
 - **Chat history.** Conversations are saved with their TrueForge session; open, search, delete, start new.
 - **Revert with three scopes** on every user message: conversation only, code only, or both.
 - **Continue and Retry** on a stopped or failed turn.
-- **Changes tray** above the composer: edited files with +/- counts, Open diff, Keep, Undo, and Keep all / Discard all.
+- **Changes tray** above the composer: edited files with +/- counts, Open diff and Undo, plus Keep all / Discard all.
 - **Review modes.** Review each edit before it lands, or apply at once and review later from the tray.
 - **Images.** Paste, drop or attach; sent to the model as file content.
 - **@symbol for every language** through VS Code's symbol providers, merged with Anvil's own index.
