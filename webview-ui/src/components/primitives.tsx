@@ -24,6 +24,24 @@ export function IconButton({ icon, label, className, ...rest }: IconButtonProps)
   );
 }
 
+export const inputClass = "h-7 w-full rounded-md border border-input-border bg-input px-2 text-xs text-input-fg outline-none placeholder:text-muted focus:border-focus";
+
+export function Switch({ on, label, title, onChange }: { on: boolean; label: string; title?: string; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={title}
+      onClick={() => onChange(!on)}
+      className={cx("relative h-4 w-7 shrink-0 rounded-full border transition-colors", on ? "border-focus bg-focus" : "border-border bg-editor")}
+    >
+      <span className={cx("absolute top-0.5 size-2.5 rounded-full bg-fg transition-[left]", on ? "left-3.5" : "left-0.5")} />
+    </button>
+  );
+}
+
 export function PathText({ path, className }: { path: string; className?: string }) {
   const { dir, base } = splitPath(path);
   return (

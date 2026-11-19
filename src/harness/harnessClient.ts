@@ -13,6 +13,18 @@ export interface ApprovalDecision {
   reason?: string;
 }
 
+export interface ConfiguredServer {
+  name: string;
+  url: string;
+  description?: string;
+}
+
+export function harnessErrorMessage(error: unknown): string {
+  const body = (error as { body?: { error?: { message?: unknown } } } | undefined)?.body;
+  const message = typeof body?.error?.message === "string" ? body.error.message : error instanceof Error ? error.message : String(error);
+  return message.replace(/^\[MCP Error\]\s*/, "").split(": [{")[0].slice(0, 240);
+}
+
 export class HarnessClient {
   readonly baseUrl: string;
   private readonly api: TrueForge;
@@ -37,24 +49,31 @@ export class HarnessClient {
   }
 
   async registerToolServer(name: string, url: string, token: string): Promise<void> {
+    await this.addMcpServer(name, url, "Anvil editor tools served by the VS Code extension", { name: "Authorization", value: `Bearer ${token}` });
+  }
+
+  async addMcpServer(name: string, url: string, description = "", header?: { name: string; value: string }): Promise<void> {
     await this.api.settings.mcpServers.createOrUpdate({
-      manifest: {
-        type: "remote",
-        name,
-        description: "Anvil editor tools served by the VS Code extension",
-        url,
-        auth: { type: "header", headers: { Authorization: `Bearer ${token}` } },
-      },
+      manifest: { type: "remote", name, description, url, ...(header ? { auth: { type: "header", headers: { [header.name]: header.value } } } : {}) },
     });
   }
 
-  async unregisterToolServer(name: string): Promise<void> {
+  async removeMcpServer(name: string): Promise<void> {
     await this.api.settings.mcpServers.delete(name);
   }
 
-  async listMcpServers(): Promise<string[]> {
+  async listMcpServers(): Promise<ConfiguredServer[]> {
     const response = await this.api.settings.mcpServers.list();
-    return response.data.map((server) => server.name);
+    return response.data.map((server) => ({ name: server.name, url: server.manifest.url, description: server.manifest.description || undefined }));
+  }
+
+  async listMcpTools(name: string, timeoutInSeconds: number): Promise<string[]> {
+    try {
+      const response = await this.api.mcpServers.listTools(name, { timeoutInSeconds, maxRetries: 0 });
+      return response.data.map((tool) => String(tool.name));
+    } catch (error) {
+      throw new Error(harnessErrorMessage(error));
+    }
   }
 
   async createSession(spec: AgentSpec, title: string): Promise<string> {

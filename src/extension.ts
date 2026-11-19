@@ -30,6 +30,7 @@ import { ChatViewProvider } from "./ui/chatViewProvider.ts";
 import { InlineEditor, inlineRequest } from "./ui/inlineEdit.ts";
 import { MessageRouter, readSettings, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
 import { SelectionContext } from "./ui/selectionContext.ts";
+import { McpManager } from "./ui/mcpManager.ts";
 import { SkillManager } from "./ui/skillManager.ts";
 
 const FOLDER_COMMANDS = [
@@ -56,6 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   let client = new HarnessClient(config().get<string>("harness.url", "http://localhost:8790"));
   const store = new ConversationStore(client.baseUrl, readSettings());
+  const mcp = new McpManager(() => client, store);
   const harnessProcess = new HarnessProcess(join(context.globalStorageUri.fsPath, "trueforge"), (line) => output.trace(line));
   const ledgerFile = context.storageUri && join(context.storageUri.fsPath, "change-ledger.json");
   const ledger = new ChangeLedger((sets) => store.update((state) => {
@@ -81,6 +83,7 @@ export async function activate(context: vscode.ExtensionContext) {
       promptProfile: config().get<PromptProfile>("agent.promptProfile", "auto"),
       toolServerName,
       autoApprove: config().get<string[]>("commands.autoApprove", []),
+      mcpServers: mcp.enabledNames(),
     };
   };
 
@@ -189,10 +192,9 @@ export async function activate(context: vscode.ExtensionContext) {
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
-      const mcpServers = await client.listMcpServers().catch(() => []);
+      await mcp.refresh().catch((error: unknown) => log(`Listing MCP servers failed: ${String(error)}`));
       store.update((state) => {
         state.availableModels = availableModels;
-        state.mcpServers = mcpServers.filter((name) => !name.startsWith("anvil-editor-"));
         state.harness = { state: "ready", url: client.baseUrl };
       });
       runner.refreshModelHealth();
@@ -313,6 +315,7 @@ export async function activate(context: vscode.ExtensionContext) {
     indexReady,
     readCache,
     skills,
+    mcp,
     selection,
     modelChain,
     send: sendPrompt,
@@ -335,6 +338,7 @@ export async function activate(context: vscode.ExtensionContext) {
     inline,
     ...registerAttachCommands(folder.uri, selection.attach),
     ...skills.register(),
+    mcp.register(),
     vscode.workspace.registerTextDocumentContentProvider(SNAPSHOT_SCHEME, {
       provideTextDocumentContent: (uri) => ledger.before(uri.query, uri.path.slice(1)) ?? "",
     }),
@@ -362,7 +366,7 @@ export async function activate(context: vscode.ExtensionContext) {
       });
     }),
     { dispose: () => void toolServer?.close() },
-    { dispose: () => void client.unregisterToolServer(toolServerName).catch(() => undefined) },
+    { dispose: () => void client.removeMcpServer(toolServerName).catch(() => undefined) },
   );
 
   const ready = connect();

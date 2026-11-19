@@ -589,6 +589,14 @@
           "default": [],
           "markdownDescription": "Skills the agent should not see or load, by name. Skills live in `.anvil/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md`, in the workspace or your home folder."
         },
+        "anvil.mcp.disabled": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "MCP servers configured in TrueForge that the agent should not use, by name. Manage servers under Settings in the Anvil panel."
+        },
         "anvil.selection.autoAttach": {
           "type": "boolean",
           "default": true,
