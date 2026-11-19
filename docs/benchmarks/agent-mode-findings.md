@@ -1,6 +1,6 @@
 # Agent-mode benchmark findings (18 Nov 2026)
 
-Full table: [agent-mode.md](agent-mode.md) · raw rows: [agent-mode.json](agent-mode.json) · per-run reports and logs: `runs/`.
+Full table: [agent-mode.md](agent-mode.md) · raw rows: [agent-mode.json](agent-mode.json) · per-run reports: [runs/](runs).
 13 models × {main (before), feat/agent-mode-behaviour (after)} × 2 runs = 52 runs, same e2e suite for both builds,
 Flask 3.1.3, Tasks A, C, cancel and B scored independently.
 

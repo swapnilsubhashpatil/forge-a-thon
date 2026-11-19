@@ -1,10 +1,5 @@
 import type { PlanItem, PlanStatus } from "../shared/protocol.ts";
 
-/**
- * M6: a plan checklist (Codex update_plan / Gemini write_todos). Strong models track their own work, so Claude Code
- * and Amp dropped todo tools for them; the tool is aimed at weak and local models, where re-sending the plan with
- * each result keeps the task on track and survives compaction (Roo's per-turn reminder).
- */
 const STATUSES: PlanStatus[] = ["pending", "in_progress", "completed", "blocked", "cancelled"];
 
 export type PlanUpdate = { ok: true; plan: PlanItem[] } | { ok: false; error: string };
@@ -31,7 +26,6 @@ export function openItems(plan: PlanItem[] | undefined): PlanItem[] {
 
 const MARKS: Record<PlanStatus, string> = { pending: "[ ]", in_progress: "[>]", completed: "[x]", blocked: "[!]", cancelled: "[-]" };
 
-/** Compact reminder appended to tool results while a plan has open steps. */
 export function planReminder(plan: PlanItem[] | undefined): string | undefined {
   if (!plan?.length || !openItems(plan).length) return undefined;
   const nl = String.fromCharCode(10);

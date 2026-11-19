@@ -1,5 +1,3 @@
-// Runs the guard scenarios (test/e2e/guards.ts) against the scripted fake model.
-// Needs TrueForge running (`npm run harness`) and the Flask venv on PATH for the M8 test run.
 import { spawn } from "node:child_process";
 import { delimiter, dirname, join, resolve } from "node:path";
 

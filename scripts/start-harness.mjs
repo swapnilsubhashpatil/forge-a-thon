@@ -74,8 +74,6 @@ if (process.env.OLLAMA_MODEL) {
   const models = list(process.env.OLLAMA_MODEL).map((modelId) => ({
     model_id: modelId,
     name: slug(modelId),
-    // Ollama defaults to a 4k context and silently truncates longer prompts; create *-16k variants with
-    // `PARAMETER num_ctx 16384` (see README) and register them with their real window.
     properties: { context_length: 16384, max_output_tokens: 4096, reasoning_efforts: ["none", "low", "medium", "high"] },
   }));
   await put("/settings/model-providers", {
@@ -84,7 +82,6 @@ if (process.env.OLLAMA_MODEL) {
   console.log(`Registered local Ollama models: ${models.map((model) => `ollama/${model.name}`).join(", ")}`);
 }
 
-// OpenAI-compatible hosted providers used for the model test matrix. Each needs a key and a comma-separated model list.
 const compatible = [
   { name: "openrouter", keyEnv: "OPENROUTER_API_KEY", modelsEnv: "OPENROUTER_MODELS", baseUrl: "https://openrouter.ai/api/v1" },
   { name: "xai", keyEnv: "XAI_API_KEY", modelsEnv: "XAI_MODELS", baseUrl: "https://api.x.ai/v1" },

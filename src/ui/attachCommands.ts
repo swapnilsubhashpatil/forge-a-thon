@@ -10,17 +10,19 @@ interface Execution {
   exitCode?: number;
 }
 
-/** The active selection as exact, whole lines (an empty selection means the cursor's line). */
+export function inWorkspace(uri: vscode.Uri, folder: vscode.Uri): boolean {
+  return vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() === folder.toString();
+}
+
 export function selectionFromEditor(editor: vscode.TextEditor | undefined, folder: vscode.Uri): Attachment | undefined {
   if (!editor) return undefined;
   const path = vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/");
-  if (path === editor.document.uri.fsPath && !editor.document.uri.fsPath.startsWith(folder.fsPath)) {
+  if (!inWorkspace(editor.document.uri, folder)) {
     void vscode.window.showWarningMessage("Anvil: only files inside the workspace can be added to the chat.");
     return undefined;
   }
   const selection = editor.selection;
   const startLine = selection.start.line;
-  // A selection ending at column 0 of the next line means "up to the previous line".
   const endLine = selection.end.character === 0 && selection.end.line > startLine ? selection.end.line - 1 : selection.end.line;
   const range = selection.isEmpty
     ? editor.document.lineAt(startLine).range
@@ -28,11 +30,6 @@ export function selectionFromEditor(editor: vscode.TextEditor | undefined, folde
   return selectionAttachment(path, startLine + 1, endLine + 1, editor.document.getText(range));
 }
 
-/**
- * "Add to Anvil chat" for editor selections and terminal text. The editor selection is exact lines; the terminal
- * has no selection API, so the selection is copied through the clipboard (restored afterwards), and the last command
- * plus its output come from shell integration.
- */
 export function registerAttachCommands(folder: vscode.Uri, attach: (attachment: Attachment) => Promise<void>): vscode.Disposable[] {
   const last = new Map<vscode.Terminal, Execution>();
 
@@ -44,7 +41,6 @@ export function registerAttachCommands(folder: vscode.Uri, attach: (attachment: 
         if (record.output.length < MAX_CAPTURE_CHARS) record.output += chunk;
       }
     } catch {
-      // The terminal closed mid-read; keep what arrived.
     }
   });
   const ended = vscode.window.onDidEndTerminalShellExecution(({ terminal, execution, exitCode }) => {

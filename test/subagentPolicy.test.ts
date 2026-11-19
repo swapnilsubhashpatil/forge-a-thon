@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { subagentDenial } from "../src/agent/subagentPolicy.ts";
+import { isAutoApproved, subagentDenial } from "../src/agent/subagentPolicy.ts";
 
 test("subagents cannot edit or create files", () => {
   assert.match(subagentDenial("propose_edit", { path: "a.py" }) ?? "", /read-only/);
@@ -19,4 +19,16 @@ test("read-only inspection commands are allowed, everything else is denied", () 
 test("read tools pass through", () => {
   assert.equal(subagentDenial("read_file", { path: "a.py" }), undefined);
   assert.equal(subagentDenial("search_code", { query: "x" }), undefined);
+});
+
+test("auto-approve matches whole-word prefixes and never chained commands", () => {
+  const prefixes = ["npm test", " git status "];
+  assert.equal(isAutoApproved("npm test", prefixes), true);
+  assert.equal(isAutoApproved("npm test -- --watch", prefixes), true);
+  assert.equal(isAutoApproved("git status", prefixes), true);
+  assert.equal(isAutoApproved("npm testing", prefixes), false);
+  assert.equal(isAutoApproved("npm test && rm -rf src", prefixes), false);
+  assert.equal(isAutoApproved("npm test\nrm -rf src", prefixes), false);
+  assert.equal(isAutoApproved("ls", []), false);
+  assert.equal(isAutoApproved("ls", [""]), false);
 });

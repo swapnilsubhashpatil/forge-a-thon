@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChangesBar } from "./components/ChangesBar.tsx";
+import type { Attachment, ChatState } from "../../src/shared/protocol.ts";
+import { ChangesTray } from "./components/ChangesTray.tsx";
 import { Composer } from "./components/Composer.tsx";
 import { EmptyState } from "./components/EmptyState.tsx";
 import { Header } from "./components/Header.tsx";
+import { HistoryView } from "./components/HistoryView.tsx";
 import { SessionStrip } from "./components/SessionStrip.tsx";
-import { ModelChain } from "./components/ModelChain.tsx";
+import { SettingsView } from "./components/SettingsView.tsx";
 import { TurnView } from "./components/TurnView.tsx";
+import { cx } from "./format.ts";
 import { takeIncoming, useStore } from "./state/store.ts";
 import { loadDraft, post, saveDraft, type Draft } from "./state/vscode.ts";
 
@@ -26,13 +29,9 @@ function useStickToBottom(content: unknown) {
   return { ref, onScroll };
 }
 
-export function App() {
-  const chat = useStore((snapshot) => snapshot.chat);
+function ChatView({ chat, hidden }: { chat: ChatState; hidden: boolean }) {
   const [draft, setDraft] = useState<Draft>(loadDraft);
-  const [chainOpen, setChainOpen] = useState(false);
   const scroller = useStickToBottom(chat.turns);
-
-  useEffect(() => post({ type: "ready" }), []);
 
   const restored = useStore((snapshot) => snapshot.restoredDraft);
   useEffect(() => {
@@ -40,29 +39,28 @@ export function App() {
   }, [restored?.seq]);
 
   const incoming = useStore((snapshot) => snapshot.incoming);
-  useEffect(() => {
-    const attachments = takeIncoming();
-    if (!attachments.length) return;
-    setDraft((current) => {
-      const next = { ...current, attachments: [...(current.attachments ?? []), ...attachments] };
-      saveDraft(next);
-      return next;
-    });
-  }, [incoming]);
+  useEffect(() => attach(takeIncoming()), [incoming]);
 
   function changeDraft(next: Draft) {
     setDraft(next);
     saveDraft(next);
   }
 
+  function attach(attachments: Attachment[]) {
+    if (!attachments.length) return;
+    setDraft((current) => {
+      const next = { ...current, attachments: [...(current.attachments ?? []), ...attachments] };
+      saveDraft(next);
+      return next;
+    });
+  }
+
   return (
-    <div className="flex h-full flex-col">
-      <Header chat={chat} chainOpen={chainOpen} onToggleChain={() => setChainOpen(!chainOpen)} />
-      {chainOpen && <ModelChain models={chat.models} activeModel={chat.activeModel} />}
+    <div className={cx("flex min-h-0 flex-1 flex-col", hidden && "hidden")}>
       <SessionStrip chat={chat} />
       <main ref={scroller.ref} onScroll={scroller.onScroll} className="min-h-0 flex-1 overflow-y-auto">
         {chat.turns.length === 0 ? (
-          <EmptyState onPick={(text) => changeDraft({ text, mentions: [] })} />
+          <EmptyState chat={chat} onPick={(text) => changeDraft({ text, mentions: [] })} />
         ) : (
           chat.turns.map((turn, index) => (
             <TurnView
@@ -75,8 +73,24 @@ export function App() {
           ))
         )}
       </main>
-      <ChangesBar changeSets={chat.changeSets} />
-      <Composer chat={chat} draft={draft} onDraftChange={changeDraft} />
+      <ChangesTray changeSets={chat.changeSets} reviews={chat.pendingReviews} />
+      <Composer chat={chat} draft={draft} onDraftChange={changeDraft} onAttach={attach} />
+    </div>
+  );
+}
+
+export function App() {
+  const chat = useStore((snapshot) => snapshot.chat);
+  const view = useStore((snapshot) => snapshot.view);
+
+  useEffect(() => post({ type: "ready" }), []);
+
+  return (
+    <div className="flex h-full flex-col">
+      <Header chat={chat} view={view} />
+      {view === "history" && <HistoryView chat={chat} />}
+      {view === "settings" && <SettingsView chat={chat} />}
+      <ChatView chat={chat} hidden={view !== "chat"} />
     </div>
   );
 }

@@ -26,3 +26,13 @@ export function cx(...classes: Array<string | false | undefined | null>): string
 export function toolBaseName(name: string): string {
   return name.split(/__|\./).pop() ?? name;
 }
+
+const relative = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+export function relativeTime(at: number): string {
+  const minutes = Math.round((at - Date.now()) / 60_000);
+  if (minutes > -60) return relative.format(minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (hours > -24) return relative.format(hours, "hour");
+  return relative.format(Math.round(hours / 24), "day");
+}

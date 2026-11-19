@@ -2,6 +2,7 @@ import { TrueForge, isEventDelta, mergeEventDelta, type TrueForgeApi } from "@tr
 
 export type HarnessEvent = TrueForgeApi.TurnStreamingEvent;
 export type AgentSpec = TrueForgeApi.AgentSpec;
+export type MessageContent = TrueForgeApi.UserMessageContent;
 
 const STREAM_TIMEOUT_SECONDS = 600;
 
@@ -47,6 +48,15 @@ export class HarnessClient {
     });
   }
 
+  async unregisterToolServer(name: string): Promise<void> {
+    await this.api.settings.mcpServers.delete(name);
+  }
+
+  async listMcpServers(): Promise<string[]> {
+    const response = await this.api.settings.mcpServers.list();
+    return response.data.map((server) => server.name);
+  }
+
   async createSession(spec: AgentSpec, title: string): Promise<string> {
     const response = await this.api.sessions.create({ agent: { spec } });
     const id = response.data.id;
@@ -58,7 +68,7 @@ export class HarnessClient {
     await this.api.sessions.update(sessionId, { agent: { spec } });
   }
 
-  async startTurn(sessionId: string, content: string, previousTurnId: string, signal: AbortSignal): Promise<AsyncIterable<HarnessEvent>> {
+  async startTurn(sessionId: string, content: MessageContent, previousTurnId: string, signal: AbortSignal): Promise<AsyncIterable<HarnessEvent>> {
     return this.api.sessions.createTurnStream(
       sessionId,
       { input: [{ type: "user.message", content }], previousTurnId },

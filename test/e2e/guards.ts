@@ -1,5 +1,3 @@
-// End-to-end guard scenarios against the scripted fake model (scripts/fake-model.mjs), through the real extension,
-// TrueForge and MCP tool server. Each scenario is scored on its own and the workspace is reset between them.
 import { execSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
@@ -91,7 +89,6 @@ export async function run(): Promise<void> {
   await settings.update("models.reasoningEffort", "none", vscode.ConfigurationTarget.Workspace);
   await settings.update("agent.promptProfile", "full", vscode.ConfigurationTarget.Workspace);
 
-  // G3 + G2 (agent): an edit calling a function that exists nowhere, on lines never read.
   await scenario(api, "G3 grounding + G2 unread lines", async () => {
     const stop = autoApprove(api);
     try {
@@ -103,7 +100,6 @@ export async function run(): Promise<void> {
     assert.match(out, /GROUNDING_SEEN SCOPE_SEEN/, `model did not receive both warnings: ${out.slice(0, 300)}`);
   });
 
-  // G2 (inline): selection is get_debug_flag, the edit lands in get_load_dotenv.
   await scenario(api, "G2 outside selection (inline)", async () => {
     const stop = autoApprove(api);
     try {
@@ -115,7 +111,6 @@ export async function run(): Promise<void> {
     assert.match(out, /SCOPE_SEEN/, `no outside-selection warning: ${out.slice(0, 300)}`);
   });
 
-  // M7: identical read forever -> nudge at 3, stop at 5, tree clean.
   await scenario(api, "M7 loop guard", async () => {
     await api.sendPrompt("SCENARIO=loop look around", []);
     const turns = turnsFor(api, "SCENARIO=loop");
@@ -126,7 +121,6 @@ export async function run(): Promise<void> {
     assert.equal(git("status --porcelain -- . :!.vscode"), "");
   });
 
-  // M8: edit then "done" without verifying -> exactly one follow-up -> test -> verified finish.
   await scenario(api, "M8 early stop follow-up", async () => {
     const stop = autoApprove(api);
     try {
@@ -140,7 +134,6 @@ export async function run(): Promise<void> {
     assert.equal(followUps[0].finish?.verified, true, `finish: ${JSON.stringify(followUps[0].finish)}`);
   });
 
-  // M3: two hunks, reject the first, accept the second -> model gets the new baseline and current text.
   await scenario(api, "M3 partial rejection feedback", async () => {
     const approve = autoApprove(api, false);
     const pending = api.sendPrompt("SCENARIO=partial adjust get_debug_flag", []);
@@ -162,7 +155,6 @@ export async function run(): Promise<void> {
     assert.match(out, /BASELINE_SEEN/, `no baseline feedback: ${out.slice(0, 300)}`);
   });
 
-  // M11: a message sent mid-turn is delivered with the next tool result.
   await scenario(api, "M11 mid-turn note delivered", async () => {
     const pending = api.sendPrompt("SCENARIO=note read a few things", []);
     await sleep(3500);
@@ -175,7 +167,6 @@ export async function run(): Promise<void> {
     assert.ok(!turns.some((turn) => turn.prompt.startsWith("NOTE_PAYLOAD")), "note was sent as a separate turn instead of steering");
   });
 
-  // M10: distinct calls until the iteration limit -> no failover, one wrap-up turn with a finish_task.
   await scenario(api, "M10 step-limit wrap-up", async () => {
     await settings.update("agent.iterationLimit", 5, vscode.ConfigurationTarget.Workspace);
     try {
@@ -192,7 +183,6 @@ export async function run(): Promise<void> {
     assert.equal(wrap.finish?.verified, false, `wrap-up finish: ${JSON.stringify(wrap.finish)}`);
   });
 
-  // Attachments: the selection reaches the model ahead of the pack; the command itself runs.
   await scenario(api, "Selection attachment", async () => {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(root(), "src", "flask", "helpers.py"));
     const editor = await vscode.window.showTextDocument(document);
@@ -205,7 +195,6 @@ export async function run(): Promise<void> {
     assert.ok(turns[0].context?.attachments?.some((entry) => entry.label === "helpers.py:28-32"), "context card does not list the attachment");
   });
 
-  // Ask about a selection: the lightbulb action and the hover link appear on selected code, and not without a selection.
   await scenario(api, "Ask-about-selection icon and hover", async () => {
     const uri = vscode.Uri.joinPath(root(), "src", "flask", "helpers.py");
     const editor = await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri));
@@ -220,7 +209,6 @@ export async function run(): Promise<void> {
     assert.ok(!empty.some((action) => action.title === "Ask Anvil about this"), "action shown without a selection");
   });
 
-  // M2: the subagent's edit and test run are refused; a read-only git command is allowed.
   await scenario(api, "M2 read-only subagent", async () => {
     const stop = autoApprove(api);
     try {

@@ -1,13 +1,12 @@
 import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { cx } from "../format.ts";
 
 const plugins = [remarkGfm];
 
-export const Markdown = memo(function Markdown({ text, streaming }: { text: string; streaming?: boolean }) {
+export const Markdown = memo(function Markdown({ text }: { text: string }) {
   return (
-    <div className={cx("markdown text-base", streaming && "streaming")}>
+    <div className="markdown text-base">
       <ReactMarkdown remarkPlugins={plugins}>{text}</ReactMarkdown>
     </div>
   );

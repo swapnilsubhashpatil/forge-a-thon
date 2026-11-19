@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatAttachments, selectionAttachment, terminalAttachment } from "../src/context/attachments.ts";
+import { formatAttachments, imageBytes, messageContent, selectionAttachment, terminalAttachment } from "../src/context/attachments.ts";
 
 test("a selection is labelled by file and lines and numbered like read_file", () => {
   const attachment = selectionAttachment("src/flask/cli.py", 1068, 1070, "def routes_command():\n    pass\n    return");
@@ -27,4 +27,15 @@ test("attachments respect their own budget and nothing is emitted when empty", (
   const { text, tokens } = formatAttachments([big], 500);
   assert.ok(tokens < 700);
   assert.match(text, /trimmed to fit/);
+});
+
+test("images travel as file content next to the text and stay out of the text block", () => {
+  const image = { id: "i1", kind: "image" as const, label: "shot.png", text: "", dataUrl: "data:image/png;base64,AAAA", mime: "image/png" };
+  assert.equal(formatAttachments([image]).text, "");
+  assert.equal(messageContent("hello", []), "hello");
+  assert.deepEqual(messageContent("hello", [image]), [
+    { type: "text", text: "hello" },
+    { type: "file", data: "data:image/png;base64,AAAA", name: "shot.png" },
+  ]);
+  assert.equal(imageBytes("data:image/png;base64,AAAA"), 3);
 });

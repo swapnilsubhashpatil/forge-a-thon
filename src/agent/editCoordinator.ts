@@ -3,7 +3,7 @@ import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
 import * as vscode from "vscode";
 import { applyReplacement } from "../edits/editMatcher.ts";
 import type { ReviewController, ReviewOutcome } from "../edits/reviewController.ts";
-import type { DiffStat } from "../shared/protocol.ts";
+import type { DiffStat, ReviewMode } from "../shared/protocol.ts";
 import type { ScopeFence } from "../edits/scopeFence.ts";
 import { NEW_BASELINE, STALE_HINT } from "../edits/feedback.ts";
 
@@ -22,10 +22,9 @@ export class EditCoordinator {
   private currentSet = "";
   private generation = 0;
   private cancelled = false;
-  /** G2: returns the expected area for an edit to an existing file, if any. */
   fenceFor: (path: string) => ScopeFence | undefined = () => undefined;
-  /** G3: grounding check for a file, if its language is supported. */
   groundingFor: (path: string) => ((addedText: string, proposal: string) => string[]) | undefined = () => undefined;
+  reviewMode: () => ReviewMode = () => "review";
 
   constructor(root: vscode.Uri, review: ReviewController, onApplied: (path: string, stat: DiffStat) => void) {
     this.root = root;
@@ -119,7 +118,7 @@ export class EditCoordinator {
     if (baseline !== undefined && proposal === baseline) return { ok: true, path, outcome: unchanged(baseline, "accepted") };
     if (this.cancelled || generation !== this.generation) return { ok: true, path, outcome: unchanged(baseline ?? "", "discarded") };
 
-    const outcome = await this.review.review({
+    const request = {
       uri,
       baseline: baseline ?? "",
       proposal,
@@ -128,7 +127,8 @@ export class EditCoordinator {
       isNewFile: baseline === undefined,
       fence: baseline === undefined ? undefined : this.fenceFor(path),
       grounding: this.groundingFor(path),
-    });
+    };
+    const outcome = this.reviewMode() === "applyThenReview" ? await this.review.applyNow(request) : await this.review.review(request);
     if (outcome.accepted > 0) this.onApplied(path, outcome.stat);
     return { ok: true, path, outcome };
   }

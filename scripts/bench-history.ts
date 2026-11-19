@@ -1,9 +1,3 @@
-// Held-out context benchmark from real history (handoff S5).
-// Each non-merge Flask commit that changed source code is one task: the commit subject is the request, the files it
-// changed (that existed before the commit) are the ground truth, and the repository is indexed as it was at the
-// parent commit. Nothing here was used to tune the ranker, unlike the 12 hand-written queries in bench.ts.
-//
-//   node scripts/bench-history.ts [--limit 200] [--split dev|test|all]
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,7 +13,6 @@ const args = Object.fromEntries(process.argv.slice(2).flatMap((arg, i, all) => (
 const LIMIT = Number(args.limit ?? 200);
 const SPLIT = (args.split ?? "all") as "dev" | "test" | "all";
 
-// Files that say nothing about where code lives: changelogs, dependency pins, CI.
 const NOISE = /^(CHANGES\.rst|docs\/changes|requirements|\.github\/|\.pre-commit|tox\.ini|pyproject\.toml|setup\.cfg|uv\.lock|\.gitignore|MANIFEST)/;
 const BORING_SUBJECT = /^(release|bump|merge|start version|update (requirements|dependencies|pre-commit|dev dep)|pre-commit|\[pre-commit|fix typos?$|typo|formatting|format |black|isort|run pre-commit|update copyright|deprecate .* removed)/i;
 
@@ -39,15 +32,13 @@ function collectTasks(): Task[] {
     const [header, ...lines] = record.trim().split("\n");
     const [sha, subject] = header.split("\x1f");
     if (!subject || subject.length < 15 || BORING_SUBJECT.test(subject)) continue;
-    // Only files modified or deleted existed before the commit and can be retrieved; added files cannot.
     const changed = lines
       .map((line) => line.split("\t"))
       .filter(([status]) => /^[MD]/.test(status ?? ""))
       .map(([, path]) => path)
       .filter((path) => path && !NOISE.test(path));
     if (!changed.some((path) => path.startsWith("src/") && path.endsWith(".py"))) continue;
-    if (changed.length > 6) continue; // sweeping refactors are not localisation tasks
-    // Deterministic split from the hash, so tuning on dev never sees test.
+    if (changed.length > 6) continue;
     tasks.push({ sha, subject: subject.replace(/\s*\(#\d+\)$/, ""), truth: changed, split: parseInt(sha.slice(0, 2), 16) % 2 ? "test" : "dev" });
     if (tasks.length >= LIMIT) break;
   }

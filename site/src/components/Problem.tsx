@@ -72,7 +72,7 @@ export default function Problem() {
 
               <Disclosure>
                 <ul className="space-y-1.5">
-                  {g.how.map((s) => <li key={s} className="flex gap-2"><span className="text-gray-300 select-none">—</span><span>{s}</span></li>)}
+                  {g.how.map((s) => <li key={s} className="flex gap-2"><span className="text-gray-300 select-none">–</span><span>{s}</span></li>)}
                 </ul>
               </Disclosure>
             </motion.div>

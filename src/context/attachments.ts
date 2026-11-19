@@ -1,12 +1,10 @@
+import type { MessageContent } from "../harness/harnessClient.ts";
 import type { Attachment } from "../shared/protocol.ts";
 import { clipOutput, stripAnsi } from "../tools/commandRunner.ts";
 import { estimateTokens } from "./tokens.ts";
 
-/**
- * Code or terminal text the user explicitly sent to the chat. It is the strongest context signal there is, so it
- * goes ahead of Anvil's own context pack, with a separate budget so it can never crowd the pack out entirely.
- */
 export const ATTACHMENT_BUDGET_TOKENS = 4_000;
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 export function selectionAttachment(path: string, startLine: number, endLine: number, text: string): Attachment {
   const name = path.split("/").pop() ?? path;
@@ -33,8 +31,8 @@ export function terminalAttachment(text: string, command?: string, exitCode?: nu
   };
 }
 
-/** Renders attachments for the model, numbered like read_file for code so edits can cite exact lines. */
 export function formatAttachments(attachments: Attachment[], budgetTokens = ATTACHMENT_BUDGET_TOKENS): { text: string; tokens: number } {
+  attachments = attachments.filter((attachment) => attachment.kind !== "image");
   if (!attachments.length) return { text: "", tokens: 0 };
   const nl = String.fromCharCode(10);
   const fence = "```";
@@ -60,4 +58,14 @@ export function formatAttachments(attachments: Attachment[], budgetTokens = ATTA
   }
   const text = `<attachments>${nl}${blocks.join(nl + nl)}${nl}</attachments>${nl}${nl}`;
   return { text, tokens: estimateTokens(text) };
+}
+
+export function imageBytes(dataUrl: string): number {
+  return Math.floor(((dataUrl.length - dataUrl.indexOf(",") - 1) * 3) / 4);
+}
+
+export function messageContent(text: string, attachments: Attachment[] = []): MessageContent {
+  const images = attachments.filter((attachment) => attachment.kind === "image" && attachment.dataUrl);
+  if (!images.length) return text;
+  return [{ type: "text", text }, ...images.map((image) => ({ type: "file" as const, data: image.dataUrl!, name: image.label }))];
 }

@@ -39,10 +39,8 @@ interface Signals {
 
 const WEIGHTS = { path: 3, bm25: 2, sibling: 2, defines: 3, active: 1.5, rank: 1, companion: 0.6, coChange: 0.6 };
 
-/** Repository housekeeping (dependency pins, CI, changelogs, community files): rarely where a change belongs. */
 const META_FILE =
   /(^|\/)(requirements[^/]*\/|\.github\/|\.circleci\/)|(^|\/)(CHANGES|CHANGELOG|HISTORY|CODE_OF_CONDUCT|CONTRIBUTING|LICENSE|SECURITY|AUTHORS)[^/]*$|(^|\/)requirements[^/]*\.(txt|in)$|\.(lock|in)$|(^|\/)(tox\.ini|setup\.cfg|pyproject\.toml|package-lock\.json|\.pre-commit-config\.yaml)$/;
-/** Words that mean the request is about that housekeeping, so it is not demoted. */
 const META_TERMS = new Set(["requirement", "requirements", "dependency", "dependencies", "depend", "pin", "upgrade", "ci", "workflow", "github", "action", "actions", "tox", "pyproject", "changelog", "changes", "contributing", "license", "release", "version", "packaging", "build"]);
 const SYNONYMS: Record<string, string[]> = {
   app: ["application"],
@@ -264,7 +262,6 @@ function addCompanions(signals: Signals[], byPath: Map<string, Signals>, index: 
       companion.role = "target";
       companion.reasons.unshift(`${kind} companion of ${basename(parent.file.path)}`);
     }
-    // Co-change: files that changed in the same commits as the parent, weighted by how often (share of its commits).
     const changes = index.changeCount.get(parent.file.path) ?? 0;
     const partners = index.coChange.get(parent.file.path);
     if (!partners || changes < 3) continue;
