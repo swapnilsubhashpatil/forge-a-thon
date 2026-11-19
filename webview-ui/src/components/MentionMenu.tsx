@@ -19,7 +19,7 @@ export function MentionMenu({ items, activeIndex, onSelect, onHover }: MentionMe
       id="mention-menu"
       role="listbox"
       aria-label="Mentions"
-      className="absolute right-0 bottom-full left-0 z-10 mb-1 max-h-60 overflow-y-auto rounded border border-border bg-widget p-1 shadow-lg"
+      className="popover absolute right-0 bottom-full left-0 z-10 mb-1.5 max-h-60 overflow-y-auto"
     >
       {items.length === 0 ? (
         <li className="px-2 py-1 text-sm text-muted">No matches</li>
@@ -34,8 +34,8 @@ export function MentionMenu({ items, activeIndex, onSelect, onHover }: MentionMe
             onMouseEnter={() => onHover(index)}
             onClick={() => onSelect(item)}
             className={cx(
-              "flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm",
-              index === activeIndex && "bg-selection text-selection-fg",
+              "flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-sm",
+              index === activeIndex && "bg-hover",
             )}
           >
             <Icon name={item.kind === "file" ? "file" : "symbol"} className={item.kind === "file" ? "text-muted" : "text-purple"} />

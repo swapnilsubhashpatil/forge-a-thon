@@ -38,7 +38,7 @@ export async function readImages(files: File[], room: number): Promise<{ images:
 }
 
 function Preview({ attachment }: { attachment: Attachment }) {
-  if (attachment.kind === "image") return <img src={attachment.dataUrl} alt="" className="size-6 rounded-sm object-cover" />;
+  if (attachment.kind === "image") return <img src={attachment.dataUrl} alt="" className="size-5 rounded-sm object-cover" />;
   return <Icon name={attachment.kind === "terminal" ? "terminal" : "code"} className="text-muted" />;
 }
 
@@ -46,7 +46,7 @@ export function AttachmentChip({ attachment, onRemove }: { attachment: Attachmen
   const source = attachment.kind === "selection" && attachment.path;
   const lines = attachment.kind === "image" ? undefined : attachment.text.split(/\r?\n/).length;
   return (
-    <li className="flex items-center gap-1 rounded border border-border bg-badge/30 px-1.5 py-0.5 text-xs text-fg" title={attachment.text.slice(0, 600) || attachment.label}>
+    <li className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-badge/30 pl-1.5 text-xs text-fg" title={attachment.text.slice(0, 600) || attachment.label}>
       <Preview attachment={attachment} />
       {source ? (
         <button type="button" title={`Open ${attachment.path}`} onClick={() => post({ type: "openFile", path: source, line: attachment.startLine })} className="font-mono hover:underline">
@@ -56,7 +56,7 @@ export function AttachmentChip({ attachment, onRemove }: { attachment: Attachmen
         <span className="max-w-32 truncate font-mono">{attachment.label}</span>
       )}
       {lines !== undefined && <span className="font-mono text-muted">{lines} lines</span>}
-      <button type="button" aria-label={`Remove ${attachment.label}`} onClick={onRemove} className="grid size-4 place-items-center rounded text-muted hover:bg-hover hover:text-fg">
+      <button type="button" aria-label={`Remove ${attachment.label}`} onClick={onRemove} className="btn btn-icon">
         <Icon name="close" size={12} />
       </button>
     </li>

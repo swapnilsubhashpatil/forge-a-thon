@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import type { AnvilSettings, ChatState, ReviewMode } from "../../../src/shared/protocol.ts";
 import { cx, shortModel } from "../format.ts";
 import { post } from "../state/vscode.ts";
+import { useListbox } from "./ModelPicker.tsx";
 import { Icon, IconButton } from "./primitives.tsx";
 
 const efforts: AnvilSettings["reasoningEffort"][] = ["default", "none", "low", "medium", "high"];
@@ -18,7 +19,7 @@ function save(patch: Partial<AnvilSettings>) {
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
     <section className="border-b border-border px-3 py-3">
-      <h2 className="text-sm font-semibold text-fg">{title}</h2>
+      <h2 className={cx("text-sm font-semibold text-fg", !hint && "mb-2")}>{title}</h2>
       {hint && <p className="mb-2 text-xs text-muted">{hint}</p>}
       {children}
     </section>
@@ -40,7 +41,7 @@ function ModelChainEditor({ chain, available }: { chain: string[]; available: st
       ) : (
         <ol className="flex flex-col gap-0.5">
           {chain.map((model, index) => (
-            <li key={model} className="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-hover">
+            <li key={model} className="flex items-center gap-1.5 rounded-md px-1 hover:bg-hover">
               <span className="w-4 shrink-0 text-right font-mono text-xs text-muted">{index + 1}</span>
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-fg" title={model}>
                 {shortModel(model)} <span className="text-muted">{model.split("/")[0]}</span>
@@ -53,21 +54,48 @@ function ModelChainEditor({ chain, available }: { chain: string[]; available: st
         </ol>
       )}
       {addable.length > 0 && (
-        <select
-          aria-label="Add a model"
-          value=""
-          onChange={(event) => save({ chain: [...chain, event.target.value] })}
-          className="mt-2 h-7 w-full rounded border border-input-border bg-input px-1 text-xs text-input-fg"
-        >
-          <option value="">Add a model…</option>
-          {addable.map((model) => (
-            <option key={model} value={model}>
-              {model}
-            </option>
-          ))}
-        </select>
+        <AddModelMenu models={addable} onAdd={(model) => save({ chain: [...chain, model] })} />
       )}
     </>
+  );
+}
+
+function AddModelMenu({ models, onAdd }: { models: string[]; onAdd: (model: string) => void }) {
+  const list = useListbox(models.length, -1, (index) => onAdd(models[index]));
+  return (
+    <div className="relative mt-2" onBlur={list.onBlur}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={list.open}
+        aria-activedescendant={list.open ? `add-model-${list.active}` : undefined}
+        onClick={list.toggle}
+        onKeyDown={list.onKeyDown}
+        className="btn w-full justify-start border border-dashed border-border text-muted hover:text-fg"
+      >
+        <Icon name="plus" />
+        Add a model
+      </button>
+      {list.open && (
+        <ul role="listbox" aria-label="Models to add" className="popover absolute top-full left-0 z-20 mt-1.5 max-h-60 w-full overflow-y-auto">
+          {models.map((model, index) => (
+            <li
+              key={model}
+              id={`add-model-${index}`}
+              role="option"
+              aria-selected={false}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => list.setActive(index)}
+              onClick={() => list.choose(index)}
+              className={cx("flex h-7 cursor-pointer items-center gap-2 rounded-md px-2 text-xs", index === list.active && "bg-hover")}
+            >
+              <span className="min-w-0 truncate font-medium text-fg">{shortModel(model)}</span>
+              <span className="min-w-0 flex-1 truncate text-muted">{model.split("/")[0]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -82,13 +110,13 @@ function PrefixEditor({ prefixes }: { prefixes: string[] }) {
     <>
       <ul className="mb-2 flex flex-wrap gap-1">
         {prefixes.map((prefix) => (
-          <li key={prefix} className="flex items-center gap-1 rounded border border-border bg-badge/30 py-0.5 pr-0.5 pl-1.5 font-mono text-xs text-fg">
+          <li key={prefix} className="flex items-center gap-0.5 rounded-md border border-border bg-badge/30 pl-2 font-mono text-xs text-fg">
             {prefix}
             <button
               type="button"
               aria-label={`Remove ${prefix}`}
               onClick={() => save({ autoApprove: prefixes.filter((entry) => entry !== prefix) })}
-              className="grid size-4 place-items-center rounded text-muted hover:bg-hover hover:text-fg"
+              className="btn btn-icon"
             >
               <Icon name="close" size={12} />
             </button>
@@ -103,7 +131,7 @@ function PrefixEditor({ prefixes }: { prefixes: string[] }) {
         onBlur={add}
         placeholder="e.g. npm test"
         aria-label="Add a command prefix"
-        className="h-7 w-full rounded border border-input-border bg-input px-2 font-mono text-xs text-input-fg outline-none placeholder:text-muted focus:border-focus"
+        className="h-7 w-full rounded-md border border-input-border bg-input px-2 font-mono text-xs text-input-fg outline-none placeholder:text-muted focus:border-focus"
       />
     </>
   );
@@ -126,7 +154,7 @@ function BudgetInput({ value }: { value: number }) {
       onKeyDown={(event) => event.key === "Enter" && commit()}
       onBlur={commit}
       aria-label="Context budget in tokens"
-      className="h-7 w-32 rounded border border-input-border bg-input px-2 font-mono text-xs text-input-fg outline-none focus:border-focus"
+      className="h-7 w-32 rounded-md border border-input-border bg-input px-2 font-mono text-xs text-input-fg outline-none focus:border-focus"
     />
   );
 }
@@ -139,7 +167,7 @@ export function SettingsView({ chat }: { chat: ChatState }) {
         <ModelChainEditor chain={settings.chain} available={chat.availableModels ?? []} />
       </Section>
       <Section title="Reasoning effort">
-        <div role="radiogroup" aria-label="Reasoning effort" className="flex rounded border border-border p-px text-xs">
+        <div role="radiogroup" aria-label="Reasoning effort" className="flex rounded-lg border border-border bg-editor/40 p-0.5 text-xs">
           {efforts.map((effort) => (
             <button
               key={effort}
@@ -147,7 +175,7 @@ export function SettingsView({ chat }: { chat: ChatState }) {
               role="radio"
               aria-checked={settings.reasoningEffort === effort}
               onClick={() => save({ reasoningEffort: effort })}
-              className={cx("flex-1 rounded-sm py-1 capitalize", settings.reasoningEffort === effort ? "bg-selection text-selection-fg" : "text-muted hover:text-fg")}
+              className={cx("h-6 min-w-0 flex-1 rounded-md font-medium capitalize", settings.reasoningEffort === effort ? "bg-raised text-fg shadow-sm" : "text-muted hover:text-fg")}
             >
               {effort}
             </button>
@@ -163,7 +191,7 @@ export function SettingsView({ chat }: { chat: ChatState }) {
               role="radio"
               aria-checked={settings.reviewMode === value}
               onClick={() => save({ reviewMode: value })}
-              className={cx("rounded border px-2 py-1.5 text-left", settings.reviewMode === value ? "border-focus bg-hover" : "border-border hover:bg-hover")}
+              className={cx("rounded-lg border px-3 py-2 text-left", settings.reviewMode === value ? "border-focus bg-hover" : "border-border hover:bg-hover")}
             >
               <span className="block text-sm text-fg">{label}</span>
               <span className="block text-xs text-muted">{hint}</span>

@@ -148,7 +148,7 @@ _Fill in after recording; timestamps must match the video._
 
 ## Tools used
 TrueForge 0.185.1 and `@truefoundry/trueforge-sdk` 0.185.0, `@modelcontextprotocol/sdk`, VS Code extension
-API, React 19, Vite 8, Tailwind CSS 4, IBM Plex, Phosphor icons, jsdiff, esbuild, `@vscode/test-electron`, Ollama
+API, React 19, Vite 8, Tailwind CSS 4, IBM Plex, Hugeicons, jsdiff, esbuild, `@vscode/test-electron`, Ollama
 (`qwen3:4b` and `qwen3:8b` for local testing). We used Claude Code as a coding assistant during development.
 
 ## Known limitations

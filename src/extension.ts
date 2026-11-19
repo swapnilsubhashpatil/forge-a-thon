@@ -1,4 +1,6 @@
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
+import { userInfo } from "node:os";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import { AgentProfiles, type PromptProfile } from "./agent/agentProfile.ts";
@@ -138,12 +140,19 @@ export async function activate(context: vscode.ExtensionContext) {
     };
   };
 
+  execFile("git", ["config", "user.name"], { cwd: folder.uri.fsPath }, (_error, stdout) => {
+    const user = (stdout.trim() || userInfo().username).split(/\s+/)[0];
+    store.update((state) => {
+      state.workspace = { name: folder.name, files: state.workspace?.files ?? 0, user };
+    });
+  });
+
   let toolServer: RunningToolServer | undefined;
   const indexReady = index.build().then(
     () => {
       log(`Indexed ${index.files().length} files`);
       store.update((state) => {
-        state.workspace = { name: folder.name, files: index.files().length };
+        state.workspace = { ...state.workspace, name: folder.name, files: index.files().length };
       });
     },
     (error: unknown) => log(`Indexing failed: ${String(error)}`),
