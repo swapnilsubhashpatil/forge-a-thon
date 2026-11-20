@@ -27,14 +27,38 @@ npm run harness         # starts TrueForge on :8790 and registers the providers 
 
 `npm run harness` runs `npx @truefoundry/trueforge@0.185.1` with `OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1","localhost"]'`.
 TrueForge blocks loopback URLs by default, and Anvil's MCP server and Ollama live on loopback. If no server is
-running, the extension starts one with the same flags. Providers can also be added in the TrueForge UI at
-`http://localhost:8790` under Settings, Models.
+running, the extension starts one with the same flags. Providers can also be added from the Anvil panel
+(Settings, Models, Add provider) or in the TrueForge UI at `http://localhost:8790`.
 
 Open this folder in VS Code and press `F5` ("Run Anvil"); the Extension Development Host opens `../flask-3.1.3`.
 To install instead, run `npm run package` and install `dist/anvil.vsix`.
 
 Local models: set `OLLAMA_MODEL=qwen3:8b` in `.env`, set `anvil.models.reasoningEffort` to `none`, and start Ollama
 with `OLLAMA_CONTEXT_LENGTH=16384`. Models under about 14B often write invalid tool calls; use a hosted model for the demo.
+
+## Run and test locally
+
+1. Start TrueForge: `npm run harness` (leave it running; it reuses a server already on :8790).
+2. Build and launch: open this folder in VS Code and press `F5` (**Run Anvil**). A second window, the Extension
+   Development Host, opens `../flask-3.1.3` with only Anvil enabled (`--disable-extensions`), so errors from other
+   extensions do not appear there.
+3. Open the Anvil panel from the activity bar. The start screen should show TrueForge connected and the indexed file
+   count. If no model is set: Settings, Models, Add provider.
+4. After changing code, run `npm run build` (or let `F5` do it), then press `Ctrl+R` in the Development Host
+   (Developer: Reload Window). Restart with `F5` only when `package.json` changed.
+5. Any other project: in the Development Host use File, Open Folder. Python and JS/TS get the richest context;
+   every language gets search, @ mentions and edits.
+
+Checks: `npm run typecheck`, `npm test`, `node scripts/e2e-guards.mjs` (scripted model, no API cost) and
+`npm run e2e` (real model, see Development).
+
+| Symptom | Cause and fix |
+|---|---|
+| "Activating extension ... failed: Cannot find module ..." naming another extension | That extension's own install is broken (for example Code Runner missing `micromatch`). Reinstall or disable it; `F5` now starts the host without other extensions |
+| Panel says TrueForge is offline | Run `npm run harness`, then Reconnect (Settings, General) |
+| No models in the picker | Settings, Models, Add provider, then add models to the chain |
+| Changes missing after a reload | Run `npm run build` first; `Ctrl+R` reloads the built `dist/` files |
+| An MCP server shows an error | Check the URL and auth header in Settings, MCP, then Test |
 
 ## Quick start
 
@@ -45,11 +69,11 @@ git clone --branch 3.1.3 https://github.com/pallets/flask.git ../flask-3.1.3
 cd ../flask-3.1.3 && python -m venv .venv && .venv/Scripts/pip install -e . "pytest==8.3.5"   # macOS/Linux: .venv/bin/pip
 ```
 
-Run **Anvil: Configure Model Fallback Chain** and pick a primary and a fallback model, then:
+In the Anvil panel open Settings, Models: add a provider if none is listed, then put a primary and a fallback model in the chain. Then:
 
 | Task | Steps | Verify |
 |---|---|---|
-| A | Open `src/flask/helpers.py`, select `get_debug_flag`, press `Ctrl+Alt+K`, type the instruction, accept or reject hunks | `FLASK_DEBUG=off python -c "from flask.helpers import get_debug_flag; print(get_debug_flag())"` prints `False` |
+| A | Open `src/flask/helpers.py`, select `get_debug_flag`, press `Ctrl+Alt+K` (or click **Edit** above the selection), type the instruction in the inline box, `Ctrl+Enter`, accept, reject or keep both per hunk | `FLASK_DEBUG=off python -c "from flask.helpers import get_debug_flag; print(get_debug_flag())"` prints `False` |
 | B | Paste the Task B prompt in the panel; watch the Context card, tool rows and reviews; open the TrueForge session from the header | `pytest tests/test_cli.py -q`, `flask --app <app> config`, `git diff --stat` (3+ files) |
 | C | Set `BROKEN_PROVIDER_FOR_DEMO=1`, rerun `npm run harness`, put `broken/unreachable` first in the chain, repeat Task A | The failover notice names the error and the fallback model; `git status` is clean until you accept |
 
@@ -59,15 +83,16 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 
 | Feature | How to use it |
 |---|---|
-| Inline edit | Select code, `Ctrl+Alt+K`, type the instruction. Hunks appear in place; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+X` rejects, `Alt+F5` / `Shift+Alt+F5` jump between changes |
+| Selection toolbar | Selecting code shows **Edit** (`Ctrl+Alt+K`), **Ask** (`Ctrl+Alt+Q`) and **Add to chat** (`Ctrl+Alt+L`) right above it |
+| Inline edit | Select code, `Ctrl+Alt+K`. An inline box opens in the editor (not the chat): type the change, `Ctrl+Enter`. Hunks appear in place with Accept / Reject / Keep both and Open diff; `Ctrl+Alt+Y` accepts, `Ctrl+Alt+X` rejects, `Alt+F5` / `Shift+Alt+F5` jump between changes. Type in **Refine…** to iterate on the same lines, **Done** closes it, `Esc` or Stop cancels a run |
 | Agent mode | Side panel. One request drives TrueForge's tool loop over Anvil's MCP tools (repo map, search, symbols, read, edit, create, run) |
 | Ask mode | Mode switch in the composer. Read-only tools, no edits |
 | Context | `@file` and `@symbol` mentions plus automatic ranking under a token budget, shown on the Context card |
-| Selection to chat | `Ctrl+Alt+L` adds the editor selection, the terminal selection, or the last terminal command and its output |
-| Ask about selection | `Ctrl+Alt+Q`, or the lightbulb and hover link on selected code |
-| Diff review | Per-hunk Accept / Reject in the editor; rejected hunks are reported back to the model |
+| Selection to chat | The current editor selection shows as a live chip in the composer and is sent with the next message; `x` skips it, the pin keeps it so you can collect selections from several files. `Ctrl+Alt+L` adds the editor selection, the terminal selection, or the last terminal command and its output |
+| Ask about selection | `Ctrl+Alt+Q` or **Ask** above the selection: attaches it and switches to Ask mode |
+| Diff review | Per-hunk Accept / Reject / Keep both in the editor, Open diff for a side-by-side view; rejected and kept-both hunks are reported back to the model |
 | Changes tray | Edited files with +/- counts, Open diff and Undo, plus Keep all / Discard all |
-| Settings view | Model chain order, reasoning effort, review mode, auto-approved commands, context budget, MCP servers |
+| Settings view | Model chain order, model providers, reasoning effort, review mode, auto-approved commands, context budget, agent limits, harness and selection options, MCP servers, skills |
 | Revert | On any user message: conversation only, code only, or both |
 | Stop, Continue, Retry | Stop (`Ctrl+Alt+Backspace`) cancels the turn and discards pending edits; Continue or Retry resumes a stopped or failed turn |
 | Steering | Messages sent while the agent works are queued and reach it at the next tool call |
@@ -75,6 +100,9 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | Images | Paste, drop or attach images to a message |
 | Model picker | Pick the model for the next message; the chain falls back on failure |
 | Usage | Session strip with tokens, cache hits and cost |
+| Skills | Folders with a `SKILL.md` in `.anvil/skills` or `.claude/skills` (workspace or home). The agent loads a matching one with `use_skill`; type `/` in the composer to run one yourself; manage them under Settings → Skills. See [docs/skills.md](docs/skills.md) |
+| MCP servers | Settings → MCP servers: add a remote server by name and URL (optional auth header), Anvil registers it in TrueForge and tests it, listing its tools. Test again, turn it off or remove it from the same card. Enabled servers reach the agent in Agent mode (writes ask first) and Ask mode (read-only tools only), never in inline edit |
+| Model providers | Add catalog or custom providers from Settings: pick a catalog provider (OpenAI, Anthropic, Gemini, Fireworks, Z.ai, Moonshot, Alibaba, Together), paste its key and tick the models, or add any OpenAI-compatible endpoint by name, base URL, optional key and model ids. Re-adding a catalog provider replaces its model list; remove deletes it from TrueForge |
 
 ## Settings
 
@@ -91,7 +119,10 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | `anvil.resilience.firstEventTimeoutSeconds` | `45` | Fail over when no model output arrives in time |
 | `anvil.harness.url` | `http://localhost:8790` | TrueForge server |
 | `anvil.harness.autoStart` | `true` | Start TrueForge with npx when none is reachable |
-| `anvil.selection.askActions` | `true` | Lightbulb and hover link on selected code |
+| `anvil.selection.askActions` | `true` | Edit / Ask / Add to chat toolbar above selected code |
+| `anvil.selection.autoAttach` | `true` | Send the current editor selection with the next chat message |
+| `anvil.skills.disabled` | `[]` | Skill names hidden from the agent |
+| `anvil.mcp.disabled` | `[]` | TrueForge MCP server names the agent should not use |
 
 Most of these are also editable from the panel's Settings view.
 
@@ -121,6 +152,7 @@ Layout: `src/` extension host (`agent/`, `context/`, `edits/`, `harness/`, `tool
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Skills](docs/skills.md)
 - [Write-up](docs/writeup.md)
 - [Benchmarks](docs/benchmarks/README.md)
 - [Verification record](docs/verification.md)

@@ -160,6 +160,73 @@
         "title": "Ask Anvil About Selection",
         "category": "Anvil",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "anvil.newSkill",
+        "title": "New Skill",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.openSkillsFolder",
+        "title": "Open Skills Folder",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.keepBothHunk",
+        "title": "Keep Both (Original and New)",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.openReviewDiff",
+        "title": "Open Diff of Agent Change",
+        "category": "Anvil",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "anvil.inline.submit",
+        "title": "Edit",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.inline.refine",
+        "title": "Refine",
+        "category": "Anvil"
+      },
+      {
+        "command": "anvil.inline.close",
+        "title": "Done",
+        "category": "Anvil",
+        "icon": "$(close)"
+      },
+      {
+        "command": "anvil.inline.stop",
+        "title": "Stop",
+        "category": "Anvil",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "anvil.inline.diff",
+        "title": "Open Diff",
+        "category": "Anvil",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "anvil.inline.accept",
+        "title": "Accept All",
+        "category": "Anvil",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "anvil.inline.reject",
+        "title": "Reject All",
+        "category": "Anvil",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "anvil.inline.ask",
+        "title": "Ask in Chat",
+        "category": "Anvil",
+        "icon": "$(comment-discussion)"
       }
     ],
     "keybindings": [
@@ -222,6 +289,11 @@
         "key": "ctrl+alt+q",
         "mac": "cmd+alt+q",
         "when": "workspaceFolderCount > 0 && editorTextFocus"
+      },
+      {
+        "command": "anvil.inline.stop",
+        "key": "escape",
+        "when": "anvil.inlineRunning && (editorTextFocus || commentEditorFocused)"
       }
     ],
     "menus": {
@@ -257,6 +329,11 @@
           "command": "anvil.rejectAll",
           "when": "anvil.editorUnderReview",
           "group": "navigation@2"
+        },
+        {
+          "command": "anvil.openReviewDiff",
+          "when": "anvil.editorUnderReview",
+          "group": "navigation@3"
         }
       ],
       "editor/context": [
@@ -312,6 +389,95 @@
         {
           "command": "anvil.prevChange",
           "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.keepBothHunk",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.openReviewDiff",
+          "when": "anvil.reviewActive"
+        },
+        {
+          "command": "anvil.inline.submit",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.refine",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.close",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.stop",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.diff",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.accept",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.reject",
+          "when": "false"
+        },
+        {
+          "command": "anvil.inline.ask",
+          "when": "false"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "anvil.inline.submit",
+          "group": "inline@1",
+          "when": "commentController == anvil.inline && commentThread == new"
+        },
+        {
+          "command": "anvil.inline.refine",
+          "group": "inline@1",
+          "when": "commentController == anvil.inline && commentThread =~ /^(review|done|answered)$/"
+        },
+        {
+          "command": "anvil.inline.ask",
+          "group": "inline@2",
+          "when": "commentController == anvil.inline && commentThread == answered"
+        },
+        {
+          "command": "anvil.inline.close",
+          "group": "inline@3",
+          "when": "commentController == anvil.inline && commentThread =~ /^(done|answered)$/"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "anvil.inline.stop",
+          "group": "inline@1",
+          "when": "commentController == anvil.inline && commentThread == running"
+        },
+        {
+          "command": "anvil.inline.accept",
+          "group": "inline@2",
+          "when": "commentController == anvil.inline && commentThread == review"
+        },
+        {
+          "command": "anvil.inline.reject",
+          "group": "inline@3",
+          "when": "commentController == anvil.inline && commentThread == review"
+        },
+        {
+          "command": "anvil.inline.diff",
+          "group": "inline@4",
+          "when": "commentController == anvil.inline && commentThread =~ /^(review|done)$/"
+        },
+        {
+          "command": "anvil.inline.close",
+          "group": "inline@5",
+          "when": "commentController == anvil.inline"
         }
       ]
     },
@@ -413,7 +579,28 @@
         "anvil.selection.askActions": {
           "type": "boolean",
           "default": true,
-          "description": "Show the “Ask Anvil about this” lightbulb action and hover link on selected code."
+          "description": "Show the Edit, Ask and Add to chat toolbar above selected code."
+        },
+        "anvil.skills.disabled": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Skills the agent should not see or load, by name. Skills live in `.anvil/skills/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md`, in the workspace or your home folder."
+        },
+        "anvil.mcp.disabled": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "MCP servers configured in TrueForge that the agent should not use, by name. Manage servers under Settings in the Anvil panel."
+        },
+        "anvil.selection.autoAttach": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the current editor selection in the chat composer and send it with your next message (dismiss or pin it from the chip)."
         }
       }
     }

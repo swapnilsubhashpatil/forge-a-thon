@@ -11,6 +11,7 @@ declare function acquireVsCodeApi(): VsCodeApi;
 export interface Draft {
   text: string;
   mentions: string[];
+  skill?: string;
   attachments?: Attachment[];
 }
 
@@ -25,11 +26,27 @@ export function post(message: WebviewMessage): void {
   vscode().postMessage(message);
 }
 
+interface Saved {
+  draft?: Draft;
+  settingsTab?: string;
+}
+
+function saved(): Saved {
+  return (vscode().getState() as Saved | undefined) ?? {};
+}
+
 export function loadDraft(): Draft {
-  const saved = vscode().getState() as { draft?: Draft } | undefined;
-  return saved?.draft ?? { text: "", mentions: [] };
+  return saved().draft ?? { text: "", mentions: [] };
 }
 
 export function saveDraft(draft: Draft): void {
-  vscode().setState({ draft });
+  vscode().setState({ ...saved(), draft });
+}
+
+export function loadSettingsTab(): string | undefined {
+  return saved().settingsTab;
+}
+
+export function saveSettingsTab(settingsTab: string): void {
+  vscode().setState({ ...saved(), settingsTab });
 }

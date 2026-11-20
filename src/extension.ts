@@ -25,11 +25,15 @@ import { HarnessProcess } from "./harness/harnessProcess.ts";
 import type { AgentMode, Attachment, ReviewMode } from "./shared/protocol.ts";
 import { createEditorTools, ReadCache } from "./tools/editorTools.ts";
 import { startToolServer, type RunningToolServer } from "./tools/toolServer.ts";
-import { registerAskSelection } from "./ui/askSelection.ts";
 import { registerAttachCommands } from "./ui/attachCommands.ts";
 import { ChatViewProvider } from "./ui/chatViewProvider.ts";
-import { inlineRequest, runInlineEdit } from "./ui/inlineEdit.ts";
-import { MessageRouter, readSettings, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
+import { InlineEditor, inlineRequest } from "./ui/inlineEdit.ts";
+import { MessageRouter, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
+import { ProviderManager } from "./ui/providerManager.ts";
+import { readSettings } from "./ui/settings.ts";
+import { SelectionContext } from "./ui/selectionContext.ts";
+import { McpManager } from "./ui/mcpManager.ts";
+import { SkillManager } from "./ui/skillManager.ts";
 
 const FOLDER_COMMANDS = [
   "anvil.inlineEdit",
@@ -43,6 +47,8 @@ const FOLDER_COMMANDS = [
   "anvil.discardAll",
   "anvil.showHistory",
   "anvil.showSettings",
+  "anvil.newSkill",
+  "anvil.openSkillsFolder",
 ];
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -53,6 +59,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
   let client = new HarnessClient(config().get<string>("harness.url", "http://localhost:8790"));
   const store = new ConversationStore(client.baseUrl, readSettings());
+  const mcp = new McpManager(() => client, store);
+  const providers = new ProviderManager(() => client, store);
   const harnessProcess = new HarnessProcess(join(context.globalStorageUri.fsPath, "trueforge"), (line) => output.trace(line));
   const ledgerFile = context.storageUri && join(context.storageUri.fsPath, "change-ledger.json");
   const ledger = new ChangeLedger((sets) => store.update((state) => {
@@ -61,12 +69,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const review = new ReviewController(ledger);
   const breaker = new CircuitBreaker();
   const readCache = new ReadCache();
-  let availableModels: string[] = [];
 
   const toolServerName = `anvil-editor-${createHash("sha1").update(folder?.uri.toString() ?? "none").digest("hex").slice(0, 8)}`;
   const modelChain = () => {
     const configured = config().get<string[]>("models.chain", []).filter(Boolean);
-    return configured.length ? configured : availableModels.slice(0, 3);
+    return configured.length ? configured : (store.state.availableModels ?? []).slice(0, 3);
   };
   const settings = (): RunnerSettings => {
     const reasoningEffort = config().get<string>("models.reasoningEffort", "default");
@@ -78,6 +85,7 @@ export async function activate(context: vscode.ExtensionContext) {
       promptProfile: config().get<PromptProfile>("agent.promptProfile", "auto"),
       toolServerName,
       autoApprove: config().get<string[]>("commands.autoApprove", []),
+      mcpServers: mcp.enabledNames(),
     };
   };
 
@@ -111,6 +119,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const index = new WorkspaceIndex(folder.uri.fsPath);
   const edits = new EditCoordinator(folder.uri, review, (path) => runner.noteFileEdited(path));
   edits.reviewMode = () => config().get<ReviewMode>("review.mode", "review");
+  const skills = new SkillManager(folder.uri, store);
   const runner = new TurnRunner({
     client: () => client,
     store,
@@ -180,13 +189,15 @@ export async function activate(context: vscode.ExtensionContext) {
         onCommandResult: (command, exitCode) => runner.noteCommand(command, exitCode),
         finishTask: (args) => runner.finishTask(args),
         updatePlan: (plan) => runner.updatePlan(plan),
+        useSkill: (name) => skills.use(name),
+        skillFile: (path) => skills.file(path),
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
-      availableModels = await client.listModels().catch(() => []);
-      const mcpServers = await client.listMcpServers().catch(() => []);
+      const availableModels = await client.listModels().catch(() => []);
+      await mcp.refresh().catch((error: unknown) => log(`Listing MCP servers failed: ${String(error)}`));
+      await providers.refresh().catch((error: unknown) => log(`Listing model providers failed: ${String(error)}`));
       store.update((state) => {
         state.availableModels = availableModels;
-        state.mcpServers = mcpServers.filter((name) => !name.startsWith("anvil-editor-"));
         state.harness = { state: "ready", url: client.baseUrl };
       });
       runner.refreshModelHealth();
@@ -245,10 +256,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const activeFiles = vscode.window.visibleTextEditors
       .map((editor) => vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/"))
       .filter((path) => index.get(path));
-    const ranked = rankFiles(index, { text, mentions: mentionPaths, activeFiles });
+    skills.refresh();
+    const skill = skills.invocation(text);
+    const ranked = rankFiles(index, { text: skill?.request ?? text, mentions: mentionPaths, activeFiles });
     const targets = ranked.filter((file) => file.role !== "reference").map((file) => file.path);
     const verify = detectTestCommand(folder.uri.fsPath, index.files().map((file) => file.path), targets);
-    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify, loadProjectRules(folder.uri.fsPath));
+    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify, loadProjectRules(folder.uri.fsPath), skills.index());
+    if (skill) pack.report.skills = [skill.name];
     const attached = formatAttachments(attachments);
     if (attachments.length) {
       pack.report.attachments = attachments.map((attachment) => ({ label: attachment.label, kind: attachment.kind, tokens: Math.round(attached.tokens / attachments.length) }));
@@ -258,14 +272,14 @@ export async function activate(context: vscode.ExtensionContext) {
       title: text.slice(0, 80),
       prompt: text,
       mentions,
-      message: `${attached.text}${pack.text}\n\n${text}`,
+      message: `${attached.text}${skill?.preamble ?? ""}${pack.text}\n\n${text}`,
       attachments,
       context: pack.report,
     });
   };
 
   const configureModels = async () => {
-    const models = await client.listModels().catch(() => availableModels);
+    const models = await client.listModels().catch(() => store.state.availableModels ?? []);
     if (!models.length) {
       void vscode.window.showWarningMessage("No models are configured in TrueForge yet. Add a provider under Settings → Models.");
       return;
@@ -285,6 +299,14 @@ export async function activate(context: vscode.ExtensionContext) {
     runner.refreshModelHealth();
   };
 
+  const selection = new SelectionContext(folder.uri, store, review, (attachment) => chatView.attach(attachment));
+  const inline = new InlineEditor(runner, review, folder.uri, vscode.Uri.joinPath(context.extensionUri, "media"), flushQueue, async (text, attachment) => {
+    store.update((state) => {
+      state.mode = "ask";
+    });
+    await chatView.show("chat");
+    await sendPrompt(text, [], [attachment], "ask");
+  }, () => store.state.workspace?.user);
   const messages = new MessageRouter({
     folder: folder.uri,
     store,
@@ -295,6 +317,10 @@ export async function activate(context: vscode.ExtensionContext) {
     index,
     indexReady,
     readCache,
+    skills,
+    mcp,
+    providers,
+    selection,
     modelChain,
     send: sendPrompt,
     connect,
@@ -307,20 +333,18 @@ export async function activate(context: vscode.ExtensionContext) {
   const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "**/*"));
   const relative = (uri: vscode.Uri) => vscode.workspace.asRelativePath(uri, false).replaceAll("\\", "/");
   const ignored = (uri: vscode.Uri) => /(^|\/)(\.git|node_modules|\.venv|venv|__pycache__|dist)(\/|$)/.test(relative(uri));
-  const attach = (attachment: Attachment) => chatView.attach(attachment);
   context.subscriptions.push(
     watcher,
     watcher.onDidChange((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidCreate((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidDelete((uri) => !ignored(uri) && index.remove(relative(uri))),
-    ...registerAttachCommands(folder.uri, attach),
-    ...registerAskSelection(folder.uri, attach),
+    selection,
+    inline,
+    ...registerAttachCommands(folder.uri, selection.attach),
+    ...skills.register(),
+    mcp.register(),
     vscode.workspace.registerTextDocumentContentProvider(SNAPSHOT_SCHEME, {
       provideTextDocumentContent: (uri) => ledger.before(uri.query, uri.path.slice(1)) ?? "",
-    }),
-    vscode.commands.registerCommand("anvil.inlineEdit", async () => {
-      await runInlineEdit(runner, folder.uri);
-      await flushQueue();
     }),
     vscode.commands.registerCommand("anvil.newSession", () => route({ type: "newSession" })),
     vscode.commands.registerCommand("anvil.cancel", () => runner.cancel()),
@@ -339,20 +363,19 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("anvil.selectModels", configureModels),
     vscode.commands.registerCommand("anvil.restartHarness", connect),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("anvil.harness.url")) void connect();
       if (event.affectsConfiguration("anvil.models.chain")) runner.refreshModelHealth();
       if (event.affectsConfiguration("anvil")) store.update((state) => {
         state.settings = readSettings();
       });
     }),
     { dispose: () => void toolServer?.close() },
-    { dispose: () => void client.unregisterToolServer(toolServerName).catch(() => undefined) },
+    { dispose: () => void client.removeMcpServer(toolServerName).catch(() => undefined) },
   );
 
   const ready = connect();
   const runInline = async (path: string, firstLine: number, lastLine: number, instruction: string) => {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...path.split("/")));
-    await runner.run(inlineRequest(document, path, firstLine, lastLine, instruction));
+    return runner.run(inlineRequest(document, path, firstLine, lastLine, instruction));
   };
   return { ready, runner, store, sendPrompt, runInline, ledger };
 }

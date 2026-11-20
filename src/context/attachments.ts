@@ -6,12 +6,16 @@ import { estimateTokens } from "./tokens.ts";
 export const ATTACHMENT_BUDGET_TOKENS = 4_000;
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
-export function selectionAttachment(path: string, startLine: number, endLine: number, text: string): Attachment {
+export function selectionLabel(path: string, startLine: number, endLine: number): string {
   const name = path.split("/").pop() ?? path;
+  return startLine === endLine ? `${name}:${startLine}` : `${name}:${startLine}-${endLine}`;
+}
+
+export function selectionAttachment(path: string, startLine: number, endLine: number, text: string): Attachment {
   return {
     id: `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     kind: "selection",
-    label: startLine === endLine ? `${name}:${startLine}` : `${name}:${startLine}-${endLine}`,
+    label: selectionLabel(path, startLine, endLine),
     path,
     startLine,
     endLine,

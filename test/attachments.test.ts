@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatAttachments, imageBytes, messageContent, selectionAttachment, terminalAttachment } from "../src/context/attachments.ts";
+import { formatAttachments, imageBytes, messageContent, selectionAttachment, selectionLabel, terminalAttachment } from "../src/context/attachments.ts";
 
 test("a selection is labelled by file and lines and numbered like read_file", () => {
   const attachment = selectionAttachment("src/flask/cli.py", 1068, 1070, "def routes_command():\n    pass\n    return");
@@ -38,4 +38,10 @@ test("images travel as file content next to the text and stay out of the text bl
     { type: "file", data: "data:image/png;base64,AAAA", name: "shot.png" },
   ]);
   assert.equal(imageBytes("data:image/png;base64,AAAA"), 3);
+});
+
+test("selection labels use the file name and a 1-based line span", () => {
+  assert.equal(selectionLabel("README.md", 57, 64), "README.md:57-64");
+  assert.equal(selectionLabel("src/flask/helpers.py", 12, 12), "helpers.py:12");
+  assert.equal(selectionAttachment("docs/a.md", 3, 4, "x\ny").label, "a.md:3-4");
 });
