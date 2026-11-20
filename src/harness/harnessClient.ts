@@ -53,9 +53,13 @@ export class HarnessClient {
   }
 
   async addMcpServer(name: string, url: string, description = "", header?: { name: string; value: string }): Promise<void> {
-    await this.api.settings.mcpServers.createOrUpdate({
-      manifest: { type: "remote", name, description, url, ...(header ? { auth: { type: "header", headers: { [header.name]: header.value } } } : {}) },
-    });
+    try {
+      await this.api.settings.mcpServers.createOrUpdate({
+        manifest: { type: "remote", name, description: description.trim() || name, url, ...(header ? { auth: { type: "header", headers: { [header.name]: header.value } } } : {}) },
+      });
+    } catch (error) {
+      throw new Error(harnessErrorMessage(error));
+    }
   }
 
   async removeMcpServer(name: string): Promise<void> {
