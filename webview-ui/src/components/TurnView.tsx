@@ -4,7 +4,7 @@ import { post } from "../state/vscode.ts";
 import { cx, formatDuration, formatTokens, shortModel } from "../format.ts";
 import { formatUsd } from "../../../src/shared/sessionStats.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
-import { ContextCard } from "./ContextCard.tsx";
+import { ContextFooter } from "./ContextCard.tsx";
 import { Markdown } from "./Markdown.tsx";
 import { Notice } from "./Notice.tsx";
 import { Reasoning } from "./Reasoning.tsx";
@@ -170,25 +170,29 @@ function MessageActions({ turn, busy, latest, resumable }: { turn: Turn; busy: b
 
 function Prompt({ turn, busy, latest, resumable }: { turn: Turn; busy: boolean; latest: boolean; resumable: boolean }) {
   const label = turn.reverted ? "Reverted: no longer part of the agent's history" : turn.followUp ? "Follow-up from Anvil" : undefined;
+  const choosing = !turn.followUp && turn.status === "running" && turn.steps.length === 0;
   return (
     <div className="group/actions">
-      <div className="rounded-lg border border-border bg-input/60 px-3 py-2">
-        {label && (
-          <p className="mb-0.5 flex items-center gap-1 text-xs text-muted">
-            {turn.reverted && <Icon name="history" />}
-            {label}
-          </p>
-        )}
-        <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
-        {turn.mentions.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {turn.mentions.map((mention) => (
-              <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-xs text-fg">
-                @{mention}
-              </span>
-            ))}
-          </div>
-        )}
+      <div className="overflow-hidden rounded-lg border border-border bg-input/60 shadow-sm">
+        <div className="px-3 py-2">
+          {label && (
+            <p className="mb-0.5 flex items-center gap-1 text-xs text-muted">
+              {turn.reverted && <Icon name="history" />}
+              {label}
+            </p>
+          )}
+          <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
+          {!turn.context && turn.mentions.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {turn.mentions.map((mention) => (
+                <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-xs text-fg">
+                  @{mention}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {(turn.context || choosing) && <ContextFooter report={turn.context} />}
       </div>
       {!turn.reverted && <MessageActions turn={turn} busy={busy} latest={latest} resumable={resumable} />}
     </div>
@@ -347,11 +351,6 @@ export const TurnView = memo(function TurnView({ turn, latest, busy, changeSet }
       <span aria-hidden="true" className="absolute top-0 bottom-0 left-[18.5px] w-px bg-border" />
       <Icon name="notch" className={cx("absolute top-[33px] left-3", turn.reverted ? "text-muted" : "text-orange")} />
       <Prompt turn={turn} busy={busy} latest={latest} resumable={resumable} />
-      {turn.context && (
-        <div className="mt-3">
-          <ContextCard report={turn.context} />
-        </div>
-      )}
       {turn.plan && turn.plan.length > 0 && (
         <div className="mt-3">
           <PlanChecklist plan={turn.plan} />
