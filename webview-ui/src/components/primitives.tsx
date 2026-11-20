@@ -1,4 +1,4 @@
-import { useId, type ButtonHTMLAttributes } from "react";
+import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cx, splitPath } from "../format.ts";
 import { post } from "../state/vscode.ts";
 import { Icon, type GlyphName } from "./Glyph.tsx";
@@ -21,6 +21,63 @@ export function IconButton({ icon, label, className, ...rest }: IconButtonProps)
     >
       <Icon name={icon} />
     </button>
+  );
+}
+
+export const inputClass = "h-7 w-full rounded-md border border-input-border bg-input px-2 text-xs text-input-fg outline-none placeholder:text-muted focus:border-focus";
+
+export function Switch({ on, label, title, onChange }: { on: boolean; label: string; title?: string; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={title}
+      onClick={() => onChange(!on)}
+      className={cx("relative h-4 w-7 shrink-0 rounded-full border transition-colors", on ? "border-focus bg-focus" : "border-border bg-editor")}
+    >
+      <span className={cx("absolute top-0.5 size-2.5 rounded-full bg-fg transition-[left]", on ? "left-3.5" : "left-0.5")} />
+    </button>
+  );
+}
+
+export function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: Array<{ value: T; label: string; title?: string }>; value: T; onChange: (value: T) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex rounded-lg border border-border bg-editor/40 p-0.5 text-xs">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={value === option.value}
+          title={option.title}
+          onClick={() => onChange(option.value)}
+          className={cx("h-6 min-w-0 flex-1 rounded-md font-medium", value === option.value ? "bg-raised text-fg shadow-sm" : "text-muted hover:text-fg")}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+  return (
+    <label className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="text-xs text-muted">{label}</span>
+      {children}
+      {error && <span className="text-xs text-red">{error}</span>}
+    </label>
+  );
+}
+
+export function ListToolbar({ summary, children }: { summary: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-6 items-center gap-1">
+      <p className="min-w-0 flex-1 text-xs text-muted">{summary}</p>
+      {children}
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { findReferences, findSymbol, searchCode } from "../context/codeSearch.ts";
 import { renderRepoMap } from "../context/repoMap.ts";
@@ -20,6 +21,8 @@ export interface ToolServices {
   onCommandOutput: (command: string, output: string) => void;
   onCommandResult?: (command: string, exitCode: string) => void;
   updatePlan?: (plan: unknown) => string;
+  useSkill?: (name: string) => string;
+  skillFile?: (path: string) => string | undefined;
   finishTask?: (args: { summary: string; files_changed?: string[]; verification?: string; verified: boolean }) => string;
 }
 
@@ -100,7 +103,7 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
     {
       name: "read_file",
       title: "Read file",
-      description: `Read a workspace file with line numbers, at most ${MAX_READ_LINES} lines per call. Re-reading an unchanged range returns a short note instead of the text; pass fresh=true if you no longer have it.`,
+      description: `Read a workspace file, or a file listed by use_skill, with line numbers, at most ${MAX_READ_LINES} lines per call. Re-reading an unchanged range returns a short note instead of the text; pass fresh=true if you no longer have it.`,
       inputSchema: {
         path: z.string().min(1),
         start_line: z.number().int().min(1).optional(),
@@ -110,7 +113,8 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
       annotations: readOnly,
       run: async (args) => {
         const path = String(args.path).replaceAll("\\", "/").replace(/^\.\//, "");
-        const content = await services.index.read(path);
+        const skillFile = services.skillFile?.(path);
+        const content = skillFile ? await readFile(skillFile, "utf8") : await services.index.read(path);
         const lines = content.split(/\r?\n/);
         const start = Math.max(1, (args.start_line as number | undefined) ?? 1);
         const end = Math.min(lines.length, (args.end_line as number | undefined) ?? start + MAX_READ_LINES - 1, start + MAX_READ_LINES - 1);
@@ -122,6 +126,14 @@ export function createEditorTools(services: ToolServices, readCache: ReadCache):
         const more = end < lines.length ? `\n… ${lines.length - end} more lines. Read with start_line=${end + 1}.` : "";
         return `${path} (${lines.length} lines)\n${body}${more}`;
       },
+    },
+    {
+      name: "use_skill",
+      title: "Use skill",
+      description: "Load a skill listed under Available skills: its instructions and the supporting files you may read_file. Call it before starting work a skill describes, then follow it. Example: {\"name\": \"release-notes\"}",
+      inputSchema: { name: z.string().min(1) },
+      annotations: readOnly,
+      run: async (args) => services.useSkill?.(String(args.name)) ?? "No skills are available.",
     },
     {
       name: "explain_context",

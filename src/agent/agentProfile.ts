@@ -12,6 +12,7 @@ export interface SpecOptions {
   reasoningEffort?: string;
   maxTokens?: number;
   promptProfile?: PromptProfile;
+  mcpServers?: string[];
 }
 
 export function usesCompactPrompt(model: string, profile: PromptProfile = "auto"): boolean {
@@ -68,6 +69,11 @@ export class AgentProfiles {
           preload: profile.preloadTools,
           requireApprovalForTools: ["@write", "@destructive", ...profile.toolsRequiringApproval],
         },
+        ...(mode === "inline" ? [] : (options.mcpServers ?? []).map((name) => ({
+          name,
+          enableTools: [mode === "ask" ? "@read-only" : "@all"],
+          requireApprovalForTools: ["@write", "@destructive"],
+        }))),
       ],
       config: {
         sandbox: { enabled: false },

@@ -83,6 +83,23 @@ test("resolveText applies only accepted hunks", () => {
   assert.deepEqual(diffStat(baseline, proposal), { added: 3, removed: 2 });
 });
 
+test("keep both keeps the original lines and inserts the new ones after them", () => {
+  const hunks = computeHunks(baseline, proposal);
+  assert.equal(resolveText(baseline, hunks, ["both", "rejected"]), "a\nb\nB\nc\nd\ne\n");
+  assert.equal(resolveText(baseline, hunks, ["accepted", "both"]), "a\nB\nc\nd\ne\nE\nf\n");
+  const kept = renderReview(baseline, hunks, ["both", "pending"]);
+  assert.equal(kept.text, "a\nb\nB\nc\nd\ne\nE\nf\n");
+  assert.deepEqual([kept.removedLines, kept.addedLines], [[5], [6, 7]]);
+});
+
+test("keep both at end of file without a trailing newline", () => {
+  const before = "one\r\ntwo";
+  const hunks = computeHunks(before, "one\r\nTWO\r\n");
+  assert.equal(resolveText(before, hunks, ["both"]), "one\r\ntwo\r\nTWO\r\n");
+  const pure = computeHunks("x\ny\n", "x\n");
+  assert.equal(resolveText("x\ny\n", pure, ["both"]), "x\ny\n");
+});
+
 test("trailing newline and CRLF round-trip", () => {
   const before = "one\r\ntwo";
   const after = "one\r\ntwo\r\nthree\r\n";

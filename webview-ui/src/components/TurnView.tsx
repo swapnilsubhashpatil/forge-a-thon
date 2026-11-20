@@ -141,8 +141,6 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-const reveal = "transition-opacity group-hover/actions:opacity-100 focus-within:opacity-100 has-[.popover]:opacity-100";
-
 function MessageActions({ turn, busy, latest, resumable }: { turn: Turn; busy: boolean; latest: boolean; resumable: boolean }) {
   const idle = latest && !busy;
   return (
@@ -150,9 +148,8 @@ function MessageActions({ turn, busy, latest, resumable }: { turn: Turn; busy: b
       role="toolbar"
       aria-label="Message actions"
       className={cx(
-        "absolute -top-5 right-2 z-10 flex items-center gap-1 rounded-lg border border-border bg-raised p-0.5 shadow-md",
-        reveal,
-        latest ? "opacity-70" : "opacity-0",
+        "mt-1 flex h-6 items-center justify-end gap-0.5 transition-opacity group-hover/actions:opacity-100 focus-within:opacity-100 has-[.popover]:opacity-100",
+        latest ? "opacity-60" : "opacity-0",
       )}
     >
       <CopyButton text={turn.prompt} label="Copy message" />
@@ -174,23 +171,25 @@ function MessageActions({ turn, busy, latest, resumable }: { turn: Turn; busy: b
 function Prompt({ turn, busy, latest, resumable }: { turn: Turn; busy: boolean; latest: boolean; resumable: boolean }) {
   const label = turn.reverted ? "Reverted: no longer part of the agent's history" : turn.followUp ? "Follow-up from Anvil" : undefined;
   return (
-    <div className="group/actions relative rounded-lg border border-border bg-input/60 px-3 py-2">
-      {label && (
-        <p className="mb-0.5 flex items-center gap-1 text-xs text-muted">
-          {turn.reverted && <Icon name="history" />}
-          {label}
-        </p>
-      )}
-      <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
-      {turn.mentions.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {turn.mentions.map((mention) => (
-            <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-xs text-fg">
-              @{mention}
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="group/actions">
+      <div className="rounded-lg border border-border bg-input/60 px-3 py-2">
+        {label && (
+          <p className="mb-0.5 flex items-center gap-1 text-xs text-muted">
+            {turn.reverted && <Icon name="history" />}
+            {label}
+          </p>
+        )}
+        <p className="text-base whitespace-pre-wrap text-fg">{turn.prompt}</p>
+        {turn.mentions.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {turn.mentions.map((mention) => (
+              <span key={mention} className="rounded-sm bg-badge/40 px-1.5 font-mono text-xs text-fg">
+                @{mention}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       {!turn.reverted && <MessageActions turn={turn} busy={busy} latest={latest} resumable={resumable} />}
     </div>
   );
@@ -319,7 +318,7 @@ function Footer({ turn, resumable, latest }: { turn: Turn; resumable: boolean; l
       {resumable && <Resume turnId={turn.id} />}
       <span className="min-w-0 truncate" title={turn.model}>{parts.join(" · ")}</span>
       {answer && (
-        <span className={cx("transition-opacity group-hover/turn:opacity-100 focus-within:opacity-100", latest ? "opacity-70" : "opacity-0")}>
+        <span className={cx("ml-auto transition-opacity group-hover/turn:opacity-100 focus-within:opacity-100", latest ? "opacity-60" : "opacity-0")}>
           <CopyButton text={answer} label="Copy answer" />
         </span>
       )}

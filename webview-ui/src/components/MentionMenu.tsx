@@ -1,6 +1,32 @@
+import { useEffect, useState } from "react";
 import type { MentionItem } from "../../../src/shared/protocol.ts";
 import { cx } from "../format.ts";
+import { useStore } from "../state/store.ts";
+import { post } from "../state/vscode.ts";
 import { Icon, PathText } from "./primitives.tsx";
+
+let requestCounter = 0;
+
+export function useMentionSearch(query: string | undefined): MentionItem[] | undefined {
+  const [requestId, setRequestId] = useState(-1);
+  const results = useStore((snapshot) => snapshot.mentions);
+
+  useEffect(() => {
+    if (query === undefined) return;
+    const timer = setTimeout(() => {
+      const id = ++requestCounter;
+      setRequestId(id);
+      post({ type: "searchMentions", requestId: id, query });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  return query !== undefined && results.requestId === requestId ? results.items : undefined;
+}
+
+export function mentionValue(item: MentionItem): string {
+  return item.kind === "file" ? item.path : `${item.path}#${item.label}`;
+}
 
 interface MentionMenuProps {
   items: MentionItem[];

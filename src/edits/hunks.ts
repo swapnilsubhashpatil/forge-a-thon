@@ -1,7 +1,7 @@
 import { createTwoFilesPatch, diffArrays } from "diff";
 import type { DiffStat } from "../shared/protocol.ts";
 
-export type HunkDecision = "pending" | "accepted" | "rejected";
+export type HunkDecision = "pending" | "accepted" | "rejected" | "both";
 
 export interface Hunk {
   index: number;
@@ -55,11 +55,20 @@ export function resolveText(baseline: string, hunks: Hunk[], decisions: HunkDeci
   let cursor = 0;
   for (const hunk of hunks) {
     out.push(...lines.slice(cursor, hunk.baselineStart));
-    out.push(...(decisions[hunk.index] === "accepted" ? hunk.proposalLines : hunk.baselineLines));
+    out.push(...resolvedLines(hunk, decisions[hunk.index]));
     cursor = hunk.baselineStart + hunk.baselineLines.length;
   }
   out.push(...lines.slice(cursor));
   return out.join("");
+}
+
+function resolvedLines(hunk: Hunk, decision: HunkDecision): string[] {
+  if (decision === "accepted") return hunk.proposalLines;
+  if (decision !== "both" || !hunk.proposalLines.length) return hunk.baselineLines;
+  const kept = [...hunk.baselineLines];
+  const last = kept.at(-1);
+  if (last !== undefined && !last.endsWith("\n")) kept[kept.length - 1] = last + (hunk.proposalLines[0].endsWith("\r\n") ? "\r\n" : "\n");
+  return [...kept, ...hunk.proposalLines];
 }
 
 export function renderReview(baseline: string, hunks: Hunk[], decisions: HunkDecision[]): ReviewRender {

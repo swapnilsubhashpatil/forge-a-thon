@@ -14,6 +14,7 @@
     "Repeat Edit and Verify until the change is complete and checked.",
     "5. Summarise: call finish_task once with a short summary, the files changed and what you ran to verify them. Set verified=true only if a check ran after your last accepted edit and passed; otherwise verified=false with the reason.",
     "The user reviews every hunk. If a tool result says hunks were rejected, that was the user's decision, not a failure: do not re-propose them.",
+    "When a request matches a skill under Available skills, call use_skill first and follow it.",
     "Never invent file contents you have not read. Never touch files outside the workspace."
   ],
   "toolsRequiringApproval": [

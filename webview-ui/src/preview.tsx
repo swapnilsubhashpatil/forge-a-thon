@@ -56,19 +56,54 @@ let state: ChatState = {
   conversationId: "conv-2",
   mode: "agent",
   workspace: { name: "flask", files: 214, user: "Swapnil" },
-  mcpServers: ["anvil-editor", "filesystem"],
+  mcpServers: [
+    {
+      name: "github",
+      url: "https://api.githubcopilot.com/mcp/",
+      description: "Issues, pull requests and code search",
+      enabled: true,
+      status: "ok",
+      tools: ["search_issues", "get_issue", "create_issue", "list_pull_requests", "get_pull_request", "search_code"],
+    },
+    { name: "docs-search", url: "http://localhost:9300/mcp", enabled: false, status: "error", error: "connect ECONNREFUSED 127.0.0.1:9300" },
+  ],
+  skills: [
+    { name: "release-notes", description: "Use when writing release notes from merged PRs", source: "project", path: ".anvil/skills/release-notes/SKILL.md", enabled: true },
+    { name: "flask-cli", description: "Use when adding or changing a flask CLI command", source: "project", path: ".claude/skills/flask-cli/SKILL.md", enabled: true },
+    { name: "commit-writer", description: "Write Conventional Commit messages", source: "user", path: "~/.claude/skills/commit-writer/SKILL.md", enabled: false },
+  ],
   settings: {
     chain: [primary, fallback, "anthropic-main/claude-sonnet-4-5"],
     reasoningEffort: "default",
     reviewMode: "review",
     autoApprove: ["pytest", "npm test"],
     budgetTokens: 6000,
+    iterationLimit: 40,
+    commandTimeoutSeconds: 120,
+    failoverSeconds: 30,
+    promptProfile: "auto",
+    harnessUrl: "http://localhost:8790",
+    harnessAutoStart: true,
+    selectionToolbar: true,
+    selectionAutoAttach: true,
   },
+  providers: [
+    { name: "openai-main", type: "openai", models: [primary, "openai-main/gpt-5-mini"], modelIds: ["gpt-5", "gpt-5-mini"] },
+    { name: "anthropic-main", type: "anthropic", models: ["anthropic-main/claude-sonnet-4-5", "anthropic-main/claude-haiku-4-5"], modelIds: ["claude-sonnet-4-5", "claude-haiku-4-5"] },
+    { name: "ollama", type: "custom", baseUrl: "http://localhost:11434/v1", models: ["ollama/qwen3-8b"], modelIds: ["qwen3-8b"] },
+  ],
+  catalog: [
+    { type: "openai", models: [{ id: "gpt-5", name: "GPT-5" }, { id: "gpt-5-mini", name: "GPT-5 mini" }] },
+    { type: "anthropic", models: [{ id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" }, { id: "claude-haiku-4-5", name: "Claude Haiku 4.5" }] },
+    { type: "google-gemini", models: [{ id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }, { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" }] },
+    { type: "fireworks", models: [{ id: "accounts/fireworks/models/qwen3-235b-a22b", name: "Qwen3 235B" }] },
+  ],
   history: [
     { id: "conv-2", title: "Add flask config command", updatedAt: now - 20_000, turns: 2, model: fallback, edits: 3 },
     { id: "conv-1", title: "Why does the dev server reload twice?", updatedAt: now - 26 * 3_600_000, turns: 4, model: primary, edits: 0 },
   ],
   pendingReviews: [{ path: "src/flask/cli.py", hunks: 2, added: 12, removed: 1 }],
+  editorSelection: { path: "src/flask/cli.py", startLine: 57, endLine: 64, label: "cli.py:57-64" },
   availableModels: [primary, fallback, "anthropic-main/claude-sonnet-4-5", "ollama/qwen3-8b"],
   sessionId: "ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
   sessionUrl: "http://localhost:8790/sessions/ses_01JD8K2M4QX7R9TF3B6WZ1PN5H",
@@ -101,7 +136,7 @@ let state: ChatState = {
     {
       id: "t1",
       prompt: "Explain how the CLI loads the app",
-      mentions: [],
+      mentions: ["src/flask/cli.py", "src/flask/helpers.py#get_debug_flag"],
       status: "done",
       model: primary,
       usage: { input: 8420, output: 612, cached: 5120 },
@@ -207,11 +242,21 @@ function emit(message: HostMessage) {
   window.postMessage(message, "*");
 }
 
+function fakeModels(provider: string, type: string, ids: string[]) {
+  const catalogModels = state.catalog.find((entry) => entry.type === type)?.models ?? [];
+  const names = ids.map((id) => catalogModels.find((model) => model.id === id)?.name ?? id);
+  return { models: names.map((name) => `${provider}/${name}`), modelIds: ids };
+}
+
 function handle(message: WebviewMessage) {
   console.info("[webview → host]", message);
   switch (message.type) {
     case "ready":
       emit({ type: "state", state });
+      emit({ type: "attach", attachment: { id: "term-1", kind: "terminal", label: "terminal: pytest -q (exit 1)", command: "pytest -q", exitCode: 1, text: "1 failed, 97 passed" } });
+      break;
+    case "pinSelection":
+      emit({ type: "attach", attachment: { id: `sel-${Date.now()}`, kind: "selection", label: "cli.py:57-64", path: "src/flask/cli.py", startLine: 57, endLine: 64, text: "def config_command():" } });
       break;
     case "searchMentions": {
       const query = message.query.toLowerCase();
@@ -247,6 +292,48 @@ function handle(message: WebviewMessage) {
       break;
     case "updateSettings":
       state = { ...state, settings: { ...state.settings, ...message.patch } };
+      emit({ type: "state", state });
+      break;
+    case "addMcpServer":
+    case "testMcpServer": {
+      const { name } = message;
+      const existing = state.mcpServers.find((server) => server.name === name);
+      const mcpServers = existing ? state.mcpServers : [...state.mcpServers, { name, url: message.type === "addMcpServer" ? message.url : "", enabled: true, status: "unknown" as const }];
+      state = { ...state, mcpServers: mcpServers.map((server) => (server.name === name ? { ...server, status: "testing" } : server)) };
+      emit({ type: "state", state });
+      setTimeout(() => {
+        state = { ...state, mcpServers: state.mcpServers.map((server) => (server.name === name ? { ...server, status: "ok", tools: ["search", "fetch"], error: undefined } : server)) };
+        emit({ type: "state", state });
+      }, 900);
+      break;
+    }
+    case "removeMcpServer":
+      state = { ...state, mcpServers: state.mcpServers.filter((server) => server.name !== message.name) };
+      emit({ type: "state", state });
+      break;
+    case "addProvider": {
+      const provider = { name: message.name, type: message.providerType, baseUrl: message.baseUrl, ...fakeModels(message.name, message.providerType, message.models) };
+      state = { ...state, providerError: undefined, providers: [...state.providers, provider] };
+      setTimeout(() => emit({ type: "state", state }), 600);
+      break;
+    }
+    case "setProviderModels":
+      state = {
+        ...state,
+        providers: state.providers.map((provider) => (provider.name === message.name ? { ...provider, ...fakeModels(provider.name, provider.type, message.models) } : provider)),
+      };
+      emit({ type: "state", state });
+      break;
+    case "removeProvider":
+      state = { ...state, providers: state.providers.filter((provider) => provider.name !== message.name) };
+      emit({ type: "state", state });
+      break;
+    case "refreshProviders":
+    case "reconnect":
+      emit({ type: "state", state });
+      break;
+    case "toggleMcpServer":
+      state = { ...state, mcpServers: state.mcpServers.map((server) => (server.name === message.name ? { ...server, enabled: message.enabled } : server)) };
       emit({ type: "state", state });
       break;
     case "undo":

@@ -12,6 +12,7 @@
     "After editing, run the tests with run_command. Do not claim it works until a test passed.",
     "If the same test fails twice, stop and explain.",
     "If the user rejected a change, do not propose it again.",
+    "When a request matches a skill under Available skills, call use_skill first and follow it.",
     "When done, call finish_task with a short summary. verified=true only if a test passed after your last edit."
   ],
   "toolsRequiringApproval": [
