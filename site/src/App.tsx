@@ -7,6 +7,7 @@ import Receipts from './components/Receipts'
 import Benchmarks from './components/Benchmarks'
 import FeatureFilms from './components/FeatureFilms'
 import Architecture from './components/Architecture'
+import TrueForgeDelta from './components/TrueForgeDelta'
 import FAQ from './components/FAQ'
 import Footer from './components/Footer'
 import ScrollProgress from './components/ScrollProgress'
@@ -39,6 +40,7 @@ function Landing() {
       <Benchmarks />
       <FeatureFilms />
       <Architecture />
+      <TrueForgeDelta />
       <FAQ />
       <Footer />
     </>

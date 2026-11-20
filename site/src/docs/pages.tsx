@@ -322,6 +322,133 @@ description: Write release notes from the git log. Use when asked for release no
         ]}
       />
       <P>Seven models, two runs each. Pass rates moved little; how the agent finishes changed a lot. Every benchmark reruns from the repository with one command.</P>
+      <H2>Files for the fixed multi-file task</H2>
+      <P>
+        For the <Code>flask config</Code> task, with no files named, Anvil’s top three picks were <Code>src/flask/cli.py</Code>, <Code>tests/test_cli.py</Code> and{' '}
+        <Code>docs/cli.rst</Code>: exactly the files the change needs. Keyword search had none of them in its top three. In every live run, each file the agent edited
+        was in Anvil’s top five.
+      </P>
+      <H2>103 commits it never saw</H2>
+      <Table
+        head={['Measure', 'Anvil', 'Anvil before co-change', 'Keyword search (BM25)']}
+        rows={[
+          ['A right file in the top 5 (hit@5)', '0.854', '0.825', '0.699'],
+          ['Every right file in the top 5 (all@5)', '0.515', '0.466', '0.369'],
+          ['Ranking score (MRR)', '0.716', '0.699', '0.532'],
+        ]}
+      />
+      <P>200 real Flask commits since 2021: the request is the commit message, the answer is the files it changed, and the index is built just before the commit. Tuned on half, reported on the other 103. Co-change ranks files that usually change together in git history.</P>
+      <H2>Edits, by kind of slip</H2>
+      <Table
+        head={['Slip in the model’s copy', 'Exact match', 'Anvil']}
+        rows={[
+          ['None', '100%', '100%'],
+          ['Trailing spaces', '0%', '100%'],
+          ['Tabs instead of spaces', '0%', '100%'],
+          ['Wrong indentation', '0%', '100%'],
+          ['Windows line endings', '0%', '100%'],
+          ['Missing blank line', '0%', '100%'],
+          ['One-character typo', '0%', '83.3%'],
+        ]}
+      />
+      <P>In 60 traps where the target code was deleted and only similar functions remained, Anvil edited the wrong place 0 times. It refuses and shows the closest lines instead.</P>
+      <H2>Stop, undo and failover</H2>
+      <Table
+        head={['Check, after every run', 'Result']}
+        rows={[
+          ['Stop mid-run left the code as it was', '14 of 14'],
+          ['Undo of a message and its code left the tree clean', '14 of 14'],
+          ['A broken model key handed over to the next model, no click needed', '10 of 10 hosted runs'],
+        ]}
+      />
+      <P>The two small local models could not produce the inline edit at all, on either build, so they are left out of the failover count.</P>
+      <H2>Per model, multi-file task</H2>
+      <Table
+        head={['Model', 'Failed test runs', 'Proved it works', 'Tokens', 'Seconds']}
+        rows={[
+          ['Claude Haiku 5.5', '4.5 → 0.5', '0 → 2 of 2', '268k → 313k', '52 → 49'],
+          ['Claude Sonnet 5.5', '3.5 → 0', '0 → 2 of 2', '131k → 95k', '37 → 27'],
+          ['Claude Opus 5.5', '3.0 → 0', '0 → 2 of 2', '131k → 102k', '44 → 29'],
+          ['GPT-5.4 mini', '6.0 → 1.5', '0 → 2 of 2', '610k → 362k', '117 → 69'],
+          ['GPT-6.1-sol', '5.0 → 0', '0 → 2 of 2', '157k → 105k', '62 → 41'],
+          ['Qwen 3 8B (local)', '0 → 0', '0 → 0', '51k → 7k', '271 → 86'],
+          ['Qwen 2.5 Coder 7B (local)', '0 → 0', '0 → 0', '7k → 7k', '41 → 43'],
+        ]}
+      />
+      <P>Before → after, averaged over two runs each. Local models fail the task on both builds, so their numbers say nothing about Anvil.</P>
+      <H2>Models we could not measure</H2>
+      <Table
+        head={['Model', 'Why']}
+        rows={[
+          ['Groq gpt-oss-120b', 'Groq rejects the reasoning text TrueForge sends back. A TrueForge bug we found.'],
+          ['Groq Qwen 3', 'The model called a tool that does not exist; Groq blocks it server-side.'],
+          ['OpenRouter free models (3)', 'The free daily quota ran out.'],
+          ['OpenRouter Jev Router', 'Not enough account credit for the reply length.'],
+        ]}
+      />
+      <H2>Safety checks, forced to fire</H2>
+      <P>
+        Real models never triggered the scope, grounding or loop checks on the fixed tasks. A scripted model that misbehaves on purpose drives the real extension and
+        TrueForge through 10 scenarios; all 10 pass. Run them with <Code>node scripts/e2e-guards.mjs</Code>.
+      </P>
+      <Table
+        head={['Scenario', 'What the test model does', 'Passes when']}
+        rows={[
+          ['Grounding and unread lines', <>Edits lines it never read and calls <Code>get_secret_keys()</Code>, defined nowhere</>, 'Both warnings reach the model in its tool result'],
+          ['Outside the selection', <>Asked about <Code>get_debug_flag</Code>, edits <Code>get_load_dotenv</Code></>, '“Outside selection” reaches the model'],
+          ['Loop guard', <>Repeats the same <Code>read_file</Code></>, 'Nudged at 3, stopped at 5, code untouched'],
+          ['Stopping too early', 'Edits, then says “Done, it should work.”', 'Exactly one follow-up, a test run, then a verified finish'],
+          ['Partial rejection', 'One edit with two hunks; the first is rejected', 'The model receives “new baseline” and the current text'],
+          ['A note mid-run', 'Works slowly while a note is sent', 'The note arrives inside the next tool result, not as a new turn'],
+          ['Step limit', 'Keeps searching past a limit of 5 steps', 'No model switch, a notice, one wrap-up turn'],
+          ['Selection as context', 'Nothing; a selection is attached', 'The selection is in the request and on the context card'],
+          ['Selection toolbar', 'Nothing; code is selected, then deselected', 'Edit, Ask and Add to chat appear only on a selection'],
+          ['Read-only helpers', <>A subagent edits, runs pytest, runs <Code>git log</Code></>, 'Edit and pytest refused; git log allowed'],
+        ]}
+      />
+      <H2>Anvil and TrueForge, side by side</H2>
+      <Table
+        head={['Area', 'TrueForge alone', 'With Anvil']}
+        rows={[
+          ['Finding code', 'No indexing or retrieval.', 'Ranks every file under a token budget and shows the reason for each pick.'],
+          ['Model failure', 'Two retries with backoff, on the one model you configured.', 'Names the cause and hands the same request to the next model. A failing model rests for 60 seconds.'],
+          ['Stopping a run', 'Stops the model call, but waits for running tools to finish.', 'Also denies pending approvals, drops open reviews and kills the running command with its child processes.'],
+          ['Editor tools', 'An MCP client over HTTP; local addresses blocked by default.', 'Serves search, read, edit and run from a local MCP server with a key that changes on every start.'],
+          ['Reviewing edits', 'Allow or deny each tool call.', 'One approval becomes a hunk-by-hunk review. Rejected parts go back with the file as it is now.'],
+          ['Saying “done”', 'A turn ends as soon as the model replies without a tool call.', 'Success can only be claimed after a check passes. A turn that ends with untested edits gets one follow-up.'],
+          ['Stuck agents', 'No loop detection.', 'A repeated call or a short cycle gets a nudge at 3 and a stop at 5.'],
+          ['Typing while it works', 'A new message cancels the running turn.', 'The note joins the running turn at its next step, or “Stop and send” on request.'],
+          ['Step limit', 'Ends with “You have reached iteration limit”.', 'A turn-budget hint from half way, then one wrap-up turn.'],
+          ['Subagents', 'On by default, sharing all the parent’s tools, writes included.', 'Kept, but write tools and nested subagents are refused.'],
+          ['Compaction', 'At 80% of the context window.', 'At 60k input tokens (12k for local models), marked on the context gauge.'],
+          ['Tool loading', 'MCP tools are looked up on demand.', 'Anvil’s own editor tools are preloaded.'],
+          ['Prompt cache', 'Anthropic caching on by default; usage in events.', 'Tokens and cache hits shown live on the context gauge.'],
+        ]}
+      />
+      <H2>Limits</H2>
+      <List
+        items={[
+          'Safety checks are proven with a scripted model. Real models never triggered them on the fixed tasks, so this shows the checks work, not how often they are needed.',
+          'Pass rates barely moved: inline edit and failover 10 of 14 on both builds, stopping clean 14 of 14 on both, the multi-file task 9 to 10 of 14.',
+          'The 7 to 8B local models fail the fixed tasks on both builds; they do not produce a usable edit.',
+          'The fixed multi-file task is easy for file finding: both builds found every file. File finding is measured on 103 real commits instead.',
+          'Two runs per model per build, on one codebase. Haiku used more tokens after the change (313k against 268k).',
+        ]}
+      />
+      <H2>Bugs the benchmarks caught</H2>
+      <Table
+        head={['Bug', 'What happened']}
+        rows={[
+          ['Step count 15 times too high', 'Each streamed piece of a reply was counted as a step, so Haiku quit at “116 of 60”.'],
+          ['Local models lost most of the prompt', 'Ollama’s default 4k window silently cut it. Local models now run with a 16k window.'],
+          ['A lowercase drive letter broke 7 tests', 'c:\\ instead of C:\\ in the command folder made unrelated Flask tests fail.'],
+          ['A just-outside edit slipped past the scope check', 'A one-line change right after the selection was treated as an insertion and not flagged.'],
+          ['The loop guard missed a pattern', 'A failing test re-run alternating with a rejected finish was not caught.'],
+          ['Settings did not reach TrueForge', 'Changing the step limit or reasoning effort mid-session had no effect.'],
+          ['The wrap-up summarised the wrong turn', 'It continued from the turn before the one that hit the limit.'],
+        ]}
+      />
+      <P>All seven are fixed.</P>
     </>,
   ),
   doc(

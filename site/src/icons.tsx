@@ -1,6 +1,14 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Activity01Icon,
+  Alert02Icon,
+  Bug01Icon,
+  CheckListIcon,
+  Message01Icon,
+  Robot01Icon,
+  ServerStack01Icon,
+  StopIcon,
+  WifiDisconnected01Icon,
   ArrowRight02Icon,
   ArrowUp01Icon,
   BookOpen01Icon,
@@ -42,6 +50,14 @@ import {
 
 const icons = {
   activity: Activity01Icon,
+  alert: Alert02Icon,
+  bug: Bug01Icon,
+  checklist: CheckListIcon,
+  message: Message01Icon,
+  robot: Robot01Icon,
+  server: ServerStack01Icon,
+  stop: StopIcon,
+  offline: WifiDisconnected01Icon,
   arrow: ArrowRight02Icon,
   up: ArrowUp01Icon,
   book: BookOpen01Icon,
