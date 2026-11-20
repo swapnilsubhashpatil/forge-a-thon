@@ -1,22 +1,21 @@
 import { useEffect } from 'react'
 import Lenis from 'lenis'
-import { gsap, ScrollTrigger, prefersReducedMotion, setLenis } from './motion'
+import { gsap, ScrollTrigger, prefersReducedMotion, scrollToId, setLenis } from './motion'
+import { usePath } from './router'
 import Hero from './components/Hero'
-import Stack from './components/Stack'
-import Stats from './components/Stats'
+import Results from './components/Results'
 import Features from './components/Features'
 import HowItWorks from './components/HowItWorks'
-import Benchmarks from './components/Benchmarks'
 import FAQ from './components/FAQ'
-import Problem from './components/Problem'
-import BeforeAfter from './components/BeforeAfter'
-import TrueForgeCompare from './components/TrueForgeCompare'
-import Limits from './components/Limits'
 import Footer from './components/Footer'
 import ScrollProgress from './components/ScrollProgress'
+import Docs from './docs/Docs'
 
-export default function App() {
+function Landing() {
   useEffect(() => {
+    document.title = 'Anvil · the coding agent that shows its work'
+    const hash = window.location.hash.slice(1)
+    if (hash) setTimeout(() => scrollToId(hash), 80)
     if (prefersReducedMotion()) return
     const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) })
     setLenis(lenis)
@@ -32,20 +31,23 @@ export default function App() {
   }, [])
 
   return (
-    <div className="tracking-tight antialiased text-gray-900 selection:bg-black selection:text-white">
+    <>
       <ScrollProgress />
       <Hero />
-      <Stack />
-      <Stats />
-      <Problem />
-      <BeforeAfter />
-      <Benchmarks />
-      <TrueForgeCompare />
-      <Limits />
-      <HowItWorks />
+      <Results />
       <Features />
+      <HowItWorks />
       <FAQ />
       <Footer />
+    </>
+  )
+}
+
+export default function App() {
+  const path = usePath()
+  return (
+    <div className="tracking-tight text-gray-900 antialiased selection:bg-black selection:text-white">
+      {path.startsWith('/docs') ? <Docs path={path} /> : <Landing />}
     </div>
   )
 }
