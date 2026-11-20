@@ -58,6 +58,17 @@ test("a file changed by hand after the agent edit is skipped, never overwritten"
   assert.equal(state.sets[0].undone, false);
 });
 
+test("a file already restored outside Anvil counts as undone", async () => {
+  vscode.files.clear();
+  const { ledger: l, state } = ledger();
+  const id = l.begin("inline");
+  write("a.py", "agent");
+  l.record(id, uri("a.py"), "original", "agent");
+  write("a.py", "original");
+  assert.deepEqual(await l.undo(id), { restored: ["a.py"], skipped: [] });
+  assert.equal(state.sets[0].undone, true);
+});
+
 test("sets touching the same file undo newest first", async () => {
   vscode.files.clear();
   const { ledger: l } = ledger();

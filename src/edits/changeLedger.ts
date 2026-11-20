@@ -113,6 +113,11 @@ export class ChangeLedger {
       if (change.undone) continue;
       const path = relativePath(change.uri);
       const document = change.conflicted ? undefined : await openDocument(change.uri);
+      if (document && document.getText() === change.before) {
+        change.undone = true;
+        result.restored.push(path);
+        continue;
+      }
       if (!document || document.getText() !== change.after) {
         result.skipped.push(path);
         continue;

@@ -183,17 +183,14 @@ export class MessageRouter {
 
   keepAll(): void {
     this.deps.review.acceptEverywhere();
-    this.deps.ledger.keep(this.conversationSets());
+    this.deps.ledger.keep(this.openSets());
   }
 
   async discardAll(): Promise<void> {
-    const { review, ledger, store } = this.deps;
+    const { review, ledger } = this.deps;
     await review.discardAll();
-    const open = new Set(store.state.changeSets.filter((set) => !set.kept && !set.undone).map((set) => set.id));
     const skipped: string[] = [];
-    for (const id of this.conversationSets().reverse()) {
-      if (open.has(id)) skipped.push(...(await ledger.undo(id)).skipped);
-    }
+    for (const id of this.openSets()) skipped.push(...(await ledger.undo(id)).skipped);
     warnSkipped({ restored: [], skipped });
   }
 
@@ -272,14 +269,14 @@ export class MessageRouter {
     });
   }
 
-  private conversationSets(): string[] {
-    return this.deps.store.state.turns.flatMap((turn) => (turn.changeSetId ? [turn.changeSetId] : []));
+  private openSets(): string[] {
+    return this.deps.store.state.changeSets.filter((set) => !set.kept && !set.undone).map((set) => set.id);
   }
 
   private async openDiff(path: string): Promise<void> {
     const uri = this.fileUri(path);
     if (await this.deps.review.show(uri)) return;
-    const setId = this.conversationSets().find((id) => this.deps.ledger.touches(id, path));
+    const setId = this.openSets().find((id) => this.deps.ledger.touches(id, path));
     if (!setId) return this.openFile(path);
     const before = vscode.Uri.from({ scheme: SNAPSHOT_SCHEME, path: `/${path}`, query: setId });
     await vscode.commands.executeCommand("vscode.diff", before, uri, `${path} (before Anvil ↔ now)`, { preview: true });
