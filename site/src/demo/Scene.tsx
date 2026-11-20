@@ -1,11 +1,11 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { ANVIL_PATH, SPARK_PATH } from '../components/Logo'
-import { Icon } from '../icons'
+import { Icon, type IconName } from '../icons'
 import { easeInOut, enter, presence, progress, typed } from './anim'
 import { Code, cliAdded, cliAfter, cliLines, docMask, helpersBefore, helpersHunks } from './code'
 import { CODE_TOP, EDITOR_X, LAYOUT, PANEL_X, WIN, agentPrompt, askPrompt, at, focus, instruction } from './script'
 
-const C = {
+export const C = {
   window: '#1f1f1f',
   side: '#181818',
   border: '#2b2b2b',
@@ -18,17 +18,17 @@ const C = {
   raised: '#262626',
 }
 
-const mono = "'IBM Plex Mono', ui-monospace, monospace"
-const sans = "'IBM Plex Sans', system-ui, sans-serif"
+export const mono = "'IBM Plex Mono', ui-monospace, monospace"
+export const sans = "'IBM Plex Sans', system-ui, sans-serif"
 
-const amount = (t: number, ranges: [number, number][], fade = 0.45) =>
+export const amount = (t: number, ranges: [number, number][], fade = 0.45) =>
   Math.max(0, ...ranges.map(([a, b]) => Math.min(progress(t, a, fade, easeInOut), 1 - progress(t, b - fade, fade, easeInOut))))
 
-const grey = (a: number): CSSProperties => (a > 0 ? { filter: `grayscale(${a}) brightness(${1 - 0.42 * a})` } : {})
+export const grey = (a: number): CSSProperties => (a > 0 ? { filter: `grayscale(${a}) brightness(${1 - 0.42 * a})` } : {})
 
 export const RESET = at.reset + 0.4
 
-function AnvilMark({ size = 16, color = C.accent }: { size?: number; color?: string }) {
+export function AnvilMark({ size = 16, color = C.accent }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true">
       <path d={ANVIL_PATH} />
@@ -115,7 +115,7 @@ function InlineBox({ t }: { t: number }) {
   )
 }
 
-function Editor({ t }: { t: number }) {
+export function Editor({ t }: { t: number }) {
   const cli = t >= at.steps[2] - 0.2 && t < RESET
   const rows = cli ? cliRows(t) : helperRows(t)
   const selected = t < RESET ? progress(t, at.selectFrom, at.selectTo - at.selectFrom, easeInOut) * presence(t, at.selectFrom, at.submit) : 0
@@ -199,10 +199,10 @@ const tree: Array<{ name: string; depth: number; folder?: boolean; file?: string
   { name: 'README.md', depth: 1 },
 ]
 
-function Explorer({ t }: { t: number }) {
+export function Explorer({ t, changed }: { t: number; changed?: string[] }) {
   const cli = t >= at.steps[2] - 0.2 && t < RESET
   const modified = (file?: string) =>
-    t < RESET &&
+    changed ? changed.includes(file ?? '') : t < RESET &&
     ((file === 'helpers.py' && t >= at.acceptClick) ||
       (file === 'cli.py' && t >= at.steps[2]) ||
       (file === 'test_cli.py' && t >= at.steps[3]) ||
@@ -235,6 +235,17 @@ function Panel({ t }: { t: number }) {
   const failed = t >= at.send3 && t < at.strike
   const model = failed || (t >= at.composer3 && t < at.send3) ? 'gpt-5' : 'claude-sonnet-5-5'
   return (
+    <PanelFrame>
+      {start > 0 && <StartScreen opacity={start} />}
+      {conv2 && <Conversation2 t={t} opacity={fadeOut} />}
+      {conv3 && <Conversation3 t={t} opacity={fadeOut} />}
+      <Composer draft={draft} ask={ask} model={model} focused={(t >= at.composerClick && t < at.send) || (t >= at.composer3 && t < at.send3)} />
+    </PanelFrame>
+  )
+}
+
+export function PanelFrame({ children }: { children: ReactNode }) {
+  return (
     <div style={{ position: 'absolute', left: PANEL_X, top: WIN.y + LAYOUT.title, width: LAYOUT.panel, height: WIN.h - LAYOUT.title - LAYOUT.status, background: C.side, borderLeft: `1px solid ${C.border}`, fontFamily: sans, color: C.text, fontSize: 13 }}>
       <div style={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', borderBottom: `1px solid ${C.border}` }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600 }}>
@@ -249,10 +260,7 @@ function Panel({ t }: { t: number }) {
           <span>Settings</span>
         </span>
       </div>
-      {start > 0 && <StartScreen opacity={start} />}
-      {conv2 && <Conversation2 t={t} opacity={fadeOut} />}
-      {conv3 && <Conversation3 t={t} opacity={fadeOut} />}
-      <Composer draft={draft} ask={ask} model={model} t={t} />
+      {children}
     </div>
   )
 }
@@ -285,7 +293,7 @@ function StartScreen({ opacity }: { opacity: number }) {
   )
 }
 
-function MessageCard({ text, children }: { text: string; children?: ReactNode }) {
+export function MessageCard({ text, children }: { text: string; children?: ReactNode }) {
   return (
     <div style={{ margin: '12px 14px 0', border: `1px solid ${C.border}`, borderRadius: 10, background: C.raised, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.25)' }}>
       <div style={{ padding: '9px 12px', lineHeight: '19px' }}>{text}</div>
@@ -294,13 +302,13 @@ function MessageCard({ text, children }: { text: string; children?: ReactNode })
   )
 }
 
-function Chip({ label, tone }: { label: string; tone: string }) {
+export function Chip({ label, tone }: { label: string; tone: string }) {
   return (
     <span style={{ fontFamily: mono, fontSize: 11.5, padding: '1px 7px', borderRadius: 5, border: `1px solid ${tone}55`, background: `${tone}18`, color: tone }}>{label}</span>
   )
 }
 
-function Step({ t, start, icon, verb, path, tail }: { t: number; start: number; icon: 'fileSearch' | 'search' | 'fileEdit' | 'terminal'; verb: string; path: string; tail?: ReactNode }) {
+export function Step({ t, start, icon, verb, path, tail }: { t: number; start: number; icon: IconName; verb: string; path: string; tail?: ReactNode }) {
   if (t < start) return null
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 26, ...enter(progress(t, start, 0.4), 8) }}>
@@ -319,7 +327,7 @@ function Step({ t, start, icon, verb, path, tail }: { t: number; start: number; 
   )
 }
 
-const diff = (added: number, removed = 0) => (
+export const diff = (added: number, removed = 0) => (
   <span>
     <span style={{ color: C.green }}>+{added}</span> <span style={{ color: C.red }}>−{removed}</span>
   </span>
@@ -423,12 +431,11 @@ function Conversation3({ t, opacity }: { t: number; opacity: number }) {
   )
 }
 
-function Composer({ draft, ask, model, t }: { draft: string; ask: boolean; model: string; t: number }) {
-  const focused = (t >= at.composerClick && t < at.send) || (t >= at.composer3 && t < at.send3)
+export function Composer({ draft, ask = false, model = 'claude-sonnet-5-5', focused = false, chips }: { draft: string; ask?: boolean; model?: string; focused?: boolean; chips?: ReactNode }) {
   const tone = ask ? C.blue : C.accent
   return (
     <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14, height: 92, borderRadius: 12, border: `1px solid ${focused ? tone : `${tone}66`}`, background: '#1e1e1e', boxShadow: '0 8px 24px rgba(0,0,0,.35)', padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <div style={{ color: draft ? C.text : C.muted, lineHeight: '18px', height: 36, overflow: 'hidden' }}>{draft || 'Describe a change, @ for files, / for skills'}</div>
+      <div style={{ color: draft ? C.text : C.muted, lineHeight: '18px', height: 36, overflow: 'hidden', display: 'flex', gap: 6, alignItems: 'flex-start' }}>{chips}{draft || (chips ? '' : 'Describe a change, @ for files, / for skills')}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: C.muted }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: tone }}>
           <Icon name={ask ? 'eye' : 'edit'} size={13} />
@@ -443,9 +450,7 @@ function Composer({ draft, ask, model, t }: { draft: string; ask: boolean; model
   )
 }
 
-export function Scene({ t }: { t: number }) {
-  const editorFocus = amount(t, focus.editor)
-  const panelFocus = amount(t, focus.panel)
+export function Desktop({ editorFocus = 0, panelFocus = 0, explorer, editor, panel }: { editorFocus?: number; panelFocus?: number; explorer: ReactNode; editor: ReactNode; panel: ReactNode }) {
   const any = Math.max(editorFocus, panelFocus)
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
@@ -470,11 +475,11 @@ export function Scene({ t }: { t: number }) {
             </span>
           </div>
           <div style={grey(panelFocus)}>
-            <Explorer t={t} />
-            <Editor t={t} />
+            {explorer}
+            {editor}
           </div>
           <div style={grey(editorFocus)}>
-            <Panel t={t} />
+            {panel}
           </div>
           <div style={{ position: 'absolute', left: WIN.x, top: WIN.y + WIN.h - LAYOUT.status, width: WIN.w, height: LAYOUT.status, background: '#181818', borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 16, padding: '0 12px', fontFamily: sans, fontSize: 12, color: C.muted, ...grey(any) }}>
             <span>main</span>
@@ -485,4 +490,8 @@ export function Scene({ t }: { t: number }) {
       </div>
     </div>
   )
+}
+
+export function Scene({ t }: { t: number }) {
+  return <Desktop editorFocus={amount(t, focus.editor)} panelFocus={amount(t, focus.panel)} explorer={<Explorer t={t} />} editor={<Editor t={t} />} panel={<Panel t={t} />} />
 }

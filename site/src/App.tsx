@@ -3,9 +3,10 @@ import Lenis from 'lenis'
 import { gsap, ScrollTrigger, prefersReducedMotion, scrollToId, setLenis } from './motion'
 import { usePath } from './router'
 import Hero from './components/Hero'
-import Results from './components/Results'
-import Features from './components/Features'
-import HowItWorks from './components/HowItWorks'
+import Receipts from './components/Receipts'
+import Benchmarks from './components/Benchmarks'
+import FeatureFilms from './components/FeatureFilms'
+import Architecture from './components/Architecture'
 import FAQ from './components/FAQ'
 import Footer from './components/Footer'
 import ScrollProgress from './components/ScrollProgress'
@@ -34,9 +35,10 @@ function Landing() {
     <>
       <ScrollProgress />
       <Hero />
-      <Results />
-      <Features />
-      <HowItWorks />
+      <Receipts />
+      <Benchmarks />
+      <FeatureFilms />
+      <Architecture />
       <FAQ />
       <Footer />
     </>

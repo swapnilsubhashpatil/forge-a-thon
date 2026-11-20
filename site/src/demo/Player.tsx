@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../icons'
 import { cameraAt, cursorAt, easeInOut, easeOut, progress } from './anim'
-import { Scene } from './Scene'
-import { LOOP_S, STAGE, camera, chapters, cursor, type ChapterId } from './script'
+import type { Chapter, Film } from './film'
+import { STAGE } from './script'
+import { tour } from './tour'
 
 const NARROW = 720
 
@@ -56,7 +57,7 @@ function Cursor({ x, y, press, visible }: { x: number; y: number; press: number;
   )
 }
 
-function Caption({ t, chapter, size }: { t: number; chapter: (typeof chapters)[number]; size: 'stage' | 'page' }) {
+function Caption({ t, chapter, size }: { t: number; chapter: Chapter; size: 'stage' | 'page' }) {
   const u = t - chapter.from
   const dur = chapter.to - chapter.from
   const out = progress(u, dur - 0.55, 0.4, easeInOut)
@@ -81,10 +82,11 @@ function Caption({ t, chapter, size }: { t: number; chapter: (typeof chapters)[n
   )
 }
 
-export default function DemoPlayer({ only, label = 'Product demo' }: { only?: ChapterId; label?: string }) {
+export default function DemoPlayer({ film = tour, only, label = 'Product demo' }: { film?: Film; only?: string; label?: string }) {
+  const { chapters } = film
   const { ref, width } = useWidth()
   const scope = only ? chapters.find((c) => c.id === only)! : undefined
-  const range: [number, number] = scope ? [scope.from, scope.to] : [0, LOOP_S]
+  const range: [number, number] = scope ? [scope.from, scope.to] : [0, film.duration]
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const [userPaused, setUserPaused] = useState(reduced)
   const [visible, setVisible] = useState(false)
@@ -100,12 +102,12 @@ export default function DemoPlayer({ only, label = 'Product demo' }: { only?: Ch
 
   const narrow = width > 0 && width < NARROW
   const scale = width / STAGE.w
-  const cam = cameraAt(camera, t)
+  const cam = cameraAt(film.camera, t)
   const zoom = cam.zoom * (narrow ? 1.75 : 1)
   const half = { w: STAGE.w / 2 / zoom, h: STAGE.h / 2 / zoom }
   const cx = Math.min(Math.max(cam.x, half.w), STAGE.w - half.w)
   const cy = Math.min(Math.max(cam.y, half.h), STAGE.h - half.h)
-  const pointer = cursorAt(cursor, t)
+  const pointer = cursorAt(film.cursor, t)
   const chapter = chapters.find((c) => t >= c.from && t < c.to) ?? chapters[0]
 
   return (
@@ -114,7 +116,7 @@ export default function DemoPlayer({ only, label = 'Product demo' }: { only?: Ch
         {width > 0 && (
           <div style={{ position: 'absolute', left: 0, top: 0, width: STAGE.w, height: STAGE.h, transform: `scale(${scale})`, transformOrigin: '0 0', textAlign: 'left' }}>
             <div style={{ position: 'absolute', left: 0, top: 0, width: STAGE.w, height: STAGE.h, transform: `translate(${STAGE.w / 2 - cx * zoom}px, ${STAGE.h / 2 - cy * zoom}px) scale(${zoom})`, transformOrigin: '0 0' }}>
-              <Scene t={t} />
+              {film.render(t)}
             </div>
             <Cursor x={(pointer.x - cx) * zoom + STAGE.w / 2} y={(pointer.y - cy) * zoom + STAGE.h / 2} press={pointer.press} visible={pointer.visible} />
             {!narrow && (
@@ -140,7 +142,7 @@ export default function DemoPlayer({ only, label = 'Product demo' }: { only?: Ch
           <Caption t={t} chapter={chapter} size="page" />
         </div>
       )}
-      {!only && (
+      {!only && chapters.length > 1 && (
         <div className="mt-4 grid grid-cols-3 gap-2" role="tablist" aria-label="Demo chapters">
           {chapters.map((c) => {
             const active = c.id === chapter.id

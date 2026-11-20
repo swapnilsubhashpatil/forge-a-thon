@@ -61,13 +61,13 @@ export default function Navbar() {
               {item.label}
             </a>
           ))}
-          <Link to="/docs" onMouseEnter={() => setHovered('docs')} className="relative px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
-            {hovered === 'docs' && <motion.span layoutId="nav-pill" className="absolute inset-0 -z-10 rounded-full bg-gray-200/60" transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }} />}
-            Docs
-          </Link>
         </div>
 
         <div className="flex items-center gap-2">
+          <Link to="/docs" className="hidden items-center gap-1.5 rounded-full border border-gray-300/80 bg-white/70 px-4 py-2 text-sm font-semibold text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:border-gray-400 hover:bg-white md:inline-flex">
+            <Icon name="book" size={15} />
+            Docs
+          </Link>
           <a href={REPO_URL} target="_blank" rel="noreferrer" aria-label="Anvil on GitHub" className="hidden size-9 place-items-center rounded-full text-gray-700 transition hover:bg-gray-200/60 md:grid">
             <Icon name="github" size={18} />
           </a>
