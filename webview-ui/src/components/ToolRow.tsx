@@ -16,6 +16,7 @@ const toolIcons: Record<string, GlyphName> = {
   find_references: "link",
   finish_task: "check-circle",
   update_plan: "plan",
+  use_skill: "book",
 };
 
 function resultChip(step: ToolStep): { text: string; tone: string } | undefined {

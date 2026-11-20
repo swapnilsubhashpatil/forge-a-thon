@@ -19,6 +19,7 @@ export interface ContextReport {
   live?: ContextLive;
   verify?: string;
   rules?: string[];
+  skills?: string[];
   attachments?: Array<{ label: string; kind: Attachment["kind"]; tokens: number }>;
   slices?: Array<{ path: string; start: number; end: number }>;
 }

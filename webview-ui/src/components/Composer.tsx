@@ -4,9 +4,10 @@ import { cx } from "../format.ts";
 import { useStore } from "../state/store.ts";
 import { post, type Draft } from "../state/vscode.ts";
 import { LiveStrip } from "./LiveStrip.tsx";
-import { AttachmentChip, IMAGE_TYPES, MAX_IMAGES, readImages } from "./AttachmentChip.tsx";
+import { AttachmentChip, IMAGE_TYPES, LiveSelectionChip, MAX_IMAGES, readImages } from "./AttachmentChip.tsx";
 import type { GlyphName } from "./Glyph.tsx";
 import { MentionMenu, mentionId } from "./MentionMenu.tsx";
+import { useSkillMenu } from "./SkillMenu.tsx";
 import { ModelPicker, useListbox } from "./ModelPicker.tsx";
 import { Icon } from "./primitives.tsx";
 
@@ -170,6 +171,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
   const [activeIndex, setActiveIndex] = useState(0);
   const results = useStore((snapshot) => snapshot.mentions);
   const focusRequests = useStore((snapshot) => snapshot.focusRequests);
+  const skillMenu = useSkillMenu(chat.skills, draft.text, (name) => onDraftChange({ ...draft, text: `/${name} ` }));
 
   const ready = chat.harness.state === "ready";
   const items = mention && results.requestId === requestId ? results.items : [];
@@ -211,13 +213,13 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
   function send() {
     const text = draft.text.trim();
     if (!text || !ready) return;
-    post({ type: "send", text, mentions: usedMentions(draft), attachments: draft.attachments, mode: chat.mode });
+    post({ type: "send", text, mentions: usedMentions(draft), attachments: draft.attachments, mode: chat.mode, includeSelection: chat.editorSelection !== undefined });
     onDraftChange({ text: "", mentions: [], attachments: [] });
     setMention(undefined);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.nativeEvent.isComposing) return;
+    if (event.nativeEvent.isComposing || skillMenu.onKeyDown(event)) return;
     if (menuOpen && items.length > 0) {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
@@ -296,9 +298,10 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
           ask ? "border-blue/30 focus-within:border-blue/70" : "border-orange/30 focus-within:border-orange/70",
         )}
       >
-        {(draft.attachments?.length ?? 0) > 0 && (
+        {((draft.attachments?.length ?? 0) > 0 || chat.editorSelection) && (
           <ul className="flex flex-wrap gap-1 px-2 pt-2" aria-label="Attached to this message">
-            {draft.attachments!.map((attachment) => (
+            {chat.editorSelection && <LiveSelectionChip selection={chat.editorSelection} />}
+            {(draft.attachments ?? []).map((attachment) => (
               <AttachmentChip key={attachment.id} attachment={attachment} onRemove={() => removeAttachment(attachment.id)} />
             ))}
           </ul>
@@ -309,22 +312,23 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
           </p>
         )}
         {menuOpen && <MentionMenu items={items} activeIndex={activeIndex} onSelect={select} onHover={setActiveIndex} />}
+        {skillMenu.menu}
         <textarea
           ref={inputRef}
           value={draft.text}
           rows={1}
           aria-label="Message Anvil"
           role="combobox"
-          aria-expanded={menuOpen}
-          aria-controls={menuOpen ? "mention-menu" : undefined}
-          aria-activedescendant={menuOpen && items.length > 0 ? mentionId(activeIndex) : undefined}
+          aria-expanded={menuOpen || skillMenu.open}
+          aria-controls={menuOpen ? "mention-menu" : skillMenu.open ? "skill-menu" : undefined}
+          aria-activedescendant={menuOpen && items.length > 0 ? mentionId(activeIndex) : skillMenu.activeId}
           aria-autocomplete="list"
           placeholder={
             chat.busy
               ? "Anvil is working. Steer it with a note, or Esc to stop"
               : ask
-                ? "Ask about the code, @ to add files or symbols"
-                : "Describe a change, @ to add files or symbols"
+                ? "Ask about the code, @ for files, / for skills"
+                : "Describe a change, @ for files, / for skills"
           }
           onChange={(event) => updateText(event.target.value, event.target.selectionStart)}
           onKeyDown={onKeyDown}

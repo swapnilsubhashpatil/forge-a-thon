@@ -11,6 +11,8 @@ import type { ReviewController } from "../edits/reviewController.ts";
 import type { AgentMode, AnvilSettings, Attachment, HostMessage, MentionItem, WebviewMessage } from "../shared/protocol.ts";
 import type { ReadCache } from "../tools/editorTools.ts";
 import { inWorkspace } from "./attachCommands.ts";
+import type { SelectionContext } from "./selectionContext.ts";
+import type { SkillManager } from "./skillManager.ts";
 
 export const SNAPSHOT_SCHEME = "anvil-snapshot";
 const MENTION_LIMIT = 12;
@@ -51,6 +53,8 @@ export interface RouterDeps {
   index: WorkspaceIndex;
   indexReady: Promise<void>;
   readCache: ReadCache;
+  skills: SkillManager;
+  selection: SelectionContext;
   modelChain: () => string[];
   send: (text: string, mentions: string[], attachments: Attachment[], mode: AgentMode) => Promise<void>;
   connect: () => Promise<void>;
@@ -74,9 +78,22 @@ export class MessageRouter {
     switch (message.type) {
       case "ready":
         runner.refreshModelHealth();
+        this.deps.skills.refresh();
+        break;
+      case "createSkill":
+      case "toggleSkill":
+      case "openSkill":
+      case "deleteSkill":
+        await this.deps.skills.handle(message);
         break;
       case "send":
-        await this.send(message.text, message.mentions, withinImageLimit(message.attachments ?? []), message.mode);
+        await this.send(message.text, message.mentions, await this.withLiveSelection(withinImageLimit(message.attachments ?? []), message.includeSelection), message.mode);
+        break;
+      case "pinSelection":
+        await this.deps.selection.pin();
+        break;
+      case "dismissSelection":
+        this.deps.selection.hide();
         break;
       case "continue":
         await this.send(CONTINUE_PROMPT, [], [], store.state.mode);
@@ -186,6 +203,11 @@ export class MessageRouter {
       if (open.has(id)) skipped.push(...(await ledger.undo(id)).skipped);
     }
     warnSkipped({ restored: [], skipped });
+  }
+
+  private async withLiveSelection(attachments: Attachment[], include = false): Promise<Attachment[]> {
+    const live = include ? await this.deps.selection.liveAttachment().catch(() => undefined) : undefined;
+    return live && !attachments.some((entry) => entry.path === live.path && entry.label === live.label) ? [live, ...attachments] : attachments;
   }
 
   private async send(text: string, mentions: string[], attachments: Attachment[], mode: AgentMode): Promise<void> {

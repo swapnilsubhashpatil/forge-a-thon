@@ -72,6 +72,17 @@ Branch `feat/ux-iteration`, same model and settings as above.
 Python for the suites needs Flask installed (`pip install -e ../flask-3.1.3`); without its package metadata
 `test_get_version` fails and the M8 guard reports a false failure.
 
+## Re-run after selection, inline edit and skills (2026-11-20)
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | clean |
+| `npm test` | 106 / 106 pass (adds Keep both, selection label and skills tests) |
+| `node scripts/e2e-guards.mjs` | 10 / 10 pass, including the new selection toolbar scenario |
+| `npm run e2e` with Sonnet | Task A 6.0 s, Task C failover 4.9 s, cancel, restore pass; Task B 3 files, pytest 56 passed, 27.8 s |
+
+Not covered by automation: focus and Ctrl+Enter in the inline edit box (VS Code comment widget); checked by hand.
+
 ## Independent review
 
 A five-lens review (agent loop, diff safety, security, webview contract, lifecycle/packaging) reported 1

@@ -25,11 +25,12 @@ import { HarnessProcess } from "./harness/harnessProcess.ts";
 import type { AgentMode, Attachment, ReviewMode } from "./shared/protocol.ts";
 import { createEditorTools, ReadCache } from "./tools/editorTools.ts";
 import { startToolServer, type RunningToolServer } from "./tools/toolServer.ts";
-import { registerAskSelection } from "./ui/askSelection.ts";
 import { registerAttachCommands } from "./ui/attachCommands.ts";
 import { ChatViewProvider } from "./ui/chatViewProvider.ts";
-import { inlineRequest, runInlineEdit } from "./ui/inlineEdit.ts";
+import { InlineEditor, inlineRequest } from "./ui/inlineEdit.ts";
 import { MessageRouter, readSettings, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
+import { SelectionContext } from "./ui/selectionContext.ts";
+import { SkillManager } from "./ui/skillManager.ts";
 
 const FOLDER_COMMANDS = [
   "anvil.inlineEdit",
@@ -43,6 +44,8 @@ const FOLDER_COMMANDS = [
   "anvil.discardAll",
   "anvil.showHistory",
   "anvil.showSettings",
+  "anvil.newSkill",
+  "anvil.openSkillsFolder",
 ];
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -111,6 +114,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const index = new WorkspaceIndex(folder.uri.fsPath);
   const edits = new EditCoordinator(folder.uri, review, (path) => runner.noteFileEdited(path));
   edits.reviewMode = () => config().get<ReviewMode>("review.mode", "review");
+  const skills = new SkillManager(folder.uri, store);
   const runner = new TurnRunner({
     client: () => client,
     store,
@@ -180,6 +184,8 @@ export async function activate(context: vscode.ExtensionContext) {
         onCommandResult: (command, exitCode) => runner.noteCommand(command, exitCode),
         finishTask: (args) => runner.finishTask(args),
         updatePlan: (plan) => runner.updatePlan(plan),
+        useSkill: (name) => skills.use(name),
+        skillFile: (path) => skills.file(path),
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
       availableModels = await client.listModels().catch(() => []);
@@ -245,10 +251,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const activeFiles = vscode.window.visibleTextEditors
       .map((editor) => vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/"))
       .filter((path) => index.get(path));
-    const ranked = rankFiles(index, { text, mentions: mentionPaths, activeFiles });
+    skills.refresh();
+    const skill = skills.invocation(text);
+    const ranked = rankFiles(index, { text: skill?.request ?? text, mentions: mentionPaths, activeFiles });
     const targets = ranked.filter((file) => file.role !== "reference").map((file) => file.path);
     const verify = detectTestCommand(folder.uri.fsPath, index.files().map((file) => file.path), targets);
-    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify, loadProjectRules(folder.uri.fsPath));
+    const pack = await buildContextPack(index, ranked, config().get<number>("context.budgetTokens", 6000), verify, loadProjectRules(folder.uri.fsPath), skills.index());
+    if (skill) pack.report.skills = [skill.name];
     const attached = formatAttachments(attachments);
     if (attachments.length) {
       pack.report.attachments = attachments.map((attachment) => ({ label: attachment.label, kind: attachment.kind, tokens: Math.round(attached.tokens / attachments.length) }));
@@ -258,7 +267,7 @@ export async function activate(context: vscode.ExtensionContext) {
       title: text.slice(0, 80),
       prompt: text,
       mentions,
-      message: `${attached.text}${pack.text}\n\n${text}`,
+      message: `${attached.text}${skill?.preamble ?? ""}${pack.text}\n\n${text}`,
       attachments,
       context: pack.report,
     });
@@ -285,6 +294,8 @@ export async function activate(context: vscode.ExtensionContext) {
     runner.refreshModelHealth();
   };
 
+  const selection = new SelectionContext(folder.uri, store, review, (attachment) => chatView.attach(attachment));
+  const inline = new InlineEditor(runner, review, folder.uri, flushQueue);
   const messages = new MessageRouter({
     folder: folder.uri,
     store,
@@ -295,6 +306,8 @@ export async function activate(context: vscode.ExtensionContext) {
     index,
     indexReady,
     readCache,
+    skills,
+    selection,
     modelChain,
     send: sendPrompt,
     connect,
@@ -307,20 +320,17 @@ export async function activate(context: vscode.ExtensionContext) {
   const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "**/*"));
   const relative = (uri: vscode.Uri) => vscode.workspace.asRelativePath(uri, false).replaceAll("\\", "/");
   const ignored = (uri: vscode.Uri) => /(^|\/)(\.git|node_modules|\.venv|venv|__pycache__|dist)(\/|$)/.test(relative(uri));
-  const attach = (attachment: Attachment) => chatView.attach(attachment);
   context.subscriptions.push(
     watcher,
     watcher.onDidChange((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidCreate((uri) => !ignored(uri) && void index.refresh(relative(uri))),
     watcher.onDidDelete((uri) => !ignored(uri) && index.remove(relative(uri))),
-    ...registerAttachCommands(folder.uri, attach),
-    ...registerAskSelection(folder.uri, attach),
+    selection,
+    inline,
+    ...registerAttachCommands(folder.uri, selection.attach),
+    ...skills.register(),
     vscode.workspace.registerTextDocumentContentProvider(SNAPSHOT_SCHEME, {
       provideTextDocumentContent: (uri) => ledger.before(uri.query, uri.path.slice(1)) ?? "",
-    }),
-    vscode.commands.registerCommand("anvil.inlineEdit", async () => {
-      await runInlineEdit(runner, folder.uri);
-      await flushQueue();
     }),
     vscode.commands.registerCommand("anvil.newSession", () => route({ type: "newSession" })),
     vscode.commands.registerCommand("anvil.cancel", () => runner.cancel()),
@@ -352,7 +362,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const ready = connect();
   const runInline = async (path: string, firstLine: number, lastLine: number, instruction: string) => {
     const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...path.split("/")));
-    await runner.run(inlineRequest(document, path, firstLine, lastLine, instruction));
+    return runner.run(inlineRequest(document, path, firstLine, lastLine, instruction));
   };
   return { ready, runner, store, sendPrompt, runInline, ledger };
 }

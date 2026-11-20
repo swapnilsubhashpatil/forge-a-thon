@@ -22,6 +22,7 @@ export interface ReviewOutcome {
   status: "accepted" | "partial" | "rejected" | "discarded";
   accepted: number;
   rejected: number;
+  keptBoth: number;
   total: number;
   finalText: string;
   rejectedPatch: string;
@@ -65,6 +66,8 @@ export class ReviewController implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[];
   private epoch = 0;
   private proposalSeq = 0;
+  private readonly befores = new Map<string, string>();
+  private readonly beforeQuery = new Map<string, string>();
 
   readonly onDidChangeState = this.stateEmitter.event;
 
@@ -77,6 +80,8 @@ export class ReviewController implements vscode.Disposable {
       this.addedStyle,
       vscode.commands.registerCommand("anvil.acceptHunk", (target?: unknown, index?: number) => this.decideHunk(target, index, "accepted")),
       vscode.commands.registerCommand("anvil.rejectHunk", (target?: unknown, index?: number) => this.decideHunk(target, index, "rejected")),
+      vscode.commands.registerCommand("anvil.keepBothHunk", (target?: unknown, index?: number) => this.decideHunk(target, index, "both")),
+      vscode.commands.registerCommand("anvil.openReviewDiff", (target?: unknown) => this.openDiff(target)),
       vscode.commands.registerCommand("anvil.acceptAll", (target?: unknown) => this.decideAll(target, "accepted")),
       vscode.commands.registerCommand("anvil.rejectAll", (target?: unknown) => this.decideAll(target, "rejected")),
       vscode.commands.registerCommand("anvil.nextChange", () => this.revealChange(1)),
@@ -86,7 +91,7 @@ export class ReviewController implements vscode.Disposable {
         provideCodeLenses: (document) => this.lenses(document),
       }),
       vscode.workspace.registerTextDocumentContentProvider(PROPOSAL_SCHEME, {
-        provideTextDocumentContent: (uri) => (uri.query === "empty" ? "" : this.findSession(uri.toString())?.request.proposal ?? ""),
+        provideTextDocumentContent: (uri) => (uri.query === "empty" ? "" : this.befores.get(uri.query) ?? this.findSession(uri.toString())?.request.proposal ?? ""),
       }),
       vscode.workspace.onDidChangeTextDocument((event) => this.onEdited(event)),
       vscode.workspace.onDidCloseTextDocument((document) => this.onClosed(document)),
@@ -122,6 +127,7 @@ export class ReviewController implements vscode.Disposable {
   async applyNow(request: ReviewRequest): Promise<ReviewOutcome> {
     const hunks = computeHunks(request.baseline, request.proposal);
     if (hunks.length === 0) return outcomeOf(request, hunks, [], request.baseline, false);
+    this.remember(request);
     try {
       if (request.isNewFile) await vscode.workspace.fs.writeFile(request.uri, new TextEncoder().encode(request.proposal));
       else await saveText(await vscode.workspace.openTextDocument(request.uri), request.proposal);
@@ -136,6 +142,11 @@ export class ReviewController implements vscode.Disposable {
 
   acceptEverywhere(): void {
     for (const session of [...this.sessions.values()]) this.decide(session, session.hunks.map((hunk) => hunk.index), "accepted");
+  }
+
+  acceptAll(uri: vscode.Uri): void {
+    const session = this.sessions.get(uri.toString());
+    if (session) this.decide(session, session.hunks.map((hunk) => hunk.index), "accepted");
   }
 
   isReviewing(uri: vscode.Uri): boolean {
@@ -159,6 +170,16 @@ export class ReviewController implements vscode.Disposable {
     if (!session) return false;
     if (session.request.isNewFile) await this.showDiff(session);
     else await vscode.window.showTextDocument(session.request.uri, { preview: false });
+    return true;
+  }
+
+  async openDiff(target?: unknown): Promise<boolean> {
+    const uri = target instanceof vscode.Uri ? target : typeof target === "string" ? vscode.Uri.parse(target) : vscode.window.activeTextEditor?.document.uri;
+    const query = uri && this.beforeQuery.get(uri.toString());
+    if (!uri || !query) return false;
+    const session = this.sessions.get(uri.toString());
+    const path = vscode.workspace.asRelativePath(uri, false);
+    await vscode.commands.executeCommand("vscode.diff", uri.with({ scheme: PROPOSAL_SCHEME, query }), session?.proposalUri ?? uri, `${path}: before ↔ Anvil`, { preview: true });
     return true;
   }
 
@@ -189,6 +210,7 @@ export class ReviewController implements vscode.Disposable {
     const hunks = computeHunks(request.baseline, request.proposal);
     if (hunks.length === 0) return Promise.resolve(outcomeOf(request, hunks, [], request.baseline, false));
     const decisions: HunkDecision[] = hunks.map(() => "pending");
+    this.remember(request);
     return new Promise((done) => {
       const session: Session = {
         request,
@@ -209,6 +231,15 @@ export class ReviewController implements vscode.Disposable {
         return this.settle(session, true);
       });
     });
+  }
+
+  private remember(request: ReviewRequest): void {
+    const key = request.uri.toString();
+    const previous = this.beforeQuery.get(key);
+    if (previous) this.befores.delete(previous);
+    const query = `before-${++this.proposalSeq}`;
+    this.befores.set(query, request.baseline);
+    this.beforeQuery.set(key, query);
   }
 
   private async showInline(session: Session): Promise<void> {
@@ -372,6 +403,7 @@ export class ReviewController implements vscode.Disposable {
     const lenses = [
       new vscode.CodeLens(top, { title: "$(check-all) Accept all", command: "anvil.acceptAll", arguments: args }),
       new vscode.CodeLens(top, { title: "$(close-all) Reject all", command: "anvil.rejectAll", arguments: args }),
+      new vscode.CodeLens(top, { title: "$(diff) Open diff", command: "anvil.openReviewDiff", arguments: args }),
       new vscode.CodeLens(top, { title: `${pending} of ${session.hunks.length} changes pending`, command: "" }),
     ];
     const flags = flagHunks(session.hunks, session.request.fence);
@@ -382,6 +414,7 @@ export class ReviewController implements vscode.Disposable {
       lenses.push(
         new vscode.CodeLens(at, { title: "$(check) Accept", command: "anvil.acceptHunk", arguments: [session.key, hunk.index] }),
         new vscode.CodeLens(at, { title: "$(close) Reject", command: "anvil.rejectHunk", arguments: [session.key, hunk.index] }),
+        ...(hunk.added > 0 && hunk.removed > 0 ? [new vscode.CodeLens(at, { title: "$(split-vertical) Keep both", tooltip: "Keep the original lines and insert the new lines after them", command: "anvil.keepBothHunk", arguments: [session.key, hunk.index] })] : []),
         new vscode.CodeLens(at, { title: `+${hunk.added} −${hunk.removed}`, command: "" }),
       );
       const ghost = groundingFlags(session.request, session.hunks)[hunk.index];
@@ -414,20 +447,22 @@ export class ReviewController implements vscode.Disposable {
 }
 
 function outcomeOf(request: ReviewRequest, hunks: Hunk[], decisions: HunkDecision[], finalText: string, discarded: boolean): ReviewOutcome {
-  const accepted = decisions.filter((d) => d === "accepted").length;
+  const keptBoth = decisions.filter((d) => d === "both").length;
+  const accepted = decisions.filter((d) => d === "accepted").length + keptBoth;
   const total = hunks.length;
-  const status = discarded ? "discarded" : accepted === total ? "accepted" : accepted === 0 ? "rejected" : "partial";
+  const status = discarded ? "discarded" : accepted === total && keptBoth === 0 ? "accepted" : accepted === 0 ? "rejected" : "partial";
   const path = vscode.workspace.asRelativePath(request.uri, false);
   return {
     status,
     accepted,
     rejected: total - accepted,
+    keptBoth,
     total,
     finalText,
     rejectedPatch: finalText === request.proposal ? "" : formatPatch(path, finalText, request.proposal),
     stat: diffStat(request.baseline, finalText),
     scopeNote: discarded ? undefined : reviewNotes(request, hunks),
-    currentRegion: discarded || accepted === total ? undefined : currentRegion(finalText, request.proposal),
+    currentRegion: discarded || finalText === request.proposal ? undefined : currentRegion(finalText, request.proposal),
   };
 }
 

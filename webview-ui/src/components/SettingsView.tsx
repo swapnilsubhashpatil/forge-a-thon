@@ -4,6 +4,7 @@ import { cx, shortModel } from "../format.ts";
 import { post } from "../state/vscode.ts";
 import { useListbox } from "./ModelPicker.tsx";
 import { Icon, IconButton } from "./primitives.tsx";
+import { SkillsSettings } from "./SkillsSettings.tsx";
 
 const efforts: AnvilSettings["reasoningEffort"][] = ["default", "none", "low", "medium", "high"];
 
@@ -204,6 +205,9 @@ export function SettingsView({ chat }: { chat: ChatState }) {
       </Section>
       <Section title="Context budget" hint="Tokens of code Anvil packs before the agent starts.">
         <BudgetInput key={settings.budgetTokens} value={settings.budgetTokens} />
+      </Section>
+      <Section title="Skills" hint="Instructions the agent loads when a request matches, or when you type /name.">
+        <SkillsSettings skills={chat.skills} />
       </Section>
       <Section title="MCP servers" hint="Tool servers TrueForge has connected.">
         {chat.mcpServers.length === 0 ? (

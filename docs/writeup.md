@@ -129,6 +129,9 @@ through nine guard scenarios; all pass, and they found four bugs that are now fi
   servers TrueForge sees.
 - **Auto-approve.** Command prefixes that run without asking, plus "Allow for this session" on approval cards.
 - **Failover marker** on the turn: which model failed, why, and which took over.
+- **Selection toolbar.** Selecting code shows Edit, Ask and Add to chat above it; the live selection follows into the chat as a chip, and pinning collects several.
+- **Inline edit in the editor.** Ctrl+Alt+K opens a box under the selection; the change is reviewed in place with Accept, Reject or Keep both, Open diff shows before and after, and Refine iterates on the same lines.
+- **Skills.** Claude Code compatible SKILL.md folders (project or user); the agent loads a matching one with `use_skill`, `/name` runs one by hand, Settings creates, toggles, opens and deletes them.
 - **Type and icons.** IBM Plex Sans and Mono with a custom glyph set; colours stay on VS Code theme tokens.
 
 ## Scorecard
@@ -158,4 +161,4 @@ API, React 19, Vite 8, Tailwind CSS 4, IBM Plex, Hugeicons, jsdiff, esbuild, `@v
 - Small local models (around 4B parameters) sometimes write tool calls as text instead of calling the tool. The instructions forbid it, but the result still depends on the model.
 - With Auto Save on, a save during review discards that review, so the review text never reaches disk. Anvil warns when Auto Save is on.
 - The scope, grounding and loop guards never fire on Task B, because the models that pass it behave; they are proven against a scripted model instead.
-- Single-root workspaces only. Skills and Code Mode are not used, because they need a paid sandbox.
+- Single-root workspaces only. TrueForge Skills and Code Mode are not used, because they need a paid sandbox; Anvil ships its own skills (`docs/skills.md`).

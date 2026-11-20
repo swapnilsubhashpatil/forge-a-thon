@@ -14,6 +14,12 @@ export function inWorkspace(uri: vscode.Uri, folder: vscode.Uri): boolean {
   return vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() === folder.toString();
 }
 
+export function selectedLines(selection: vscode.Selection): { startLine: number; endLine: number } {
+  const startLine = selection.start.line;
+  const endLine = selection.end.character === 0 && selection.end.line > startLine ? selection.end.line - 1 : selection.end.line;
+  return { startLine, endLine };
+}
+
 export function selectionFromEditor(editor: vscode.TextEditor | undefined, folder: vscode.Uri): Attachment | undefined {
   if (!editor) return undefined;
   const path = vscode.workspace.asRelativePath(editor.document.uri, false).replaceAll("\\", "/");
@@ -22,8 +28,7 @@ export function selectionFromEditor(editor: vscode.TextEditor | undefined, folde
     return undefined;
   }
   const selection = editor.selection;
-  const startLine = selection.start.line;
-  const endLine = selection.end.character === 0 && selection.end.line > startLine ? selection.end.line - 1 : selection.end.line;
+  const { startLine, endLine } = selectedLines(selection);
   const range = selection.isEmpty
     ? editor.document.lineAt(startLine).range
     : new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length);

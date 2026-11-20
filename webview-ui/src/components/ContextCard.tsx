@@ -114,6 +114,17 @@ export function ContextCard({ report }: { report: ContextReport }) {
       </button>
       {open && (
         <div className="px-1 pb-2">
+          {(report.skills?.length ?? 0) > 0 && (
+            <div className="mb-1 flex flex-wrap items-center gap-1 border-b border-border px-2 pb-1.5 text-xs text-muted">
+              <Icon name="pin" />
+              {report.skills!.map((name) => (
+                <span key={name} className="flex items-center gap-1 rounded-sm bg-purple/14 px-1.5 font-mono text-purple">
+                  <Icon name="book" />
+                  skill: {name}
+                </span>
+              ))}
+            </div>
+          )}
           {(report.attachments?.length ?? 0) > 0 && (
             <div className="mb-1 border-b border-border px-2 pb-1.5">
               <div className="mb-1 flex items-center gap-1 text-xs text-muted">

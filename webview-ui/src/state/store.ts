@@ -18,6 +18,7 @@ const initialChat: ChatState = {
   pendingReviews: [],
   settings: { chain: [], reasoningEffort: "default", reviewMode: "review", autoApprove: [], budgetTokens: 0 },
   mcpServers: [],
+  skills: [],
   turns: [],
   harness: { state: "connecting", url: "" },
   models: [],
