@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import DemoPlayer from '../demo/Player'
+import { films } from '../demo/films'
 import type { ChapterId } from '../demo/script'
 
 export const H2 = ({ children }: { children: ReactNode }) => (
@@ -75,8 +76,8 @@ export const Note = ({ children }: { children: ReactNode }) => (
   <div className="my-6 rounded-2xl border border-ember-100 bg-ember-50/60 px-5 py-4 leading-7 text-gray-800">{children}</div>
 )
 
-export const Demo = ({ chapter, caption }: { chapter: ChapterId; caption: string }) => (
+export const Demo = ({ chapter, film, caption }: { chapter?: ChapterId; film?: keyof typeof films; caption: string }) => (
   <div className="my-8">
-    <DemoPlayer only={chapter} label={caption} />
+    <DemoPlayer film={film ? films[film] : undefined} only={film ? undefined : chapter} label={caption} />
   </div>
 )

@@ -142,6 +142,7 @@ npm run harness     # starts TrueForge on port 8790, leave it running`}</Pre>
     'Context',
     'How Anvil decides what the model sees, and how you steer it.',
     <>
+      <Demo film="context" caption="Opening the context footer" />
       <P>
         Before every request Anvil ranks each file in your repository on your machine. It looks at file paths, symbol names and docstrings, which files
         import which, which files usually change together, and what you have open. The best matches go into a compact context pack within a token budget
@@ -164,6 +165,7 @@ npm run harness     # starts TrueForge on port 8790, leave it running`}</Pre>
     'Review and undo',
     'Nothing is saved until you approve it, and anything can be rewound.',
     <>
+      <Demo film="undo" caption="Reverting a message and its code" />
       <P>
         Every edit opens as a review in the editor. Keep what you like, reject the rest. The model is told exactly what you turned down and gets the
         current text as its new starting point.
@@ -209,6 +211,7 @@ npm run harness     # starts TrueForge on port 8790, leave it running`}</Pre>
     'Skills',
     'Teach Anvil your team’s way of doing things.',
     <>
+      <Demo film="skills" caption="Running a skill with /" />
       <P>
         A skill is a folder with a <Code>SKILL.md</Code> file: a short description of when to use it, then the steps. Anvil reads the same format as
         Claude Code, so existing skills work as they are.
@@ -236,6 +239,7 @@ description: Write release notes from the git log. Use when asked for release no
     'MCP servers',
     'Give the agent more tools, from docs search to your notes.',
     <>
+      <Demo film="mcp" caption="Adding an Obsidian MCP server" />
       <Steps
         items={[
           <>Open <b>Settings → MCP → Add server</b>.</>,

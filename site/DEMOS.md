@@ -11,6 +11,8 @@ One timeline drives both the website player and, later, the exported videos.
 | Recreated VS Code window and Anvil panel, drawn from `t` only | `src/demo/Scene.tsx` |
 | Code shown in the editor | `src/demo/code.tsx` |
 | Player: clock, camera, cursor, captions, chapter tabs, mobile framing | `src/demo/Player.tsx` |
+| Feature films (context, undo, skills, MCP), each its own timeline | `src/demo/films.tsx` |
+| Film type shared by every timeline | `src/demo/film.ts` |
 | Easing, camera and cursor maths | `src/demo/anim.ts` |
 
 Rules (from the demo-video skill's direction playbook):
@@ -30,11 +32,11 @@ Rules (from the demo-video skill's direction playbook):
 | 1 | Edit in place | Select `get_debug_flag`, toolbar, Edit, inline box, two hunks, Accept all | Edit right where you are. | Hero, docs: Inline edit | Built |
 | 2 | Hand off a task | Prompt, context footer, read/search/edit/run rows, Verified, edits tray, Keep all | Hand off the whole task. | Hero, docs: What is Anvil, Agent mode | Built |
 | 3 | Survive outages | Ask mode question, primary fails, strike marker, fallback answers | Never stuck on one model. | Hero, docs: Models and failover | Built |
-| 4 | Undo anything | Hover a message, Revert, choose Conversation and code, confirm, files restored | Rewind anything. | Docs: Review and undo | Planned |
-| 5 | Context you can see | Click the context footer, groups open, reasons per file, budget meter | See what it read. | Docs: Context | Planned |
+| 4 | Undo anything | Hover a message, Revert, choose Conversation and code, confirm, files restored | Rewind anything. | Landing films, docs: Review and undo | Built (`films.tsx`) |
+| 5 | Context you can see | Click the context footer, groups open, reasons per file, budget meter | See what it read. | Landing films, docs: Context | Built (`films.tsx`) |
 | 6 | Steer while it works | Type a note mid-run, Steer, note delivered at the next step | Change course mid-task. | Docs: Agent mode | Planned |
-| 7 | Skills | Settings, New skill, then `/release-notes` in the input, Used skill row | Teach it your way. | Docs: Skills | Planned |
-| 8 | MCP servers | Settings, MCP, Add server, Test shows tool count, agent uses a tool | Plug in more tools. | Docs: MCP servers | Planned |
+| 7 | Skills | Type `/`, pick a skill, send, the agent follows it | Teach it your way. | Landing films, docs: Skills | Built (`films.tsx`) |
+| 8 | MCP servers | Settings, MCP, add an Obsidian server, it tests itself, the agent reads notes | Plug in your tools. | Landing films, docs: MCP servers | Built (`films.tsx`) |
 | 9 | Providers | Settings, Models, Add provider, pick models, add to chain | Bring any model. | Docs: Models and failover | Planned |
 | 10 | Keep both | Inline edit, Keep both on one hunk, Open diff side by side | Keep both versions. | Docs: Inline edit | Planned |
 
