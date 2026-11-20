@@ -295,7 +295,13 @@ export async function activate(context: vscode.ExtensionContext) {
   };
 
   const selection = new SelectionContext(folder.uri, store, review, (attachment) => chatView.attach(attachment));
-  const inline = new InlineEditor(runner, review, folder.uri, flushQueue);
+  const inline = new InlineEditor(runner, review, folder.uri, vscode.Uri.joinPath(context.extensionUri, "media"), flushQueue, async (text, attachment) => {
+    store.update((state) => {
+      state.mode = "ask";
+    });
+    await chatView.show("chat");
+    await sendPrompt(text, [], [attachment], "ask");
+  });
   const messages = new MessageRouter({
     folder: folder.uri,
     store,

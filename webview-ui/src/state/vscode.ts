@@ -11,6 +11,7 @@ declare function acquireVsCodeApi(): VsCodeApi;
 export interface Draft {
   text: string;
   mentions: string[];
+  skill?: string;
   attachments?: Attachment[];
 }
 
