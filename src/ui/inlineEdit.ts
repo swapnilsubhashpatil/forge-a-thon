@@ -257,6 +257,16 @@ export class InlineEditor implements vscode.Disposable {
 }
 
 export function inlineOutcome(turn: Turn): InlineOutcome {
+  const outcome = turnOutcome(turn);
+  const switched = turn.steps.find((step): step is NoticeStep => step.kind === "notice" && step.failover !== undefined)?.failover;
+  if (!switched) return outcome;
+  const line = `${switched.from} failed (${dashes(switched.reason)}). ${switched.to} took over.`;
+  return { ...outcome, note: outcome.note ? `${line}
+
+${outcome.note}` : line };
+}
+
+function turnOutcome(turn: Turn): InlineOutcome {
   if (turn.status === "cancelled" || turn.status === "superseded") {
     return { icon: "debug-stop", status: "Stopped", tag: "stopped", note: "Changes you had not accepted were discarded.", answered: false };
   }
