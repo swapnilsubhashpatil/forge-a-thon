@@ -221,6 +221,26 @@ export interface AnvilSettings {
   reviewMode: ReviewMode;
   autoApprove: string[];
   budgetTokens: number;
+  iterationLimit: number;
+  commandTimeoutSeconds: number;
+  failoverSeconds: number;
+  promptProfile: "auto" | "full" | "compact";
+  harnessUrl: string;
+  harnessAutoStart: boolean;
+  selectionToolbar: boolean;
+  selectionAutoAttach: boolean;
+}
+
+export interface ProviderSummary {
+  name: string;
+  type: string;
+  baseUrl?: string;
+  models: string[];
+}
+
+export interface CatalogProvider {
+  type: string;
+  models: Array<{ id: string; name: string }>;
 }
 
 export interface McpServerInfo {
@@ -255,6 +275,9 @@ export interface ChatState {
   pendingReviews: PendingReview[];
   settings: AnvilSettings;
   mcpServers: McpServerInfo[];
+  providers: ProviderSummary[];
+  catalog: CatalogProvider[];
+  providerError?: string;
   skills: SkillSummary[];
   editorSelection?: EditorSelection;
   workspace?: { name: string; files: number; user?: string };
@@ -295,6 +318,9 @@ export type WebviewMessage =
   | { type: "testMcpServer"; name: string }
   | { type: "removeMcpServer"; name: string }
   | { type: "toggleMcpServer"; name: string; enabled: boolean }
+  | { type: "addProvider"; providerType: string; name: string; apiKey?: string; baseUrl?: string; models: string[] }
+  | { type: "removeProvider"; name: string }
+  | { type: "refreshProviders" }
   | { type: "pinSelection" }
   | { type: "dismissSelection" }
   | { type: "createSkill"; name: string; description: string; scope: "project" | "user" }
