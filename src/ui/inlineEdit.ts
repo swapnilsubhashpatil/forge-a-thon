@@ -1,3 +1,6 @@
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import * as vscode from "vscode";
 import { EDIT_TOOLS } from "../agent/editCoordinator.ts";
 import type { TurnRequest, TurnRunner } from "../agent/turnRunner.ts";
@@ -10,7 +13,6 @@ import { inWorkspace, selectedLines } from "./attachCommands.ts";
 
 const SURROUNDING_LINES = 30;
 const MAX_PATCH_CHARS = 3_000;
-const MAX_HISTORY_CHARS = 80;
 const KEYS = process.platform === "darwin" ? "Cmd+Enter" : "Ctrl+Enter";
 
 type Phase = "new" | "running" | "review" | "done" | "answered";
@@ -32,7 +34,6 @@ interface InlineSession {
   linesBefore: number;
   status?: vscode.Comment;
   rounds: string[];
-  history: string[];
   instruction: string;
   work: Promise<void>;
 }
@@ -45,7 +46,7 @@ export class InlineEditor implements vscode.Disposable {
   private readonly afterRun: () => Promise<void>;
   private readonly ask: (text: string, attachment: Attachment) => Promise<void>;
   private readonly anvil: vscode.CommentAuthorInformation;
-  private readonly you: vscode.CommentAuthorInformation;
+  private readonly user: () => string | undefined;
   private readonly disposables: vscode.Disposable[];
   private session: InlineSession | undefined;
 
@@ -56,6 +57,7 @@ export class InlineEditor implements vscode.Disposable {
     media: vscode.Uri,
     afterRun: () => Promise<void>,
     ask: (text: string, attachment: Attachment) => Promise<void>,
+    user: () => string | undefined,
   ) {
     this.runner = runner;
     this.review = review;
@@ -63,7 +65,7 @@ export class InlineEditor implements vscode.Disposable {
     this.afterRun = afterRun;
     this.ask = ask;
     this.anvil = { name: "Anvil", iconPath: vscode.Uri.joinPath(media, "anvil-avatar.svg") };
-    this.you = { name: "You", iconPath: vscode.Uri.joinPath(media, "user-avatar.svg") };
+    this.user = user;
     this.disposables = [
       this.controller,
       vscode.commands.registerCommand("anvil.inlineEdit", () => this.open()),
@@ -105,7 +107,7 @@ export class InlineEditor implements vscode.Disposable {
     const thread = this.controller.createCommentThread(editor.document.uri, range, []);
     thread.canReply = true;
     thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
-    this.session = { thread, uri: editor.document.uri, path, firstLine: startLine, lastLine: endLine, linesBefore: editor.document.lineCount, rounds: [], history: [], instruction: "", work: Promise.resolve() };
+    this.session = { thread, uri: editor.document.uri, path, firstLine: startLine, lastLine: endLine, linesBefore: editor.document.lineCount, rounds: [], instruction: "", work: Promise.resolve() };
     this.setPhase(this.session, "new");
     editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
   }
@@ -154,7 +156,6 @@ export class InlineEditor implements vscode.Disposable {
       `Result: ${result.status}. ${result.note}`.trim(),
       ...(patch ? ["Applied diff:", "```diff", clip(patch.trim()), "```"] : []),
     ].join("\n"));
-    session.history.push(`${oneLine(instruction)} · ${result.tag}`);
     this.show(session, result);
     this.setPhase(session, result.answered ? "answered" : "done", result.tag);
   }
@@ -225,25 +226,33 @@ export class InlineEditor implements vscode.Disposable {
   }
 
   private startExchange(session: InlineSession, instruction: string): void {
-    const comments: vscode.Comment[] = [];
-    if (session.history.length) {
-      const body = new vscode.MarkdownString();
-      session.history.forEach((line, index) => {
-        body.appendMarkdown(index ? "  \n_" : "_").appendText(line).appendMarkdown("_");
-      });
-      comments.push({ body, mode: vscode.CommentMode.Preview, author: this.you, label: "Earlier" });
-    }
-    comments.push({ body: new vscode.MarkdownString().appendText(instruction), mode: vscode.CommentMode.Preview, author: this.you });
-    session.status = { body: "", mode: vscode.CommentMode.Preview, author: this.anvil };
-    session.thread.comments = [...comments, session.status];
+    const round = session.rounds.length + 1;
+    const you: vscode.Comment = {
+      body: new vscode.MarkdownString().appendText(instruction),
+      mode: vscode.CommentMode.Preview,
+      author: this.author(),
+      label: round > 1 ? `round ${round}` : undefined,
+      timestamp: new Date(),
+    };
+    session.status = { body: "", mode: vscode.CommentMode.Preview, author: this.anvil, timestamp: new Date() };
+    session.thread.comments = [you, session.status];
   }
 
   private show(session: InlineSession, outcome: InlineOutcome): void {
     if (!session.status) return;
-    const body = new vscode.MarkdownString(`$(${outcome.icon}) **${outcome.status}**`, true);
-    if (outcome.note) body.appendMarkdown(`\n\n${outcome.note.replaceAll("$(", "\\$(")}`);
-    session.status.body = body;
+    const text = outcome.note ? outcome.note.replaceAll("$(", "\\$(") : outcome.status;
+    session.status.label = outcome.tag;
+    session.status.body = new vscode.MarkdownString(`$(${outcome.icon})&nbsp; ${text}`, true);
     session.thread.comments = [...session.thread.comments];
+  }
+
+  private author(): vscode.CommentAuthorInformation {
+    const name = this.user();
+    if (!name) return { name: "You" };
+    const initial = name[0].toUpperCase();
+    const file = join(tmpdir(), `anvil-avatar-${initial.charCodeAt(0)}.svg`);
+    writeFileSync(file, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#3B6EA8"/><text x="16" y="21.5" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="15" font-weight="600" fill="#fff">${initial}</text></svg>`);
+    return { name, iconPath: vscode.Uri.file(file) };
   }
 }
 
@@ -269,11 +278,6 @@ export function inlineOutcome(turn: Turn): InlineOutcome {
 
 function dashes(text: string): string {
   return text.replace(/\u2014/g, "\u2013");
-}
-
-function oneLine(text: string): string {
-  const flat = text.replace(/\s+/g, " ");
-  return flat.length > MAX_HISTORY_CHARS ? `${flat.slice(0, MAX_HISTORY_CHARS)}…` : flat;
 }
 
 function clip(text: string): string {
