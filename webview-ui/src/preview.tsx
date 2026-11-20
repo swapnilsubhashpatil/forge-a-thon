@@ -78,7 +78,26 @@ let state: ChatState = {
     reviewMode: "review",
     autoApprove: ["pytest", "npm test"],
     budgetTokens: 6000,
+    iterationLimit: 40,
+    commandTimeoutSeconds: 120,
+    failoverSeconds: 30,
+    promptProfile: "auto",
+    harnessUrl: "http://localhost:8790",
+    harnessAutoStart: true,
+    selectionToolbar: true,
+    selectionAutoAttach: true,
   },
+  providers: [
+    { name: "openai-main", type: "openai", models: [primary, "openai-main/gpt-5-mini"], modelIds: ["gpt-5", "gpt-5-mini"] },
+    { name: "anthropic-main", type: "anthropic", models: ["anthropic-main/claude-sonnet-4-5", "anthropic-main/claude-haiku-4-5"], modelIds: ["claude-sonnet-4-5", "claude-haiku-4-5"] },
+    { name: "ollama", type: "custom", baseUrl: "http://localhost:11434/v1", models: ["ollama/qwen3-8b"], modelIds: ["qwen3-8b"] },
+  ],
+  catalog: [
+    { type: "openai", models: [{ id: "gpt-5", name: "GPT-5" }, { id: "gpt-5-mini", name: "GPT-5 mini" }] },
+    { type: "anthropic", models: [{ id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" }, { id: "claude-haiku-4-5", name: "Claude Haiku 4.5" }] },
+    { type: "google-gemini", models: [{ id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" }, { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" }] },
+    { type: "fireworks", models: [{ id: "accounts/fireworks/models/qwen3-235b-a22b", name: "Qwen3 235B" }] },
+  ],
   history: [
     { id: "conv-2", title: "Add flask config command", updatedAt: now - 20_000, turns: 2, model: fallback, edits: 3 },
     { id: "conv-1", title: "Why does the dev server reload twice?", updatedAt: now - 26 * 3_600_000, turns: 4, model: primary, edits: 0 },
@@ -223,6 +242,12 @@ function emit(message: HostMessage) {
   window.postMessage(message, "*");
 }
 
+function fakeModels(provider: string, type: string, ids: string[]) {
+  const catalogModels = state.catalog.find((entry) => entry.type === type)?.models ?? [];
+  const names = ids.map((id) => catalogModels.find((model) => model.id === id)?.name ?? id);
+  return { models: names.map((name) => `${provider}/${name}`), modelIds: ids };
+}
+
 function handle(message: WebviewMessage) {
   console.info("[webview → host]", message);
   switch (message.type) {
@@ -284,6 +309,27 @@ function handle(message: WebviewMessage) {
     }
     case "removeMcpServer":
       state = { ...state, mcpServers: state.mcpServers.filter((server) => server.name !== message.name) };
+      emit({ type: "state", state });
+      break;
+    case "addProvider": {
+      const provider = { name: message.name, type: message.providerType, baseUrl: message.baseUrl, ...fakeModels(message.name, message.providerType, message.models) };
+      state = { ...state, providerError: undefined, providers: [...state.providers, provider] };
+      setTimeout(() => emit({ type: "state", state }), 600);
+      break;
+    }
+    case "setProviderModels":
+      state = {
+        ...state,
+        providers: state.providers.map((provider) => (provider.name === message.name ? { ...provider, ...fakeModels(provider.name, provider.type, message.models) } : provider)),
+      };
+      emit({ type: "state", state });
+      break;
+    case "removeProvider":
+      state = { ...state, providers: state.providers.filter((provider) => provider.name !== message.name) };
+      emit({ type: "state", state });
+      break;
+    case "refreshProviders":
+    case "reconnect":
       emit({ type: "state", state });
       break;
     case "toggleMcpServer":

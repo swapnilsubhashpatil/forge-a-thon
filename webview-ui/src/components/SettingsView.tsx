@@ -2,12 +2,20 @@ import { useState, type ReactNode } from "react";
 import type { AnvilSettings, ChatState, ReviewMode } from "../../../src/shared/protocol.ts";
 import { cx, shortModel } from "../format.ts";
 import { loadSettingsTab, post, saveSettingsTab } from "../state/vscode.ts";
-import { McpSettings } from "./McpSettings.tsx";
+import { harnessStatus } from "./Header.tsx";
+import { isHttpUrl, McpSettings } from "./McpSettings.tsx";
 import { useListbox } from "./ModelPicker.tsx";
-import { Icon, IconButton } from "./primitives.tsx";
+import { Icon, IconButton, inputClass, Segmented, StatusGlyph, Switch } from "./primitives.tsx";
+import { ProvidersSettings } from "./ProvidersSettings.tsx";
 import { SkillsSettings } from "./SkillsSettings.tsx";
 
-const efforts: AnvilSettings["reasoningEffort"][] = ["default", "none", "low", "medium", "high"];
+const efforts = (["default", "none", "low", "medium", "high"] as const).map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }));
+
+const profiles: Array<{ value: AnvilSettings["promptProfile"]; label: string }> = [
+  { value: "auto", label: "Auto" },
+  { value: "full", label: "Full" },
+  { value: "compact", label: "Compact" },
+];
 
 const reviewModes: Array<{ value: ReviewMode; label: string; hint: string }> = [
   { value: "review", label: "Review each edit", hint: "Every edit waits in the editor until you accept or reject it." },
@@ -139,31 +147,72 @@ function PrefixEditor({ prefixes }: { prefixes: string[] }) {
   );
 }
 
-function BudgetInput({ value }: { value: number }) {
-  const [draft, setDraft] = useState(String(value));
-  const commit = () => {
-    const next = Number(draft);
-    if (Number.isInteger(next) && next > 0 && next !== value) save({ budgetTokens: next });
-    else setDraft(String(value));
-  };
+function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <input
-      type="number"
-      min={1000}
-      step={1000}
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onKeyDown={(event) => event.key === "Enter" && commit()}
-      onBlur={commit}
-      aria-label="Context budget in tokens"
-      className="h-7 w-32 rounded-md border border-input-border bg-input px-2 font-mono text-xs text-input-fg outline-none focus:border-focus"
-    />
+    <div className="flex items-start justify-between gap-3 py-1">
+      <div className="min-w-0">
+        <p className="text-xs text-fg">{label}</p>
+        {hint && <p className="text-xs text-muted">{hint}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function NumberInput({ value, min = 1, step = 1, label, onCommit }: { value: number; min?: number; step?: number; label: string; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState(String(value));
+  const next = Number(draft);
+  const valid = draft.trim() !== "" && Number.isInteger(next) && next >= min;
+  const commit = () => valid && next !== value && onCommit(next);
+  return (
+    <div className="flex shrink-0 flex-col items-end gap-1">
+      <input
+        type="number"
+        min={min}
+        step={step}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") commit();
+          if (event.key === "Escape") setDraft(String(value));
+        }}
+        onBlur={commit}
+        aria-label={label}
+        aria-invalid={!valid}
+        className={cx(inputClass, "w-24 font-mono", !valid && "border-red")}
+      />
+      {!valid && <span className="text-xs text-red">Whole number, {min} or more</span>}
+    </div>
+  );
+}
+
+function UrlInput({ value }: { value: string }) {
+  const [draft, setDraft] = useState(value);
+  const valid = isHttpUrl(draft.trim());
+  const commit = () => valid && draft.trim() !== value && save({ harnessUrl: draft.trim() });
+  return (
+    <div className="flex flex-col gap-1">
+      <input
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") commit();
+          if (event.key === "Escape") setDraft(value);
+        }}
+        onBlur={commit}
+        aria-label="TrueForge URL"
+        aria-invalid={!valid}
+        className={cx(inputClass, "font-mono", !valid && "border-red")}
+      />
+      {!valid && <span className="text-xs text-red">Enter an http:// or https:// URL</span>}
+    </div>
   );
 }
 
 const tabs = [
-  { id: "models", label: "Models", description: "Which models answer, in what order, and how hard they think." },
-  { id: "agent", label: "Agent", description: "How edits land, which commands run unasked, and how much code the agent starts with." },
+  { id: "general", label: "General", description: "How Anvil reaches TrueForge and how it works with the editor." },
+  { id: "models", label: "Models", description: "Which providers and models answer, in what order, and how hard they think." },
+  { id: "agent", label: "Agent", description: "How edits land, which commands run unasked, and how far the agent goes on its own." },
   { id: "skills", label: "Skills", description: "Instructions the agent loads when a request matches, or when you type /name." },
   { id: "mcp", label: "MCP", description: "Remote MCP servers over HTTP. Enabled servers are available to the agent; edits and destructive tools still ask for approval." },
 ] as const;
@@ -173,7 +222,7 @@ type Tab = (typeof tabs)[number]["id"];
 function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   return (
     <nav className="@container sticky top-0 z-10 border-b border-border bg-bg px-3 py-2">
-      <div role="tablist" aria-label="Settings sections" className="hidden rounded-lg border border-border bg-editor/40 p-0.5 text-xs @[16rem]:flex">
+      <div role="tablist" aria-label="Settings sections" className="hidden rounded-lg border border-border bg-editor/40 p-0.5 text-xs @[20rem]:flex">
         {tabs.map(({ id, label }) => (
           <button
             key={id}
@@ -187,7 +236,7 @@ function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
           </button>
         ))}
       </div>
-      <select value={tab} onChange={(event) => onChange(event.target.value as Tab)} aria-label="Settings section" className="h-7 w-full rounded-md border border-input-border bg-input px-1.5 text-xs text-input-fg outline-none focus:border-focus @[16rem]:hidden">
+      <select value={tab} onChange={(event) => onChange(event.target.value as Tab)} aria-label="Settings section" className="h-7 w-full rounded-md border border-input-border bg-input px-1.5 text-xs text-input-fg outline-none focus:border-focus @[20rem]:hidden">
         {tabs.map(({ id, label }) => (
           <option key={id} value={id}>
             {label}
@@ -198,28 +247,58 @@ function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   );
 }
 
+const harnessLabel: Record<ChatState["harness"]["state"], string> = {
+  connecting: "Connecting",
+  starting: "Starting",
+  ready: "Connected",
+  offline: "Offline",
+};
+
+function GeneralPage({ chat }: { chat: ChatState }) {
+  const { settings, harness } = chat;
+  return (
+    <>
+      <Section title="Connection">
+        <UrlInput key={settings.harnessUrl} value={settings.harnessUrl} />
+        <div role="status" className="mt-2 flex items-center gap-1.5 text-xs">
+          <StatusGlyph kind={harnessStatus[harness.state]} />
+          <span className="text-fg">{harnessLabel[harness.state]}</span>
+          <span className="min-w-0 flex-1 truncate text-muted" title={harness.message}>
+            {harness.message}
+          </span>
+          <button type="button" onClick={() => post({ type: "reconnect" })} className="btn btn-secondary">
+            <Icon name="retry" />
+            Reconnect
+          </button>
+        </div>
+        <Row label="Start TrueForge automatically" hint="Start a local server with npx when none is reachable.">
+          <Switch on={settings.harnessAutoStart} label="Start TrueForge automatically" onChange={(on) => save({ harnessAutoStart: on })} />
+        </Row>
+      </Section>
+      <Section title="Editor">
+        <Row label="Selection toolbar" hint="Edit, Ask and Add to chat above selected code.">
+          <Switch on={settings.selectionToolbar} label="Selection toolbar" onChange={(on) => save({ selectionToolbar: on })} />
+        </Row>
+        <Row label="Attach selection to chat automatically" hint="The current selection rides along with your next message.">
+          <Switch on={settings.selectionAutoAttach} label="Attach selection to chat automatically" onChange={(on) => save({ selectionAutoAttach: on })} />
+        </Row>
+      </Section>
+    </>
+  );
+}
+
 function ModelsPage({ chat }: { chat: ChatState }) {
   const settings = chat.settings;
   return (
     <>
+      <Section title="Providers">
+        <ProvidersSettings providers={chat.providers} catalog={chat.catalog} chain={settings.chain} error={chat.providerError} />
+      </Section>
       <Section title="Model chain" hint="The first healthy model runs each message; the rest take over when it fails.">
         <ModelChainEditor chain={settings.chain} available={chat.availableModels ?? []} />
       </Section>
       <Section title="Reasoning effort">
-        <div role="radiogroup" aria-label="Reasoning effort" className="flex rounded-lg border border-border bg-editor/40 p-0.5 text-xs">
-          {efforts.map((effort) => (
-            <button
-              key={effort}
-              type="button"
-              role="radio"
-              aria-checked={settings.reasoningEffort === effort}
-              onClick={() => save({ reasoningEffort: effort })}
-              className={cx("h-6 min-w-0 flex-1 rounded-md font-medium capitalize", settings.reasoningEffort === effort ? "bg-raised text-fg shadow-sm" : "text-muted hover:text-fg")}
-            >
-              {effort}
-            </button>
-          ))}
-        </div>
+        <Segmented label="Reasoning effort" options={efforts} value={settings.reasoningEffort} onChange={(reasoningEffort) => save({ reasoningEffort })} />
       </Section>
     </>
   );
@@ -248,15 +327,29 @@ function AgentPage({ settings }: { settings: AnvilSettings }) {
       <Section title="Commands that run without asking" hint="A command starting with one of these runs without an approval prompt.">
         <PrefixEditor prefixes={settings.autoApprove} />
       </Section>
-      <Section title="Context budget" hint="Tokens of code Anvil packs before the agent starts.">
-        <BudgetInput key={settings.budgetTokens} value={settings.budgetTokens} />
+      <Section title="Limits">
+        <Row label="Steps per turn" hint="Tool calls the agent makes before it stops and checks in.">
+          <NumberInput key={settings.iterationLimit} value={settings.iterationLimit} label="Steps per turn" onCommit={(iterationLimit) => save({ iterationLimit })} />
+        </Row>
+        <Row label="Command timeout" hint="Seconds before a running command is stopped.">
+          <NumberInput key={settings.commandTimeoutSeconds} value={settings.commandTimeoutSeconds} label="Command timeout in seconds" onCommit={(commandTimeoutSeconds) => save({ commandTimeoutSeconds })} />
+        </Row>
+        <Row label="Failover after" hint="Seconds to wait for a model's first reply before the next one takes over.">
+          <NumberInput key={settings.failoverSeconds} value={settings.failoverSeconds} label="Failover after seconds" onCommit={(failoverSeconds) => save({ failoverSeconds })} />
+        </Row>
+        <Row label="Context budget" hint="Tokens of code Anvil packs before the agent starts.">
+          <NumberInput key={settings.budgetTokens} value={settings.budgetTokens} min={1000} step={1000} label="Context budget in tokens" onCommit={(budgetTokens) => save({ budgetTokens })} />
+        </Row>
+      </Section>
+      <Section title="Instructions" hint="Compact suits small local models.">
+        <Segmented label="Prompt profile" options={profiles} value={settings.promptProfile} onChange={(promptProfile) => save({ promptProfile })} />
       </Section>
     </>
   );
 }
 
 export function SettingsView({ chat }: { chat: ChatState }) {
-  const [tab, setTab] = useState<Tab>(() => tabs.find(({ id }) => id === loadSettingsTab())?.id ?? "models");
+  const [tab, setTab] = useState<Tab>(() => tabs.find(({ id }) => id === loadSettingsTab())?.id ?? tabs[0].id);
   const page = tabs.find(({ id }) => id === tab)!;
   const choose = (next: Tab) => {
     setTab(next);
@@ -270,18 +363,11 @@ export function SettingsView({ chat }: { chat: ChatState }) {
           <h2 className="text-base font-semibold text-fg">{page.label}</h2>
           <p className="text-xs text-muted">{page.description}</p>
         </header>
+        {tab === "general" && <GeneralPage chat={chat} />}
         {tab === "models" && <ModelsPage chat={chat} />}
         {tab === "agent" && <AgentPage settings={chat.settings} />}
-        {tab === "skills" && (
-          <section>
-            <SkillsSettings skills={chat.skills} />
-          </section>
-        )}
-        {tab === "mcp" && (
-          <section>
-            <McpSettings servers={chat.mcpServers} />
-          </section>
-        )}
+        {tab === "skills" && <SkillsSettings skills={chat.skills} />}
+        {tab === "mcp" && <McpSettings servers={chat.mcpServers} />}
       </div>
     </div>
   );

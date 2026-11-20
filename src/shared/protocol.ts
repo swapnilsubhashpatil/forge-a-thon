@@ -236,6 +236,7 @@ export interface ProviderSummary {
   type: string;
   baseUrl?: string;
   models: string[];
+  modelIds: string[];
 }
 
 export interface CatalogProvider {
@@ -320,6 +321,7 @@ export type WebviewMessage =
   | { type: "toggleMcpServer"; name: string; enabled: boolean }
   | { type: "addProvider"; providerType: string; name: string; apiKey?: string; baseUrl?: string; models: string[] }
   | { type: "removeProvider"; name: string }
+  | { type: "setProviderModels"; name: string; models: string[] }
   | { type: "refreshProviders" }
   | { type: "pinSelection" }
   | { type: "dismissSelection" }
