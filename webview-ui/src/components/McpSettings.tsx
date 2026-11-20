@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import type { McpServerInfo } from "../../../src/shared/protocol.ts";
 import { cx } from "../format.ts";
 import { post } from "../state/vscode.ts";
-import { Icon, IconButton, inputClass, StatusGlyph, Switch, type StatusKind } from "./primitives.tsx";
+import { Field, Icon, IconButton, inputClass, ListToolbar, StatusGlyph, Switch, type StatusKind } from "./primitives.tsx";
 
 const statusKind: Record<McpServerInfo["status"], StatusKind> = {
   ok: "ready",
@@ -84,7 +84,7 @@ interface Draft {
   headerValue: string;
 }
 
-function isHttpUrl(value: string): boolean {
+export function isHttpUrl(value: string): boolean {
   try {
     return ["http:", "https:"].includes(new URL(value).protocol);
   } catch {
@@ -102,16 +102,6 @@ function validate(draft: Draft, taken: string[]): Partial<Record<"name" | "url",
         : undefined;
   const url = !draft.url ? "Required" : !isHttpUrl(draft.url) ? "Enter an http:// or https:// URL" : undefined;
   return { name, url };
-}
-
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
-  return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1">
-      <span className="text-xs text-muted">{label}</span>
-      {children}
-      {error && <span className="text-xs text-red">{error}</span>}
-    </label>
-  );
 }
 
 function AddServerForm({ taken, onDone }: { taken: string[]; onDone: () => void }) {
@@ -143,7 +133,7 @@ function AddServerForm({ taken, onDone }: { taken: string[]; onDone: () => void 
         event.preventDefault();
         add();
       }}
-      className="mt-2 flex flex-col gap-2.5 rounded-lg border border-border p-2.5"
+      className="flex flex-col gap-2.5 rounded-lg border border-border p-2.5"
     >
       <Field label="Name" error={shown("name")}>
         <input autoFocus value={draft.name} onChange={set("name")} placeholder="linear" aria-invalid={!!shown("name")} className={cx(inputClass, "font-mono")} />
@@ -178,7 +168,16 @@ function AddServerForm({ taken, onDone }: { taken: string[]; onDone: () => void 
 export function McpSettings({ servers }: { servers: McpServerInfo[] }) {
   const [adding, setAdding] = useState(false);
   return (
-    <>
+    <div className="flex flex-col gap-2">
+      <ListToolbar summary={`${servers.length} ${servers.length === 1 ? "server" : "servers"}`}>
+        {!adding && (
+          <button type="button" onClick={() => setAdding(true)} className="btn btn-secondary">
+            <Icon name="plus" />
+            Add server
+          </button>
+        )}
+      </ListToolbar>
+      {adding && <AddServerForm taken={servers.map((server) => server.name)} onDone={() => setAdding(false)} />}
       {servers.length === 0 ? (
         <p className="text-xs text-muted">No servers yet. Add one with its URL; it is tested as soon as it is saved.</p>
       ) : (
@@ -188,14 +187,6 @@ export function McpSettings({ servers }: { servers: McpServerInfo[] }) {
           ))}
         </ul>
       )}
-      {adding ? (
-        <AddServerForm taken={servers.map((server) => server.name)} onDone={() => setAdding(false)} />
-      ) : (
-        <button type="button" onClick={() => setAdding(true)} className="btn mt-2 w-full justify-start border border-dashed border-border text-muted hover:text-fg">
-          <Icon name="plus" />
-          Add server
-        </button>
-      )}
-    </>
+    </div>
   );
 }

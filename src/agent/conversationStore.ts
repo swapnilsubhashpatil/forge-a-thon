@@ -16,6 +16,8 @@ export class ConversationStore {
       pendingReviews: [],
       settings,
       mcpServers: [],
+      providers: [],
+      catalog: [],
       skills: [],
       turns: [],
       harness: { state: "connecting", url: harnessUrl },

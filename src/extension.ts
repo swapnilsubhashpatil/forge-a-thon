@@ -28,7 +28,9 @@ import { startToolServer, type RunningToolServer } from "./tools/toolServer.ts";
 import { registerAttachCommands } from "./ui/attachCommands.ts";
 import { ChatViewProvider } from "./ui/chatViewProvider.ts";
 import { InlineEditor, inlineRequest } from "./ui/inlineEdit.ts";
-import { MessageRouter, readSettings, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
+import { MessageRouter, SNAPSHOT_SCHEME } from "./ui/messageRouter.ts";
+import { ProviderManager } from "./ui/providerManager.ts";
+import { readSettings } from "./ui/settings.ts";
 import { SelectionContext } from "./ui/selectionContext.ts";
 import { McpManager } from "./ui/mcpManager.ts";
 import { SkillManager } from "./ui/skillManager.ts";
@@ -58,6 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
   let client = new HarnessClient(config().get<string>("harness.url", "http://localhost:8790"));
   const store = new ConversationStore(client.baseUrl, readSettings());
   const mcp = new McpManager(() => client, store);
+  const providers = new ProviderManager(() => client, store);
   const harnessProcess = new HarnessProcess(join(context.globalStorageUri.fsPath, "trueforge"), (line) => output.trace(line));
   const ledgerFile = context.storageUri && join(context.storageUri.fsPath, "change-ledger.json");
   const ledger = new ChangeLedger((sets) => store.update((state) => {
@@ -66,12 +69,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const review = new ReviewController(ledger);
   const breaker = new CircuitBreaker();
   const readCache = new ReadCache();
-  let availableModels: string[] = [];
 
   const toolServerName = `anvil-editor-${createHash("sha1").update(folder?.uri.toString() ?? "none").digest("hex").slice(0, 8)}`;
   const modelChain = () => {
     const configured = config().get<string[]>("models.chain", []).filter(Boolean);
-    return configured.length ? configured : availableModels.slice(0, 3);
+    return configured.length ? configured : (store.state.availableModels ?? []).slice(0, 3);
   };
   const settings = (): RunnerSettings => {
     const reasoningEffort = config().get<string>("models.reasoningEffort", "default");
@@ -191,8 +193,9 @@ export async function activate(context: vscode.ExtensionContext) {
         skillFile: (path) => skills.file(path),
       }, readCache), log, (name, args, result) => runner.decorateToolResult(name, args, result));
       await client.registerToolServer(toolServerName, toolServer.url, toolServer.token);
-      availableModels = await client.listModels().catch(() => []);
+      const availableModels = await client.listModels().catch(() => []);
       await mcp.refresh().catch((error: unknown) => log(`Listing MCP servers failed: ${String(error)}`));
+      await providers.refresh().catch((error: unknown) => log(`Listing model providers failed: ${String(error)}`));
       store.update((state) => {
         state.availableModels = availableModels;
         state.harness = { state: "ready", url: client.baseUrl };
@@ -276,7 +279,7 @@ export async function activate(context: vscode.ExtensionContext) {
   };
 
   const configureModels = async () => {
-    const models = await client.listModels().catch(() => availableModels);
+    const models = await client.listModels().catch(() => store.state.availableModels ?? []);
     if (!models.length) {
       void vscode.window.showWarningMessage("No models are configured in TrueForge yet. Add a provider under Settings → Models.");
       return;
@@ -316,6 +319,7 @@ export async function activate(context: vscode.ExtensionContext) {
     readCache,
     skills,
     mcp,
+    providers,
     selection,
     modelChain,
     send: sendPrompt,
@@ -359,7 +363,6 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("anvil.selectModels", configureModels),
     vscode.commands.registerCommand("anvil.restartHarness", connect),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("anvil.harness.url")) void connect();
       if (event.affectsConfiguration("anvil.models.chain")) runner.refreshModelHealth();
       if (event.affectsConfiguration("anvil")) store.update((state) => {
         state.settings = readSettings();

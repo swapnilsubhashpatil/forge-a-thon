@@ -8,41 +8,18 @@ import { mentionCandidates } from "../context/codeSearch.ts";
 import type { WorkspaceIndex } from "../context/workspaceIndex.ts";
 import type { ChangeLedger, UndoResult } from "../edits/changeLedger.ts";
 import type { ReviewController } from "../edits/reviewController.ts";
-import type { AgentMode, AnvilSettings, Attachment, HostMessage, MentionItem, WebviewMessage } from "../shared/protocol.ts";
+import type { AgentMode, Attachment, HostMessage, MentionItem, WebviewMessage } from "../shared/protocol.ts";
 import type { ReadCache } from "../tools/editorTools.ts";
 import { inWorkspace } from "./attachCommands.ts";
 import type { McpManager } from "./mcpManager.ts";
+import type { ProviderManager } from "./providerManager.ts";
 import type { SelectionContext } from "./selectionContext.ts";
+import { SETTING_KEYS, writeSetting, writeSettings } from "./settings.ts";
 import type { SkillManager } from "./skillManager.ts";
 
 export const SNAPSHOT_SCHEME = "anvil-snapshot";
 const MENTION_LIMIT = 12;
 const CONTINUE_PROMPT = "Continue from where you stopped.";
-
-const SETTING_KEYS: Record<keyof AnvilSettings, string> = {
-  chain: "models.chain",
-  reasoningEffort: "models.reasoningEffort",
-  reviewMode: "review.mode",
-  autoApprove: "commands.autoApprove",
-  budgetTokens: "context.budgetTokens",
-};
-
-export function readSettings(): AnvilSettings {
-  const config = vscode.workspace.getConfiguration("anvil");
-  return {
-    chain: config.get<string[]>(SETTING_KEYS.chain, []).filter(Boolean),
-    reasoningEffort: config.get<AnvilSettings["reasoningEffort"]>(SETTING_KEYS.reasoningEffort, "default"),
-    reviewMode: config.get<AnvilSettings["reviewMode"]>(SETTING_KEYS.reviewMode, "review"),
-    autoApprove: config.get<string[]>(SETTING_KEYS.autoApprove, []),
-    budgetTokens: config.get<number>(SETTING_KEYS.budgetTokens, 6000),
-  };
-}
-
-async function writeSetting(key: string, value: unknown): Promise<void> {
-  const config = vscode.workspace.getConfiguration("anvil");
-  const target = config.inspect(key)?.workspaceValue !== undefined ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
-  await config.update(key, value, target);
-}
 
 export interface RouterDeps {
   folder: vscode.Uri;
@@ -56,6 +33,7 @@ export interface RouterDeps {
   readCache: ReadCache;
   skills: SkillManager;
   mcp: McpManager;
+  providers: ProviderManager;
   selection: SelectionContext;
   modelChain: () => string[];
   send: (text: string, mentions: string[], attachments: Attachment[], mode: AgentMode) => Promise<void>;
@@ -94,6 +72,12 @@ export class MessageRouter {
       case "toggleMcpServer":
         await this.deps.mcp.handle(message);
         break;
+      case "addProvider":
+      case "removeProvider":
+      case "setProviderModels":
+      case "refreshProviders":
+        await this.deps.providers.handle(message);
+        break;
       case "send":
         await this.send(message.text, message.mentions, await this.withLiveSelection(withinImageLimit(message.attachments ?? []), message.includeSelection), message.mode);
         break;
@@ -131,7 +115,7 @@ export class MessageRouter {
         runner.refreshModelHealth();
         break;
       case "updateSettings":
-        for (const [key, value] of Object.entries(message.patch)) await writeSetting(SETTING_KEYS[key as keyof AnvilSettings], value);
+        await writeSettings(message.patch);
         break;
       case "removeNote":
         runner.removeNote(message.id);
