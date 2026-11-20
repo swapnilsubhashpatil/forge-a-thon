@@ -328,7 +328,7 @@ export function Composer({ chat, draft, onDraftChange, onAttach }: ComposerProps
         )}
       >
         {hasContext && (
-          <ul className="flex flex-wrap gap-1 px-2 pt-2" aria-label="Attached to this message">
+          <ul className="flex flex-wrap gap-x-1.5 gap-y-2 px-2 pt-2.5" aria-label="Attached to this message">
             {draft.skill && <SkillChip name={draft.skill} onRemove={() => onDraftChange({ ...draft, skill: undefined })} />}
             {chat.editorSelection && <LiveSelectionChip selection={chat.editorSelection} />}
             {mentions.map((value) => (

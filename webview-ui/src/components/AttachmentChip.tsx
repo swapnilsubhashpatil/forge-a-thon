@@ -77,7 +77,7 @@ function Chip({ lead, label, detail, title, open, live, removeLabel, onRemove, c
     <li
       title={title}
       className={cx(
-        "group flex h-6 max-w-full min-w-0 items-center gap-1 rounded-md border bg-raised pr-0.5 pl-1.5 text-xs",
+        "group relative flex h-6 max-w-full min-w-0 items-center gap-1 rounded-md border bg-raised px-1.5 text-xs",
         live ? "border-dashed border-muted/50" : "border-border",
       )}
     >
@@ -100,9 +100,9 @@ function Chip({ lead, label, detail, title, open, live, removeLabel, onRemove, c
         aria-label={removeLabel}
         title={removeLabel}
         onClick={onRemove}
-        className={cx(tool, "w-0 overflow-hidden group-focus-within:w-5 group-hover:w-5")}
+        className="invisible absolute -top-1.5 -right-1.5 z-10 grid size-4 place-items-center rounded-full border border-border bg-raised text-muted shadow-sm group-focus-within:visible group-hover:visible hover:text-fg"
       >
-        <Icon name="close" size={12} />
+        <Icon name="close" size={10} />
       </button>
     </li>
   );
