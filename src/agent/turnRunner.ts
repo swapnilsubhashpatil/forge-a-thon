@@ -37,6 +37,7 @@ export interface RunnerSettings {
   promptProfile?: PromptProfile;
   toolServerName: string;
   autoApprove: string[];
+  mcpServers: string[];
 }
 
 export interface TurnRunnerDeps {
@@ -557,6 +558,7 @@ export class TurnRunner {
       reasoningEffort: overrides.reasoningEffort ?? settings.reasoningEffort,
       maxTokens: overrides.maxTokens,
       promptProfile: settings.promptProfile,
+      mcpServers: settings.mcpServers,
     };
   }
 
@@ -564,7 +566,7 @@ export class TurnRunner {
     const client = this.deps.client();
     const spec = this.deps.profiles.spec(request.mode, model, this.specOptions(overrides));
     const settings = this.deps.settings();
-    const specKey = JSON.stringify([request.mode, model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, settings.promptProfile ?? "auto", settings.iterationLimit, settings.reasoningEffort ?? null]);
+    const specKey = JSON.stringify([request.mode, model, overrides.reasoningEffort ?? null, overrides.maxTokens ?? null, settings.promptProfile ?? "auto", settings.iterationLimit, settings.reasoningEffort ?? null, settings.mcpServers]);
     if (request.mode === "inline") {
       const id = await client.createSession(spec, request.title);
       active.sessionId = id;

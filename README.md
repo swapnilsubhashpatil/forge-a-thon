@@ -77,6 +77,7 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | Model picker | Pick the model for the next message; the chain falls back on failure |
 | Usage | Session strip with tokens, cache hits and cost |
 | Skills | Folders with a `SKILL.md` in `.anvil/skills` or `.claude/skills` (workspace or home). The agent loads a matching one with `use_skill`; type `/` in the composer to run one yourself; manage them under Settings → Skills. See [docs/skills.md](docs/skills.md) |
+| MCP servers | Settings → MCP servers: add a remote server by name and URL (optional auth header), Anvil registers it in TrueForge and tests it, listing its tools. Test again, turn it off or remove it from the same card. Enabled servers reach the agent in Agent mode (writes ask first) and Ask mode (read-only tools only), never in inline edit |
 
 ## Settings
 
@@ -96,6 +97,7 @@ Keys are shown for Windows and Linux; on macOS use `Cmd` for `Ctrl`.
 | `anvil.selection.askActions` | `true` | Edit / Ask / Add to chat toolbar above selected code |
 | `anvil.selection.autoAttach` | `true` | Send the current editor selection with the next chat message |
 | `anvil.skills.disabled` | `[]` | Skill names hidden from the agent |
+| `anvil.mcp.disabled` | `[]` | TrueForge MCP server names the agent should not use |
 
 Most of these are also editable from the panel's Settings view.
 

@@ -132,6 +132,7 @@ through nine guard scenarios; all pass, and they found four bugs that are now fi
 - **Selection toolbar.** Selecting code shows Edit, Ask and Add to chat above it; the live selection follows into the chat as a chip, and pinning collects several.
 - **Inline edit in the editor.** Ctrl+Alt+K opens a box under the selection; the change is reviewed in place with Accept, Reject or Keep both, Open diff shows before and after, and Refine iterates on the same lines.
 - **Skills.** Claude Code compatible SKILL.md folders (project or user); the agent loads a matching one with `use_skill`, `/name` runs one by hand, Settings creates, toggles, opens and deletes them.
+- **MCP servers.** Add a remote MCP server (name, URL, optional auth header) from Settings; Anvil registers it in TrueForge, tests it and lists its tools. Enabled servers join Agent mode with approval on writes and Ask mode with read-only tools.
 - **Type and icons.** IBM Plex Sans and Mono with a custom glyph set; colours stay on VS Code theme tokens.
 
 ## Scorecard

@@ -11,6 +11,7 @@ import type { ReviewController } from "../edits/reviewController.ts";
 import type { AgentMode, AnvilSettings, Attachment, HostMessage, MentionItem, WebviewMessage } from "../shared/protocol.ts";
 import type { ReadCache } from "../tools/editorTools.ts";
 import { inWorkspace } from "./attachCommands.ts";
+import type { McpManager } from "./mcpManager.ts";
 import type { SelectionContext } from "./selectionContext.ts";
 import type { SkillManager } from "./skillManager.ts";
 
@@ -54,6 +55,7 @@ export interface RouterDeps {
   indexReady: Promise<void>;
   readCache: ReadCache;
   skills: SkillManager;
+  mcp: McpManager;
   selection: SelectionContext;
   modelChain: () => string[];
   send: (text: string, mentions: string[], attachments: Attachment[], mode: AgentMode) => Promise<void>;
@@ -85,6 +87,12 @@ export class MessageRouter {
       case "openSkill":
       case "deleteSkill":
         await this.deps.skills.handle(message);
+        break;
+      case "addMcpServer":
+      case "testMcpServer":
+      case "removeMcpServer":
+      case "toggleMcpServer":
+        await this.deps.mcp.handle(message);
         break;
       case "send":
         await this.send(message.text, message.mentions, await this.withLiveSelection(withinImageLimit(message.attachments ?? []), message.includeSelection), message.mode);

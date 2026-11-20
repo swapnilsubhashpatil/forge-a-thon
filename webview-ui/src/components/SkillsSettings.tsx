@@ -2,28 +2,21 @@ import { useState } from "react";
 import type { SkillSummary } from "../../../src/shared/protocol.ts";
 import { cx } from "../format.ts";
 import { post } from "../state/vscode.ts";
-import { Icon, IconButton } from "./primitives.tsx";
+import { Icon, IconButton, inputClass, Switch } from "./primitives.tsx";
 
 type Scope = "project" | "user";
-
-const inputClass = "h-7 w-full rounded-md border border-input-border bg-input px-2 text-xs text-input-fg outline-none placeholder:text-muted focus:border-focus";
 
 function SkillRow({ skill }: { skill: SkillSummary }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <li className="rounded-md px-1 py-1 hover:bg-hover">
       <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={skill.enabled}
-          aria-label={`${skill.enabled ? "Turn off" : "Turn on"} ${skill.name}`}
+        <Switch
+          on={skill.enabled}
+          label={`${skill.enabled ? "Turn off" : "Turn on"} ${skill.name}`}
           title={skill.enabled ? "On: the agent can use it" : "Off: hidden from the agent"}
-          onClick={() => post({ type: "toggleSkill", name: skill.name, enabled: !skill.enabled })}
-          className={cx("relative h-4 w-7 shrink-0 rounded-full border transition-colors", skill.enabled ? "border-focus bg-focus" : "border-border bg-editor")}
-        >
-          <span className={cx("absolute top-0.5 size-2.5 rounded-full bg-fg transition-[left]", skill.enabled ? "left-3.5" : "left-0.5")} />
-        </button>
+          onChange={(enabled) => post({ type: "toggleSkill", name: skill.name, enabled })}
+        />
         <span className={cx("min-w-0 truncate font-mono text-xs", skill.enabled ? "text-fg" : "text-muted")}>{skill.name}</span>
         <span className="shrink-0 rounded-sm bg-badge/30 px-1 text-[10px] text-muted">{skill.source}</span>
         <span className="flex-1" />

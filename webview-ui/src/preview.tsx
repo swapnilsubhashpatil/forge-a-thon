@@ -56,7 +56,17 @@ let state: ChatState = {
   conversationId: "conv-2",
   mode: "agent",
   workspace: { name: "flask", files: 214, user: "Swapnil" },
-  mcpServers: ["anvil-editor", "filesystem"],
+  mcpServers: [
+    {
+      name: "github",
+      url: "https://api.githubcopilot.com/mcp/",
+      description: "Issues, pull requests and code search",
+      enabled: true,
+      status: "ok",
+      tools: ["search_issues", "get_issue", "create_issue", "list_pull_requests", "get_pull_request", "search_code"],
+    },
+    { name: "docs-search", url: "http://localhost:9300/mcp", enabled: false, status: "error", error: "connect ECONNREFUSED 127.0.0.1:9300" },
+  ],
   skills: [
     { name: "release-notes", description: "Use when writing release notes from merged PRs", source: "project", path: ".anvil/skills/release-notes/SKILL.md", enabled: true },
     { name: "flask-cli", description: "Use when adding or changing a flask CLI command", source: "project", path: ".claude/skills/flask-cli/SKILL.md", enabled: true },
@@ -257,6 +267,27 @@ function handle(message: WebviewMessage) {
       break;
     case "updateSettings":
       state = { ...state, settings: { ...state.settings, ...message.patch } };
+      emit({ type: "state", state });
+      break;
+    case "addMcpServer":
+    case "testMcpServer": {
+      const { name } = message;
+      const existing = state.mcpServers.find((server) => server.name === name);
+      const mcpServers = existing ? state.mcpServers : [...state.mcpServers, { name, url: message.type === "addMcpServer" ? message.url : "", enabled: true, status: "unknown" as const }];
+      state = { ...state, mcpServers: mcpServers.map((server) => (server.name === name ? { ...server, status: "testing" } : server)) };
+      emit({ type: "state", state });
+      setTimeout(() => {
+        state = { ...state, mcpServers: state.mcpServers.map((server) => (server.name === name ? { ...server, status: "ok", tools: ["search", "fetch"], error: undefined } : server)) };
+        emit({ type: "state", state });
+      }, 900);
+      break;
+    }
+    case "removeMcpServer":
+      state = { ...state, mcpServers: state.mcpServers.filter((server) => server.name !== message.name) };
+      emit({ type: "state", state });
+      break;
+    case "toggleMcpServer":
+      state = { ...state, mcpServers: state.mcpServers.map((server) => (server.name === message.name ? { ...server, enabled: message.enabled } : server)) };
       emit({ type: "state", state });
       break;
     case "undo":

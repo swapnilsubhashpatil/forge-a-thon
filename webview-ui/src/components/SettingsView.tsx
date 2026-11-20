@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import type { AnvilSettings, ChatState, ReviewMode } from "../../../src/shared/protocol.ts";
 import { cx, shortModel } from "../format.ts";
-import { post } from "../state/vscode.ts";
+import { loadSettingsTab, post, saveSettingsTab } from "../state/vscode.ts";
+import { McpSettings } from "./McpSettings.tsx";
 import { useListbox } from "./ModelPicker.tsx";
 import { Icon, IconButton } from "./primitives.tsx";
 import { SkillsSettings } from "./SkillsSettings.tsx";
@@ -19,8 +20,8 @@ function save(patch: Partial<AnvilSettings>) {
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="border-b border-border px-3 py-3">
-      <h2 className={cx("text-sm font-semibold text-fg", !hint && "mb-2")}>{title}</h2>
+    <section>
+      <h3 className={cx("text-sm font-semibold text-fg", !hint && "mb-2")}>{title}</h3>
       {hint && <p className="mb-2 text-xs text-muted">{hint}</p>}
       {children}
     </section>
@@ -160,10 +161,47 @@ function BudgetInput({ value }: { value: number }) {
   );
 }
 
-export function SettingsView({ chat }: { chat: ChatState }) {
+const tabs = [
+  { id: "models", label: "Models", description: "Which models answer, in what order, and how hard they think." },
+  { id: "agent", label: "Agent", description: "How edits land, which commands run unasked, and how much code the agent starts with." },
+  { id: "skills", label: "Skills", description: "Instructions the agent loads when a request matches, or when you type /name." },
+  { id: "mcp", label: "MCP", description: "Remote MCP servers over HTTP. Enabled servers are available to the agent; edits and destructive tools still ask for approval." },
+] as const;
+
+type Tab = (typeof tabs)[number]["id"];
+
+function TabBar({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+  return (
+    <nav className="@container sticky top-0 z-10 border-b border-border bg-bg px-3 py-2">
+      <div role="tablist" aria-label="Settings sections" className="hidden rounded-lg border border-border bg-editor/40 p-0.5 text-xs @[16rem]:flex">
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => onChange(id)}
+            className={cx("h-6 min-w-0 flex-1 rounded-md font-medium", tab === id ? "bg-raised text-fg shadow-sm" : "text-muted hover:text-fg")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <select value={tab} onChange={(event) => onChange(event.target.value as Tab)} aria-label="Settings section" className="h-7 w-full rounded-md border border-input-border bg-input px-1.5 text-xs text-input-fg outline-none focus:border-focus @[16rem]:hidden">
+        {tabs.map(({ id, label }) => (
+          <option key={id} value={id}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </nav>
+  );
+}
+
+function ModelsPage({ chat }: { chat: ChatState }) {
   const settings = chat.settings;
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <>
       <Section title="Model chain" hint="The first healthy model runs each message; the rest take over when it fails.">
         <ModelChainEditor chain={settings.chain} available={chat.availableModels ?? []} />
       </Section>
@@ -183,6 +221,13 @@ export function SettingsView({ chat }: { chat: ChatState }) {
           ))}
         </div>
       </Section>
+    </>
+  );
+}
+
+function AgentPage({ settings }: { settings: AnvilSettings }) {
+  return (
+    <>
       <Section title="Edits">
         <div role="radiogroup" aria-label="Review mode" className="flex flex-col gap-1">
           {reviewModes.map(({ value, label, hint }) => (
@@ -206,23 +251,38 @@ export function SettingsView({ chat }: { chat: ChatState }) {
       <Section title="Context budget" hint="Tokens of code Anvil packs before the agent starts.">
         <BudgetInput key={settings.budgetTokens} value={settings.budgetTokens} />
       </Section>
-      <Section title="Skills" hint="Instructions the agent loads when a request matches, or when you type /name.">
-        <SkillsSettings skills={chat.skills} />
-      </Section>
-      <Section title="MCP servers" hint="Tool servers TrueForge has connected.">
-        {chat.mcpServers.length === 0 ? (
-          <p className="text-xs text-muted">None.</p>
-        ) : (
-          <ul className="flex flex-col gap-0.5">
-            {chat.mcpServers.map((server) => (
-              <li key={server} className="flex items-center gap-1.5 font-mono text-xs text-fg">
-                <Icon name="plug" className="text-muted" />
-                {server}
-              </li>
-            ))}
-          </ul>
+    </>
+  );
+}
+
+export function SettingsView({ chat }: { chat: ChatState }) {
+  const [tab, setTab] = useState<Tab>(() => tabs.find(({ id }) => id === loadSettingsTab())?.id ?? "models");
+  const page = tabs.find(({ id }) => id === tab)!;
+  const choose = (next: Tab) => {
+    setTab(next);
+    saveSettingsTab(next);
+  };
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <TabBar tab={tab} onChange={choose} />
+      <div role="tabpanel" aria-label={page.label} className="flex flex-col gap-5 px-3 pt-3 pb-6">
+        <header>
+          <h2 className="text-base font-semibold text-fg">{page.label}</h2>
+          <p className="text-xs text-muted">{page.description}</p>
+        </header>
+        {tab === "models" && <ModelsPage chat={chat} />}
+        {tab === "agent" && <AgentPage settings={chat.settings} />}
+        {tab === "skills" && (
+          <section>
+            <SkillsSettings skills={chat.skills} />
+          </section>
         )}
-      </Section>
+        {tab === "mcp" && (
+          <section>
+            <McpSettings servers={chat.mcpServers} />
+          </section>
+        )}
+      </div>
     </div>
   );
 }
